@@ -1,0 +1,10 @@
+{
+  "world": { "width": 1920, "height": 600, "backgroundColor": "#000000" },
+  "player": { "x": 200, "y": 500, "radius": 20, "color": "#ff0000" },
+  "platforms": [
+    { "x": 960, "y": 580, "width": 1920, "height": 40, "color": "#4a8f38" },
+    { "x": 400, "y": 450, "width": 250, "height": 30, "color": "#956338" },
+    { "x": 950, "y": 350, "width": 400, "height": 30, "color": "#956338" },
+    { "x": 1600, "y": 450, "width": 250, "height": 30, "color": "#956338" }
+  ]
+}
