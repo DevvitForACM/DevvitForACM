@@ -2,6 +2,7 @@ import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
+import leaderboardRoutes from './routes/leaderboard.routes';
 
 const app = express();
 
@@ -126,6 +127,9 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
 
 // Use router middleware
 app.use(router);
+
+// Leaderboard routes
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Get port from environment variable with fallback
 const port = getServerPort();
