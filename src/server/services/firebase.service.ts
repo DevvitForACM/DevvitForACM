@@ -1,19 +1,18 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getDatabase, 
-  ref, 
-  set, 
-  get, 
-  query, 
-  orderByChild, 
-  limitToLast, 
+import {
+  getDatabase,
+  ref,
+  set,
+  get,
+  query,
+  orderByChild,
+  limitToLast,
   limitToFirst,
   startAt,
   endAt,
   onValue,
-  off,
   DataSnapshot,
-  Database
+  Database,
 } from 'firebase/database';
 import { firebaseConfig } from '../config/firebase.config';
 
@@ -26,14 +25,14 @@ interface QueryOptions {
 }
 
 export class FirebaseService {
-  private database!: Database; //
+  private database!: Database;
   private static instance: FirebaseService;
 
   constructor() {
     if (FirebaseService.instance) {
       return FirebaseService.instance;
     }
-    
+
     this.initializeFirebase();
     FirebaseService.instance = this;
   }
@@ -72,27 +71,27 @@ export class FirebaseService {
   async query(path: string, options: QueryOptions): Promise<DataSnapshot> {
     try {
       let dbQuery = query(ref(this.database, path));
-      
+
       if (options.orderBy) {
         dbQuery = query(dbQuery, orderByChild(options.orderBy));
       }
-      
+
       if (options.limitToLast) {
         dbQuery = query(dbQuery, limitToLast(options.limitToLast));
       }
-      
+
       if (options.limitToFirst) {
         dbQuery = query(dbQuery, limitToFirst(options.limitToFirst));
       }
-      
+
       if (options.startAt !== undefined) {
         dbQuery = query(dbQuery, startAt(options.startAt));
       }
-      
+
       if (options.endAt !== undefined) {
         dbQuery = query(dbQuery, endAt(options.endAt));
       }
-      
+
       return await get(dbQuery);
     } catch (error) {
       console.error(`Error querying data from path ${path}:`, error);
@@ -101,33 +100,33 @@ export class FirebaseService {
   }
 
   onValue(
-    path: string, 
-    options: QueryOptions, 
+    path: string,
+    options: QueryOptions,
     callback: (snapshot: DataSnapshot) => void
   ): () => void {
     try {
       let dbQuery = query(ref(this.database, path));
-      
+
       if (options.orderBy) {
         dbQuery = query(dbQuery, orderByChild(options.orderBy));
       }
-      
+
       if (options.limitToLast) {
         dbQuery = query(dbQuery, limitToLast(options.limitToLast));
       }
-      
+
       if (options.limitToFirst) {
         dbQuery = query(dbQuery, limitToFirst(options.limitToFirst));
       }
-      
+
       if (options.startAt !== undefined) {
         dbQuery = query(dbQuery, startAt(options.startAt));
       }
-      
+
       if (options.endAt !== undefined) {
         dbQuery = query(dbQuery, endAt(options.endAt));
       }
-      
+
       const unsubscribe = onValue(dbQuery, callback);
       return unsubscribe;
     } catch (error) {
