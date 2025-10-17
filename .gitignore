@@ -13,7 +13,13 @@ dist
 .cursor
 .vscode
 .git
+<<<<<<< HEAD
 WARP.md
 devvit.json
 .cursorignore
 .editorconfig
+=======
+devvit.json
+.cursorignore
+.editorconfig
+>>>>>>> origin/main
