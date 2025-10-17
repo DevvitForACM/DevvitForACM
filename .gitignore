@@ -13,3 +13,5 @@ dist
 .cursor
 .vscode
 .git
+WARP.md
+devvit.json
