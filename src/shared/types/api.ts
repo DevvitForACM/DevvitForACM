@@ -16,3 +16,5 @@ export type DecrementResponse = {
   postId: string;
   count: number;
 };
+
+export * from './leaderboard';
