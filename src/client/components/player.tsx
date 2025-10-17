@@ -24,33 +24,27 @@ export const PhaserGame = ({ width = 640, height = 360 }: PhaserGameProps) => {
             private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
 
             constructor() {
-                super({ key: 'main_scene' });
+                super({ key: 'main-scene' });
             }
 
             preload() {
-                // Use a simple rectangle via graphics texture so we don't need assets
-                this.add.text(8, 8, 'WASD to move, space to jump', { color: '#111', fontSize: '14px' }).setScrollFactor(0);
+                this.add.text(8, 8, 'WASD to move, space to jump', { color: '#111' }).setScrollFactor(0);
             }
 
             create() {
-                // Create a simple platform world using arcade physics
                 this.physics.world.setBounds(0, 0, width, height);
 
-                // Ground
                 const ground = this.add.rectangle(width / 2, height - 20, width, 40, 0x222222);
                 this.physics.add.existing(ground, true);
 
-                // Player: a colored rectangle as a physics sprite
                 const player_rect = this.add.rectangle(100, height - 80, 32, 48, 0xd93900);
                 this.player = this.physics.add.existing(player_rect, false) as unknown as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
                 this.player.setCollideWorldBounds(true);
                 this.player.body.setBounce(0.1, 0);
                 this.player.body.setDragX(600);
 
-                // Collide with ground
                 this.physics.add.collider(this.player, ground as unknown as Phaser.GameObjects.GameObject);
 
-                // Input
                 this.cursors = this.input.keyboard!.createCursorKeys();
                 this.wasd = {
                     up: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -72,11 +66,8 @@ export const PhaserGame = ({ width = 640, height = 360 }: PhaserGameProps) => {
                     this.player.setVelocityX(-speed);
                 } else if (right) {
                     this.player.setVelocityX(speed);
-                } else {
-                    // X drag handles deceleration; no-op here
                 }
 
-                // Only jump if on the ground
                 const on_floor = (this.player.body as Phaser.Physics.Arcade.Body).blocked.down;
                 if (up && on_floor) {
                     this.player.setVelocityY(jump_velocity);
