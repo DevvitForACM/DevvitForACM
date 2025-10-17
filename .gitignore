@@ -15,3 +15,5 @@ dist
 .git
 WARP.md
 devvit.json
+.cursorignore
+.editorconfig

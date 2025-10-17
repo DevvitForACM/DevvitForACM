@@ -1,9 +1,12 @@
-import { GameCanvas } from './components/GameCanvas';
+import { RoutingController, AppRoute } from '@/components/routing';
+import Home from '@/pages/home/index';
+import Play from '@/pages/play/index';
 
-export const App = () => {
-  return (
-    <div className="w-full h-full">
-      <GameCanvas />
-    </div>
-  );
-};
+const appRoutes: AppRoute[] = [
+  { path: '/', element: <Home /> },
+  { path: '/play', element: <Play /> },
+];
+
+export default function App() {
+  return <RoutingController routes={appRoutes} />;
+}

@@ -19,11 +19,11 @@ export class MainScene extends Phaser.Scene {
     this.physics.add.existing(ground, true);
 
     // Player sprite (placeholder)
-    this.player = this.physics.add.sprite(64, height - 100, undefined as any);
+    this.player = this.physics.add.sprite(64, height - 100, undefined as unknown as string);
     this.player.setDisplaySize(24, 36).setTint(0xefd81d).setCollideWorldBounds(true);
     this.player.body.setSize(24, 36);
 
-    this.physics.add.collider(this.player, ground as any);
+    this.physics.add.collider(this.player, ground as Phaser.GameObjects.GameObject);
 
     // Input
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -32,9 +32,9 @@ export class MainScene extends Phaser.Scene {
     this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
       // Reposition ground to bottom of new size
       const newHeight = gameSize.height;
-      (ground as any).y = newHeight - 40;
+      (ground as Phaser.GameObjects.Rectangle).y = newHeight - 40;
       // Expand ground width
-      (ground as any).width = Math.max(gameSize.width, 2000);
+      (ground as Phaser.GameObjects.Rectangle).width = Math.max(gameSize.width, 2000);
       (ground.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
     });
   }
