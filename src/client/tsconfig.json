@@ -1,17 +1,18 @@
 {
   "extends": "../../tools/tsconfig-base.json",
   "compilerOptions": {
+    "moduleResolution": "node16",
     "customConditions": ["browser"],
-    "lib": ["DOM", "ES2022", "esnext.disposable"],
+    "lib": ["DOM", "ES2022", "ESNext"],
     "outDir": "../../dist/types/client",
     "jsx": "react-jsx",
-    "tsBuildInfoFile": "../../dist/client/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "../../dist/client/tsbuildinfo",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
   "include": ["**/*", "**/*.json"],
-  "exclude": ["**/*.test.ts"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"],
   "references": [{ "path": "../shared" }]
 }
