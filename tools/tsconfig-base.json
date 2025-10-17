@@ -13,10 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
-<<<<<<< HEAD
     "noUncheckedSideEffectImports": true,
-=======
->>>>>>> origin/main
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,

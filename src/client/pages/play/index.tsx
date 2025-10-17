@@ -1,5 +1,4 @@
 import PhaserContainer from '@/components/phaser-container';
-<<<<<<< HEAD
 import { createGameConfig } from '@/lib/game-config';
 import { DEFAULT_LEVEL, type LevelConfig } from '@/lib/level-types';
 
@@ -26,14 +25,3 @@ export default function Play() {
     </main>
   );
 }
-=======
-import { gameConfig } from '@/lib/game-config';
-
-export default function Play() {
-  return (
-    <main className="w-screen h-screen bg-black overflow-hidden">
-      <PhaserContainer config={gameConfig} />
-    </main>
-  );
-}
->>>>>>> origin/main
