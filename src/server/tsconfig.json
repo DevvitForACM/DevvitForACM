@@ -2,7 +2,11 @@
 {
   "extends": "../../tools/tsconfig-base.json",
   "compilerOptions": {
+<<<<<<< HEAD
     "lib": ["ES2022"],
+=======
+    "lib": ["ES2023"],
+>>>>>>> origin/main
 
     "types": ["node"],
 

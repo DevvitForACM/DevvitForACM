@@ -2,7 +2,11 @@
 {
   "extends": "../../tools/tsconfig-base.json",
   "compilerOptions": {
+<<<<<<< HEAD
     "lib": ["WebWorker", "ES2022"],
+=======
+    "lib": ["WebWorker", "ES2023"],
+>>>>>>> origin/main
 
     "outDir": "../../dist/types/shared",
 

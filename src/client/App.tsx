@@ -9,4 +9,8 @@ const appRoutes: AppRoute[] = [
 
 export default function App() {
   return <RoutingController routes={appRoutes} />;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/main

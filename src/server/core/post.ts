@@ -13,6 +13,10 @@ export const createPost = async () => {
       backgroundUri: 'default-splash.png',
       buttonLabel: 'Tap to Start',
       description: 'An exciting interactive experience',
+<<<<<<< HEAD
+=======
+      entryUri: 'index.html',
+>>>>>>> origin/main
       heading: 'Welcome to the Game!',
       appIconUri: 'default-icon.png',
     },
