@@ -1,9 +1,33 @@
 import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
-import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
-import { createPost } from './core/post';
 import leaderboardRoutes from './routes/leaderboard.routes';
+import authRoutes from './routes/auth.routes';
+// Ensure firebase-admin is initialized on server start
+import './services/firebase-admin.service';
 
+// Detect if running in Devvit context or standalone
+const isDevvitContext = process.env.DEVVIT_EXECUTION_ID !== undefined;
+
+// Conditionally import Devvit-specific modules
+let redis: any, reddit: any, createServer: any, context: any, getServerPort: any, createPost: any;
+
+async function initializeServer() {
+  if (isDevvitContext) {
+    const devvitWeb = await import('@devvit/web/server');
+    redis = devvitWeb.redis;
+    reddit = devvitWeb.reddit;
+    createServer = devvitWeb.createServer;
+    context = devvitWeb.context;
+    getServerPort = devvitWeb.getServerPort;
+    
+    const postModule = await import('./core/post');
+    createPost = postModule.createPost;
+  }
+  
+  startServer();
+}
+
+function startServer() {
 const app = express();
 
 // Middleware for JSON body parsing
@@ -15,9 +39,11 @@ app.use(express.text());
 
 const router = express.Router();
 
-router.get<{ postId: string }, InitResponse | { status: string; message: string }>(
-  '/api/init',
-  async (_req, res): Promise<void> => {
+// Devvit-specific routes (only enabled in Devvit context)
+if (isDevvitContext) {
+  router.get<{ postId: string }, InitResponse | { status: string; message: string }>(
+    '/api/init',
+    async (_req, res): Promise<void> => {
     const { postId } = context;
 
     if (!postId) {
@@ -124,16 +150,48 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
     });
   }
 });
+} // End of isDevvitContext block for router
 
-// Use router middleware
-app.use(router);
+// Use router middleware only if Devvit routes exist
+if (isDevvitContext) {
+  app.use(router);
+}
 
 // Leaderboard routes
 app.use('/api/leaderboard', leaderboardRoutes);
 
-// Get port from environment variable with fallback
-const port = getServerPort();
+// Auth routes (Reddit OAuth)
+app.use('/auth', authRoutes);
 
-const server = createServer(app);
-server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port);
+// Health check for standalone mode
+if (!isDevvitContext) {
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', message: 'Standalone server running', port: process.env.PORT || 3000 });
+  });
+}
+
+// Get port from environment variable with fallback
+const port = isDevvitContext ? getServerPort() : (process.env.PORT || 3000);
+console.log('🚀 Server will listen on port:', port);
+console.log('   Mode:', isDevvitContext ? 'Devvit' : 'Standalone');
+
+if (isDevvitContext) {
+  const server = createServer(app);
+  server.on('error', (err: Error) => console.error(`server error; ${err.stack}`));
+  server.listen(port);
+} else {
+  // Standalone mode - use regular Express listen
+  app.listen(port, () => {
+    console.log(`✅ Server is running on http://localhost:${port}`);
+    console.log(`   Health check: http://localhost:${port}/health`);
+    console.log(`   Auth callback: http://localhost:${port}/auth/reddit/callback`);
+    console.log(`   Leaderboard: http://localhost:${port}/api/leaderboard`);
+  });
+}
+} // End of startServer function
+
+// Initialize and start the server
+initializeServer().catch(err => {
+  console.error('Failed to initialize server:', err);
+  process.exit(1);
+});
