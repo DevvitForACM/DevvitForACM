@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { adminDb, safeAdminAuth } from './firebase-admin.service';
 import jwt from 'jsonwebtoken';
-
+// added email and avatar url fields in user db
 // Read JWT secret from environment. Do not fall back to a hardcoded value in production.
 let JWT_SECRET: string | undefined = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
