@@ -1,4 +1,5 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
+import { CAMERA_SCROLL } from "../../constants/game-constants";
 
 interface ControllableScene extends Phaser.Scene {
   cameraScrollSpeed: number;
@@ -6,19 +7,31 @@ interface ControllableScene extends Phaser.Scene {
 
 export function createScrollControls(scene: ControllableScene): void {
   scene.cameraScrollSpeed = 0;
-  const SCROLL_VELOCITY = 5;
 
   const leftArrow = scene.add
-    .text(0, 0, '<', { fontSize: '48px', color: '#ffffff' })
+    .text(0, 0, CAMERA_SCROLL.LEFT_SYMBOL, {
+      fontSize: CAMERA_SCROLL.FONT_SIZE,
+      color: CAMERA_SCROLL.COLOR,
+    })
     .setOrigin(0.5);
+
   const rightArrow = scene.add
-    .text(0, 0, '>', { fontSize: '48px', color: '#ffffff' })
+    .text(0, 0, CAMERA_SCROLL.RIGHT_SYMBOL, {
+      fontSize: CAMERA_SCROLL.FONT_SIZE,
+      color: CAMERA_SCROLL.COLOR,
+    })
     .setOrigin(0.5);
 
   const positionControls = () => {
     const { height } = scene.scale;
-    leftArrow.setPosition(50, height - 50);
-    rightArrow.setPosition(150, height - 50);
+    leftArrow.setPosition(
+      CAMERA_SCROLL.LEFT_X,
+      height - CAMERA_SCROLL.BUTTON_OFFSET_Y
+    );
+    rightArrow.setPosition(
+      CAMERA_SCROLL.RIGHT_X,
+      height - CAMERA_SCROLL.BUTTON_OFFSET_Y
+    );
   };
 
   positionControls();
@@ -27,11 +40,11 @@ export function createScrollControls(scene: ControllableScene): void {
   rightArrow.setInteractive().setScrollFactor(0);
 
   leftArrow.on(Phaser.Input.Events.POINTER_DOWN, () => {
-    scene.cameraScrollSpeed = -SCROLL_VELOCITY;
+    scene.cameraScrollSpeed = -CAMERA_SCROLL.VELOCITY;
   });
 
   rightArrow.on(Phaser.Input.Events.POINTER_DOWN, () => {
-    scene.cameraScrollSpeed = SCROLL_VELOCITY;
+    scene.cameraScrollSpeed = CAMERA_SCROLL.VELOCITY;
   });
 
   const stopScrolling = () => {
