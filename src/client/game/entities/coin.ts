@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BaseEntity } from './base-entity';
+import { Player } from './player';
 
 export class Coin extends BaseEntity {
   public value: number;
@@ -36,7 +37,11 @@ export class Coin extends BaseEntity {
     this.sprite.angle += delta * 0.2;
   }
 
-  public override onCollision(other: BaseEntity): void {}
+  public override onCollision(other: BaseEntity): void {
+    if (other instanceof Player && !this.isCollected) {
+      this.collect();
+    }
+  }
 
   public collect(): void {
     if (this.isCollected) return;

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { createScrollControls } from './temp-controls';
-import type { LevelConfig, RectDef } from './level-types';
-import { DEFAULT_LEVEL } from './level-types';
+import { createScrollControls } from '../controls/camera-controls';
+import type { LevelConfig, RectDef } from '../level/level-types';
+import { DEFAULT_LEVEL } from '../level/level-types';
 
 
 export class PlayScene extends Phaser.Scene {

@@ -37,35 +37,28 @@ export class Door extends BaseEntity {
 
   public unlock(): void {
     this.isLocked = false;
-    console.log(`Door ${this.id} unlocked!`);
   }
 
   public lock(): void {
     this.isLocked = true;
-    console.log(`Door ${this.id} locked!`);
   }
 
   public open(): void {
     if (this.isLocked) {
-      console.log(`Door ${this.id} is locked!`);
       return;
     }
     this.isOpen = true;
-    console.log(`Door ${this.id} opened!`);
   }
 
   public close(): void {
     this.isOpen = false;
-    console.log(`Door ${this.id} closed!`);
   }
 
   public enter(): void {
     if (!this.isOpen) {
-      console.log(`Door ${this.id} is not open!`);
       return;
     }
 
-    console.log(`Entering door ${this.id}, target level: ${this.targetLevel}`);
     // collision and next level handled here
   }
 }

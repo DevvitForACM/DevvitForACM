@@ -4,6 +4,7 @@ import { Player } from './player';
 import { Spike } from './spike';
 import { Spring } from './spring';
 import { Tile } from './tile';
+import { CollisionManager } from './collision-manager';
 
 export class EntityController {
   private entities: BaseEntity[]; // Array of all entities
@@ -50,13 +51,30 @@ export class EntityController {
   }
 
   public update(delta: number): void {
+    // Update all entities first
     for (const entity of this.entities) {
       if (entity.active) {
         entity.update(delta);
       }
     }
 
-    // Collision detection will be handled seperately
+    // Handle collision detection
+    this.handleCollisions();
+  }
+
+  /**
+   * Handle collision detection between all entities
+   */
+  private handleCollisions(): void {
+    CollisionManager.checkCollisions(this.entities);
+  }
+
+  /**
+   * Check collisions for a specific entity against all others
+   */
+  public checkEntityCollisions(entity: BaseEntity): BaseEntity[] {
+    const others = this.entities.filter(e => e !== entity);
+    return CollisionManager.checkEntityCollisions(entity, others);
   }
 
   // Remove all entities

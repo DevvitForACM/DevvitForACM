@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { PlayScene } from './play-scene';
-import type { LevelConfig } from './level-types';
+import { PlayScene } from '../game/scenes/play-scene';
+import type { LevelConfig } from '../game/level/level-types';
 
 export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConfig {
   return {
