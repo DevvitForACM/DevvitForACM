@@ -10,6 +10,19 @@ export class PlayScene extends Phaser.Scene {
     super({ key: 'PlayScene' });
   }
 
+  preload() {
+    // Load spike texture from assets (served via Vite publicDir)
+    this.load.image('spike', '/Spikes.png');
+
+    // Load player animations from individual frames
+    for (let i = 1; i <= 4; i++) {
+      this.load.image(`player-idle-${i}`, `/Animations/Idle/${i}.png`);
+    }
+    for (let i = 1; i <= 5; i++) {
+      this.load.image(`player-jump-${i}`, `/Animations/Jump/${i}.png`);
+    }
+  }
+
   // New: keyboard + player refs
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: {
@@ -18,12 +31,14 @@ export class PlayScene extends Phaser.Scene {
     down: Phaser.Input.Keyboard.Key;
     right: Phaser.Input.Keyboard.Key;
   };
-  private player!: Phaser.GameObjects.Arc; // circle shape
+  private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private playerBody!: Phaser.Physics.Arcade.Body;
 
   // Collision groups & debug
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
-  private hazards!: Phaser.Physics.Arcade.StaticGroup;
+  private blocks!: Phaser.Physics.Arcade.StaticGroup;
+  private placedBlocks = new Map<string, Phaser.GameObjects.Rectangle>();
+  private readonly TILE = 32;
 
   public create(): void {
     const W = this.level.worldWidth;
@@ -53,28 +68,48 @@ export class PlayScene extends Phaser.Scene {
       addPlatform({ x: 1600, y: H - 150, width: 250, height: 30, color: 0x956338 });
     }
 
-    // Hazards
-    this.hazards = this.physics.add.staticGroup();
-    const addHazard = (r: RectDef) => {
-      const rect = this.add.rectangle(r.x, r.y, r.width, r.height, r.color ?? 0x2dd4bf);
-      this.physics.add.existing(rect, true);
-      this.hazards.add(rect as Phaser.GameObjects.GameObject);
-    };
-    this.level.hazards?.forEach(addHazard);
+    // Placeable Blocks (Minecraft-like)
+    this.blocks = this.physics.add.staticGroup();
+    this.input.mouse?.disableContextMenu();
+    if (this.level.allowBlockPlacement) {
+      this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+        const x = pointer.worldX;
+        const y = pointer.worldY;
+        if (pointer.leftButtonDown()) {
+          this.placeBlockAt(x, y);
+        } else if (pointer.rightButtonDown()) {
+          this.removeBlockAt(x, y);
+        }
+      });
+    }
 
-    // Player
+    // Animations
+    this.anims.create({
+      key: 'player-idle',
+      frames: [1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'player-jump',
+      frames: [1, 2, 3, 4, 5].map((i) => ({ key: `player-jump-${i}` })),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    // Player sprite
     const startX = this.level.playerStartX ?? 200;
     const startY = this.level.playerStartY ?? Math.max(0, H - 100);
-    const playerCircle = this.add.circle(startX, startY, 20, 0xff0000);
-    this.player = this.physics.add.existing(playerCircle, false) as unknown as Phaser.GameObjects.Arc;
+    this.player = this.physics.add.sprite(startX, startY, 'player-idle-1');
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
     this.playerBody.setBounce(0.1, 0);
     this.playerBody.setDragX(600);
+    this.player.play('player-idle');
 
     // Colliders / overlaps
     this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.overlap(this.player, this.hazards, () => this.onHitHazard(), undefined, this);
+    this.physics.add.collider(this.player, this.blocks);
 
     // Camera follow (Chrome Dino-style)
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
@@ -129,13 +164,55 @@ export class PlayScene extends Phaser.Scene {
     if (up && onFloor) {
       this.playerBody.setVelocityY(-jump);
     }
+
+    // Flip sprite based on movement direction
+    if (vx < 0) this.player.setFlipX(true);
+    else if (vx > 0) this.player.setFlipX(false);
+
+    // Play animations based on state
+    if (!onFloor) {
+      if (this.player.anims.currentAnim?.key !== 'player-jump') {
+        this.player.play('player-jump', true);
+      }
+    } else {
+      if (vx === 0 && this.player.anims.currentAnim?.key !== 'player-idle') {
+        this.player.play('player-idle', true);
+      }
+    }
   }
 
-  private onHitHazard(): void {
-    this.cameras.main.shake(150, 0.003);
-    // Reset player near current camera view
-    const view = this.cameras.main.worldView;
-    this.player.setPosition(view.x + 100, this.level.worldHeight - 100);
-    this.playerBody.setVelocity(0, 0);
+  private keyForCell(cx: number, cy: number) {
+    return `${cx},${cy}`;
+  }
+
+  private worldToCell(x: number, y: number) {
+    return {
+      cx: Math.floor(x / this.TILE),
+      cy: Math.floor(y / this.TILE),
+    };
+  }
+
+  private placeBlockAt(x: number, y: number) {
+    const { cx, cy } = this.worldToCell(x, y);
+    const key = this.keyForCell(cx, cy);
+    if (this.placedBlocks.has(key)) return;
+
+    const bx = cx * this.TILE + this.TILE / 2;
+    const by = cy * this.TILE + this.TILE / 2;
+    const rect = this.add.rectangle(bx, by, this.TILE, this.TILE, 0x956338);
+    this.physics.add.existing(rect, true);
+    this.blocks.add(rect as unknown as Phaser.GameObjects.GameObject);
+    (rect.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+    this.placedBlocks.set(key, rect);
+  }
+
+  private removeBlockAt(x: number, y: number) {
+    const { cx, cy } = this.worldToCell(x, y);
+    const key = this.keyForCell(cx, cy);
+    const rect = this.placedBlocks.get(key);
+    if (!rect) return;
+
+    this.blocks.remove(rect, true, true);
+    this.placedBlocks.delete(key);
   }
 }

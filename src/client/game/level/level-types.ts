@@ -20,6 +20,8 @@ export interface LevelConfig {
   playerStartY?: number;
   platforms?: RectDef[];
   hazards?: RectDef[];
+  // When true, left/right click places/removes blocks (builder mode)
+  allowBlockPlacement?: boolean;
 }
 
 export const DEFAULT_LEVEL: LevelConfig = {
@@ -36,4 +38,5 @@ export const DEFAULT_LEVEL: LevelConfig = {
   playerStartY: 500,
   platforms: [],
   hazards: [],
+  allowBlockPlacement: true,
 };
