@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { PlayScene } from './play-scene';
+import { WasdScene } from '../game/scenes/wasd-scene';
 
-export const gameConfig: Phaser.Types.Core.GameConfig = {
+export const wasdGameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  parent: 'phaser-game-container',
-  backgroundColor: '#000000',
+  parent: 'phaser-wasd-container',
+  backgroundColor: '#f6f7f8',
   scale: {
     mode: Phaser.Scale.RESIZE,
     width: '100%',
@@ -14,9 +14,9 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { x: 0, y: 0 },
+      gravity: { x: 0, y: 800 },
       debug: false,
     },
   },
-  scene: [PlayScene],
+  scene: [WasdScene],
 };

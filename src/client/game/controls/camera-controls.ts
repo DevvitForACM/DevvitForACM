@@ -8,29 +8,30 @@ interface ControllableScene extends Phaser.Scene {
 export function createScrollControls(scene: ControllableScene): void {
   scene.cameraScrollSpeed = 0;
 
+  // Use constants for symbols and styling
   const leftArrow = scene.add
-    .text(0, 0, CAMERA_SCROLL.LEFT_SYMBOL, {
-      fontSize: CAMERA_SCROLL.FONT_SIZE,
-      color: CAMERA_SCROLL.COLOR,
+    .text(0, 0, CAMERA_SCROLL.LEFT_SYMBOL ?? "<", {
+      fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",
+      color: CAMERA_SCROLL.COLOR ?? "#ffffff",
     })
     .setOrigin(0.5);
 
   const rightArrow = scene.add
-    .text(0, 0, CAMERA_SCROLL.RIGHT_SYMBOL, {
-      fontSize: CAMERA_SCROLL.FONT_SIZE,
-      color: CAMERA_SCROLL.COLOR,
+    .text(0, 0, CAMERA_SCROLL.RIGHT_SYMBOL ?? ">", {
+      fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",
+      color: CAMERA_SCROLL.COLOR ?? "#ffffff",
     })
     .setOrigin(0.5);
 
   const positionControls = () => {
     const { height } = scene.scale;
     leftArrow.setPosition(
-      CAMERA_SCROLL.LEFT_X,
-      height - CAMERA_SCROLL.BUTTON_OFFSET_Y
+      CAMERA_SCROLL.LEFT_X ?? 50,
+      height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50)
     );
     rightArrow.setPosition(
-      CAMERA_SCROLL.RIGHT_X,
-      height - CAMERA_SCROLL.BUTTON_OFFSET_Y
+      CAMERA_SCROLL.RIGHT_X ?? 150,
+      height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50)
     );
   };
 
@@ -39,12 +40,14 @@ export function createScrollControls(scene: ControllableScene): void {
   leftArrow.setInteractive().setScrollFactor(0);
   rightArrow.setInteractive().setScrollFactor(0);
 
+  const scrollVelocity = CAMERA_SCROLL.VELOCITY ?? 5;
+
   leftArrow.on(Phaser.Input.Events.POINTER_DOWN, () => {
-    scene.cameraScrollSpeed = -CAMERA_SCROLL.VELOCITY;
+    scene.cameraScrollSpeed = -scrollVelocity;
   });
 
   rightArrow.on(Phaser.Input.Events.POINTER_DOWN, () => {
-    scene.cameraScrollSpeed = CAMERA_SCROLL.VELOCITY;
+    scene.cameraScrollSpeed = scrollVelocity;
   });
 
   const stopScrolling = () => {

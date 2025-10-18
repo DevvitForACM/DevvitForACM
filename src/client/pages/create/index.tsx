@@ -2,7 +2,7 @@ import PhaserContainer from '@/components/phaser-container';
 import { createGameConfig } from '@/config/game-config';
 import { DEFAULT_LEVEL, type LevelConfig } from '@/game/level/level-types';
 
-export default function Play() {
+export default function Create() {
   // Example: configure props per level; can be sourced from props, query, or state
   const level: LevelConfig = {
     ...DEFAULT_LEVEL,

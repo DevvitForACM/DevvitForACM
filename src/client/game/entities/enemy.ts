@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BaseEntity } from './base-entity';
+import { Player } from './player';
 
 export class Enemy extends BaseEntity {
   public health: number;
@@ -32,7 +33,21 @@ export class Enemy extends BaseEntity {
     }
   }
 
-  public override onCollision(other: BaseEntity): void {}
+  public override onCollision(other: BaseEntity): void {
+    if (other instanceof Player && !this.isDead && !other.isDead) {
+      // Damage is applied by the player's collision handler
+      // We could add attack animations or sound effects here
+      this.performAttack();
+    }
+  }
+
+  private performAttack(): void {
+    // Visual feedback for attack
+    this.sprite.setTint(0xff4444);
+    setTimeout(() => {
+      this.sprite.clearTint();
+    }, 150);
+  }
 
   public takeDamage(amount: number): void {
     if (this.isDead) return;
