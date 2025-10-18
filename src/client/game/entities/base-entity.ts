@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CollisionBounds } from './collision-manager';
 
 export class BaseEntity {
   public id: string;
@@ -8,6 +9,9 @@ export class BaseEntity {
   public height: number;
   public sprite: Phaser.GameObjects.Sprite;
   public active: boolean;
+  public canCollide: boolean;
+  public collisionOffsetX: number;
+  public collisionOffsetY: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -22,6 +26,9 @@ export class BaseEntity {
     this.width = 32;
     this.height = 32;
     this.active = true;
+    this.canCollide = true;
+    this.collisionOffsetX = 0;
+    this.collisionOffsetY = 0;
 
     this.sprite = scene.add.sprite(x, y, texture);
 
@@ -31,6 +38,26 @@ export class BaseEntity {
   public update(delta: number): void {}
 
   public onCollision(other: BaseEntity): void {}
+
+  /**
+   * Get collision bounds for this entity
+   */
+  public getBounds(): CollisionBounds {
+    return {
+      x: this.x - this.width / 2 + this.collisionOffsetX,
+      y: this.y - this.height / 2 + this.collisionOffsetY,
+      width: this.width,
+      height: this.height
+    };
+  }
+
+  /**
+   * Set collision bounds offset from center
+   */
+  public setCollisionOffset(x: number, y: number): void {
+    this.collisionOffsetX = x;
+    this.collisionOffsetY = y;
+  }
 
   public destroy(): void {
     this.active = false;
