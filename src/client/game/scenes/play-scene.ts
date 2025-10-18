@@ -11,15 +11,15 @@ export class PlayScene extends Phaser.Scene {
   }
 
   preload() {
-    // Load spike texture from assets (served via Vite publicDir)
-    this.load.image('spike', '/Spikes.png');
+    // Load spike texture from assets (ensure path matches repo's assets/)
+    this.load.image('spike', '/assets/Spikes.png');
 
     // Load player animations from individual frames
     for (let i = 1; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `/Animations/Idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `/assets/Animations/Idle/${i}.png`);
     }
     for (let i = 1; i <= 5; i++) {
-      this.load.image(`player-jump-${i}`, `/Animations/Jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `/assets/Animations/Jump/${i}.png`);
     }
   }
 
