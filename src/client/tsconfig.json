@@ -6,7 +6,7 @@
       "@/*": ["./*"]
     },
     "customConditions": ["browser"],
-    "lib": ["DOM", "ES2023", "esnext.disposable"],
+    "lib": ["DOM", "ES2022"],
     "outDir": "../../dist/types/client",
     "jsx": "react-jsx",
     "tsBuildInfoFile": "../../dist/client/tsconfig.tsbuildinfo"

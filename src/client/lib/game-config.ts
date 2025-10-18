@@ -1,22 +1,25 @@
 import Phaser from 'phaser';
 import { PlayScene } from './play-scene';
+import type { LevelConfig } from './level-types';
 
-export const gameConfig: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
-  parent: 'phaser-game-container',
-  backgroundColor: '#000000',
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    width: '100%',
-    height: '100%',
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: { x: 0, y: 0 },
-      debug: false,
+export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConfig {
+  return {
+    type: Phaser.AUTO,
+    parent: 'phaser-game-container',
+    backgroundColor: level.bgColor,
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      width: '100%',
+      height: '100%',
+      autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-  },
-  scene: [PlayScene],
-};
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { x: 0, y: level.gravityY },
+        debug: false,
+      },
+    },
+    scene: [new PlayScene(level)],
+  };
+}
