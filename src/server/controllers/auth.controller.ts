@@ -40,7 +40,7 @@ export async function redditAuthStatus(req: Request, res: Response) {
   return res.json({
     service: 'Reddit OAuth Backend',
     status: 'running',
-    port: 3000,
+    port: process.env.PORT || 3000,
     timestamp: new Date().toISOString(),
     config: {
       hasRedditCredentials: hasCredentials,

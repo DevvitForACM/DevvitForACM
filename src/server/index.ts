@@ -9,17 +9,26 @@ import './services/firebase-admin.service';
 const isDevvitContext = process.env.DEVVIT_EXECUTION_ID !== undefined;
 
 // Conditionally import Devvit-specific modules
-let redis: any, reddit: any, createServer: any, context: any, getServerPort: any, createPost: any;
+// Use more specific types where possible. These come from the Devvit runtime and are
+// only available when running in Devvit context, so they're typed as unknown here
+// and narrowed at runtime.
+let redis: { get(key: string): Promise<string | undefined>; incrBy(key: string, by: number): Promise<number> } | undefined;
+let reddit: { getCurrentUsername(): Promise<string | undefined> } | undefined;
+let createServer: ((app: import('express').Express) => import('http').Server) | undefined;
+let context: { postId?: string | undefined; subredditName?: string | undefined } | undefined;
+let getServerPort: (() => number) | undefined;
+let createPost: (() => Promise<{ id: string }>) | undefined;
 
 async function initializeServer() {
   if (isDevvitContext) {
     const devvitWeb = await import('@devvit/web/server');
+    // Assign runtime values - runtime checks below will assume these are defined.
     redis = devvitWeb.redis;
     reddit = devvitWeb.reddit;
     createServer = devvitWeb.createServer;
     context = devvitWeb.context;
     getServerPort = devvitWeb.getServerPort;
-    
+
     const postModule = await import('./core/post');
     createPost = postModule.createPost;
   }
@@ -40,11 +49,11 @@ app.use(express.text());
 const router = express.Router();
 
 // Devvit-specific routes (only enabled in Devvit context)
-if (isDevvitContext) {
+  if (isDevvitContext) {
   router.get<{ postId: string }, InitResponse | { status: string; message: string }>(
     '/api/init',
-    async (_req, res): Promise<void> => {
-    const { postId } = context;
+    async (_req, res) => {
+    const postId = context?.postId;
 
     if (!postId) {
       console.error('API Init Error: postId not found in devvit context');
@@ -52,6 +61,12 @@ if (isDevvitContext) {
         status: 'error',
         message: 'postId is required but missing from context',
       });
+      return;
+    }
+
+    if (!redis || !reddit) {
+      console.error('API Init Error: devvit runtime clients are not available');
+      res.status(500).json({ status: 'error', message: 'Devvit runtime not available' });
       return;
     }
 
@@ -80,8 +95,8 @@ if (isDevvitContext) {
 
 router.post<{ postId: string }, IncrementResponse | { status: string; message: string }, unknown>(
   '/api/increment',
-  async (_req, res): Promise<void> => {
-    const { postId } = context;
+  async (_req, res) => {
+    const postId = context?.postId;
     if (!postId) {
       res.status(400).json({
         status: 'error',
@@ -90,8 +105,13 @@ router.post<{ postId: string }, IncrementResponse | { status: string; message: s
       return;
     }
 
+    if (!redis) {
+      return res.status(500).json({ status: 'error', message: 'Redis client unavailable' });
+    }
+
+    const newCount = await redis.incrBy('count', 1);
     res.json({
-      count: await redis.incrBy('count', 1),
+      count: newCount,
       postId,
       type: 'increment',
     });
@@ -100,8 +120,8 @@ router.post<{ postId: string }, IncrementResponse | { status: string; message: s
 
 router.post<{ postId: string }, DecrementResponse | { status: string; message: string }, unknown>(
   '/api/decrement',
-  async (_req, res): Promise<void> => {
-    const { postId } = context;
+  async (_req, res) => {
+    const postId = context?.postId;
     if (!postId) {
       res.status(400).json({
         status: 'error',
@@ -110,21 +130,30 @@ router.post<{ postId: string }, DecrementResponse | { status: string; message: s
       return;
     }
 
+    if (!redis) {
+      return res.status(500).json({ status: 'error', message: 'Redis client unavailable' });
+    }
+
+    const newCount = await redis.incrBy('count', -1);
     res.json({
-      count: await redis.incrBy('count', -1),
+      count: newCount,
       postId,
       type: 'decrement',
     });
   }
 );
 
-router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
+router.post('/internal/on-app-install', async (_req, res) => {
+  if (!createPost) {
+    return res.status(500).json({ status: 'error', message: 'CreatePost not available' });
+  }
+
   try {
     const post = await createPost();
 
     res.json({
       status: 'success',
-      message: `Post created in subreddit ${context.subredditName} with id ${post.id}`,
+      message: `Post created in subreddit ${context?.subredditName} with id ${post.id}`,
     });
   } catch (error) {
     console.error(`Error creating post: ${error}`);
@@ -135,12 +164,16 @@ router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
   }
 });
 
-router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
+router.post('/internal/menu/post-create', async (_req, res) => {
+  if (!createPost) {
+    return res.status(500).json({ status: 'error', message: 'CreatePost not available' });
+  }
+
   try {
     const post = await createPost();
 
     res.json({
-      navigateTo: `https://reddit.com/r/${context.subredditName}/comments/${post.id}`,
+      navigateTo: `https://reddit.com/r/${context?.subredditName}/comments/${post.id}`,
     });
   } catch (error) {
     console.error(`Error creating post: ${error}`);
@@ -171,12 +204,12 @@ if (!isDevvitContext) {
 }
 
 // Get port from environment variable with fallback
-const port = isDevvitContext ? getServerPort() : (process.env.PORT || 3000);
+const port = isDevvitContext ? getServerPort!() : (Number(process.env.PORT) || 3000);
 console.log('🚀 Server will listen on port:', port);
 console.log('   Mode:', isDevvitContext ? 'Devvit' : 'Standalone');
 
 if (isDevvitContext) {
-  const server = createServer(app);
+  const server = createServer!(app);
   server.on('error', (err: Error) => console.error(`server error; ${err.stack}`));
   server.listen(port);
 } else {
