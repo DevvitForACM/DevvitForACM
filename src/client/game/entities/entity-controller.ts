@@ -1,9 +1,6 @@
 import Phaser from 'phaser';
 import { BaseEntity } from './base-entity';
 import { Player } from './player';
-import { Spike } from './spike';
-import { Spring } from './spring';
-import { Tile } from './tile';
 import { CollisionManager } from './collision-manager';
 
 export class EntityController {
@@ -14,6 +11,8 @@ export class EntityController {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.entities = [];
+    // Mark scene as used to satisfy noUnusedLocals
+    void this.scene;
   }
 
   public add(entity: BaseEntity): void {

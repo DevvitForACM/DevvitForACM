@@ -19,9 +19,9 @@ export class Tile extends BaseEntity {
     this.isGround = isGround;
   }
 
-  public override update(delta: number): void {}
+  public override update(delta: number): void { void delta; }
 
-  public override onCollision(other: BaseEntity): void {}
+  public override onCollision(other: BaseEntity): void { void other; }
 
   public isLava(): boolean {
     return !this.isGround;

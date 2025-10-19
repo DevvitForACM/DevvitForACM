@@ -7,6 +7,7 @@ export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConf
     type: Phaser.AUTO,
     parent: 'phaser-game-container',
     backgroundColor: level.bgColor,
+    render: { pixelArt: true, antialias: false },
     scale: {
       mode: Phaser.Scale.RESIZE,
       width: '100%',

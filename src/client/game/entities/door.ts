@@ -22,6 +22,7 @@ export class Door extends BaseEntity {
   }
 
   public override update(delta: number): void {
+    void delta;
     this.sprite.setPosition(this.x, this.y);
 
     if (this.isLocked) {
@@ -33,7 +34,7 @@ export class Door extends BaseEntity {
     }
   }
 
-  public override onCollision(other: BaseEntity): void {}
+  public override onCollision(other: BaseEntity): void { void other; }
 
   public unlock(): void {
     this.isLocked = false;
