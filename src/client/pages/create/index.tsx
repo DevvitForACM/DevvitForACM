@@ -1,12 +1,182 @@
+import React, { useState, useEffect } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
+import { CreateScene } from '@/game/scenes/create-scene';
+
+const ENTITY_TYPES_DATA = {
+  enemy: { name: 'Enemy', icon: '👾' },
+  spike: { name: 'Spike', icon: '⚠️' },
+  spring: { name: 'Spring', icon: '🔄' },
+  ground: { name: 'Ground', icon: '🟫' },
+  lava: { name: 'Lava', icon: '🔥' },
+  coin: { name: 'Coin', icon: '💰' },
+  door: { name: 'Door', icon: '🚪' },
+};
+
+const ENTITY_TYPES = [
+  { id: 'enemy', name: 'Enemy', icon: '👾' },
+  { id: 'spike', name: 'Spike', icon: '⚠️' },
+  { id: 'spring', name: 'Spring', icon: '🔄' },
+  { id: 'ground', name: 'Ground', icon: '🟫' },
+  { id: 'lava', name: 'Lava', icon: '🔥' },
+  { id: 'coin', name: 'Coin', icon: '💰' },
+  { id: 'door', name: 'Door', icon: '🚪' },
+];
 
 export default function Create() {
+  const [scene, setScene] = useState<CreateScene | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+  const [entityCount, setEntityCount] = useState(0);
+
   const config = createBlankCanvasConfig('#f6f7f8');
 
+  useEffect(() => {
+    const check = setInterval(() => {
+      const game = (window as any).game;
+      if (game) {
+        const s = game.scene.getScene('CreateScene') as CreateScene;
+        if (s) {
+          setScene(s);
+          s.registry.set('entityTypes', ENTITY_TYPES_DATA);
+          s.events.on('entity-placed', () =>
+            setEntityCount(s.getAllEntities().length)
+          );
+          s.events.on('entity-removed', () =>
+            setEntityCount(s.getAllEntities().length)
+          );
+          s.events.on('entities-cleared', () => setEntityCount(0));
+          clearInterval(check);
+        }
+      }
+    }, 100);
+    return () => clearInterval(check);
+  }, []);
+
+  const handleSelect = (id: string) => {
+    setSelectedEntity(id);
+    scene?.setSelectedEntityType(id);
+  };
+
+  const handleClear = () => {
+    if (confirm('Clear all?')) {
+      scene?.clearAllEntities();
+      setSelectedEntity(null);
+    }
+  };
+
+  const handleSave = () => {
+    const entities = scene?.getAllEntities() || [];
+    alert(`Saved ${entities.length} entities!`);
+  };
+
+  const handlePlay = () => {
+    alert('Play (not implemented)');
+  };
+
   return (
-    <main className="w-screen h-screen overflow-hidden bg-gray-50">
-      <PhaserContainer config={config} />
-    </main>
+    <div className="relative w-full h-screen overflow-hidden bg-gray-50">
+      {/* Phaser Canvas */}
+      <div className="absolute inset-0">
+        <PhaserContainer config={config} />
+      </div>
+
+      {/* Top Bar */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-white shadow-md">
+        <div className="flex items-center justify-between p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-gray-600">
+            Entities:{' '}
+            <span className="font-bold text-base sm:text-lg">
+              {entityCount}
+            </span>
+          </div>
+          <div className="flex gap-1 sm:gap-2">
+            <button
+              onClick={handleClear}
+              className="px-2 py-1 sm:px-4 sm:py-2 text-xs bg-zinc-900 sm:text-sm text-white rounded font-medium"
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
+            >
+              Save
+            </button>
+            <button
+              onClick={handlePlay}
+              className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
+            >
+              Play
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Toolbox */}
+      <div className="absolute bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t">
+        <div className="overflow-x-auto">
+          <div className="flex gap-2 sm:gap-3 p-2 sm:p-4">
+            {ENTITY_TYPES.map((entity) => (
+              <button
+                key={entity.id}
+                onClick={() => handleSelect(entity.id)}
+                className={`
+                  flex flex-col items-center justify-center
+                  min-w-[60px] sm:min-w-[80px]
+                  p-2 sm:p-4 rounded-lg border
+                  transition-all cursor-pointer
+                  ${
+                    selectedEntity === entity.id
+                      ? 'ring-4 ring-blue-500 scale-105'
+                      : 'hover:scale-105'
+                  }
+                `}
+              >
+                <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">
+                  {entity.icon}
+                </div>
+                <div className="text-[10px] sm:text-xs font-medium text-center text-gray-700">
+                  {entity.name}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Selected Indicator */}
+      {selectedEntity && (
+        <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-40 bg-white rounded-lg shadow-lg p-2 sm:p-4 max-w-[150px] sm:max-w-none">
+          <div className="text-[10px] sm:text-xs text-gray-500 mb-1">
+            Selected:
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-xl sm:text-2xl">
+              {ENTITY_TYPES.find((e) => e.id === selectedEntity)?.icon}
+            </span>
+            <span className="text-xs sm:text-sm font-medium truncate">
+              {ENTITY_TYPES.find((e) => e.id === selectedEntity)?.name}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Helper */}
+      {entityCount === 0 && !selectedEntity && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+          <div className="text-center bg-white/90 p-4 sm:p-8 rounded-lg max-w-xs sm:max-w-md mx-4">
+            <div className="text-4xl sm:text-6xl mb-2 sm:mb-4">🎮</div>
+            <div className="text-sm sm:text-lg font-semibold mb-2">
+              Start Creating!
+            </div>
+            <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+              <div>1. Click entity below</div>
+              <div>2. Click canvas to place</div>
+              <div className="text-gray-400 mt-2">Right-click to remove</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
