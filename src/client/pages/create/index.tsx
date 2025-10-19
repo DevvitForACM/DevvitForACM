@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
 
 const ENTITY_TYPES_DATA = {
-  enemy: { name: 'Enemy', icon: '👾' },
-  spike: { name: 'Spike', icon: '⚠️' },
-  spring: { name: 'Spring', icon: '🔄' },
-  ground: { name: 'Ground', icon: '🟫' },
-  lava: { name: 'Lava', icon: '🔥' },
-  coin: { name: 'Coin', icon: '💰' },
-  door: { name: 'Door', icon: '🚪' },
+  enemy: { name: 'Enemy', icon: '👾', color: '#ef4444' },
+  spike: { name: 'Spike', icon: '⚠️', color: '#6b7280' },
+  spring: { name: 'Spring', icon: '🔄', color: '#10b981' },
+  ground: { name: 'Ground', icon: '🟫', color: '#78716c' },
+  lava: { name: 'Lava', icon: '🔥', color: '#f97316' },
+  coin: { name: 'Coin', icon: '💰', color: '#eab308' },
+  door: { name: 'Door', icon: '🚪', color: '#8b5cf6' },
 };
 
 const ENTITY_TYPES = [
-  { id: 'enemy', name: 'Enemy', icon: '👾' },
-  { id: 'spike', name: 'Spike', icon: '⚠️' },
-  { id: 'spring', name: 'Spring', icon: '🔄' },
-  { id: 'ground', name: 'Ground', icon: '🟫' },
-  { id: 'lava', name: 'Lava', icon: '🔥' },
-  { id: 'coin', name: 'Coin', icon: '💰' },
-  { id: 'door', name: 'Door', icon: '🚪' },
+  { id: 'enemy', name: 'Enemy', icon: '👾', color: '#ef4444' },
+  { id: 'spike', name: 'Spike', icon: '⚠️', color: '#6b7280' },
+  { id: 'spring', name: 'Spring', icon: '🔄', color: '#10b981' },
+  { id: 'ground', name: 'Ground', icon: '🟫', color: '#78716c' },
+  { id: 'lava', name: 'Lava', icon: '🔥', color: '#f97316' },
+  { id: 'coin', name: 'Coin', icon: '💰', color: '#eab308' },
+  { id: 'door', name: 'Door', icon: '🚪', color: '#8b5cf6' },
 ];
 
 export default function Create() {
@@ -115,27 +115,31 @@ export default function Create() {
       {/* Bottom Toolbox */}
       <div className="absolute bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t">
         <div className="overflow-x-auto">
-          <div className="flex gap-2 sm:gap-3 p-2 sm:p-4">
+          <div className="flex gap-2 sm:gap-3 p-2 sm:p-4 min-h-[80px] sm:min-h-[100px]">
             {ENTITY_TYPES.map((entity) => (
               <button
                 key={entity.id}
                 onClick={() => handleSelect(entity.id)}
                 className={`
                   flex flex-col items-center justify-center
-                  min-w-[60px] sm:min-w-[80px]
-                  p-2 sm:p-4 rounded-lg border
-                  transition-all cursor-pointer
+                  min-w-[60px] sm:min-w-[80px] h-[64px] sm:h-[80px]
+                  p-2 sm:p-3 rounded-lg border-2
+                  transition-all duration-200 cursor-pointer flex-shrink-0
                   ${
                     selectedEntity === entity.id
-                      ? 'ring-4 ring-blue-500 scale-105'
-                      : 'hover:scale-105'
+                      ? 'border-blue-500 bg-blue-50 shadow-md transform scale-105'
+                      : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm hover:scale-[1.02]'
                   }
                 `}
+                style={{
+                  backgroundColor:
+                    selectedEntity === entity.id
+                      ? `${entity.color}15`
+                      : 'white',
+                }}
               >
-                <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">
-                  {entity.icon}
-                </div>
-                <div className="text-[10px] sm:text-xs font-medium text-center text-gray-700">
+                <div className="text-xl sm:text-2xl mb-1">{entity.icon}</div>
+                <div className="text-[9px] sm:text-[10px] font-medium text-center text-gray-700 leading-tight">
                   {entity.name}
                 </div>
               </button>
@@ -146,15 +150,21 @@ export default function Create() {
 
       {/* Selected Indicator */}
       {selectedEntity && (
-        <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-40 bg-white rounded-lg shadow-lg p-2 sm:p-4 max-w-[150px] sm:max-w-none">
-          <div className="text-[10px] sm:text-xs text-gray-500 mb-1">
-            Selected:
+        <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-40 bg-white rounded-lg shadow-lg border p-3 sm:p-4 min-w-[120px] sm:min-w-[160px]">
+          <div className="text-[10px] sm:text-xs text-gray-500 mb-2">
+            Selected Entity:
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-xl sm:text-2xl">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-lg sm:text-xl"
+              style={{
+                backgroundColor: `${ENTITY_TYPES.find((e) => e.id === selectedEntity)?.color}20`,
+                border: `2px solid ${ENTITY_TYPES.find((e) => e.id === selectedEntity)?.color}40`,
+              }}
+            >
               {ENTITY_TYPES.find((e) => e.id === selectedEntity)?.icon}
-            </span>
-            <span className="text-xs sm:text-sm font-medium truncate">
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-gray-800">
               {ENTITY_TYPES.find((e) => e.id === selectedEntity)?.name}
             </span>
           </div>

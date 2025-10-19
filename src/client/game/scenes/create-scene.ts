@@ -7,6 +7,8 @@ export class CreateScene extends Phaser.Scene {
   private occupiedCells: Set<string>;
   private selectedEntityType: string | null;
   private gridGraphics?: Phaser.GameObjects.Graphics;
+  private currentWidth: number = 0;
+  private currentHeight: number = 0;
 
   constructor() {
     super({ key: 'CreateScene' });
@@ -17,6 +19,10 @@ export class CreateScene extends Phaser.Scene {
 
   public create(): void {
     this.drawGrid();
+
+    // Listen for resize events to redraw grid
+    this.scale.on('resize', this.handleResize, this);
+
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (!this.selectedEntityType) return;
 
@@ -45,17 +51,44 @@ export class CreateScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Only redraw if dimensions have changed
+    if (
+      width === this.currentWidth &&
+      height === this.currentHeight &&
+      this.gridGraphics
+    ) {
+      return;
+    }
+
+    // Clear existing grid
+    if (this.gridGraphics) {
+      this.gridGraphics.destroy();
+    }
+
+    // Create new grid
     this.gridGraphics = this.add.graphics();
     this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
 
+    // Draw vertical lines
     for (let x = 0; x <= width; x += GRID_SIZE) {
       this.gridGraphics.lineBetween(x, 0, x, height);
     }
+
+    // Draw horizontal lines
     for (let y = 0; y <= height; y += GRID_SIZE) {
       this.gridGraphics.lineBetween(0, y, width, y);
     }
 
     this.gridGraphics.setDepth(-1);
+
+    // Update current dimensions
+    this.currentWidth = width;
+    this.currentHeight = height;
+  }
+
+  private handleResize(): void {
+    // Redraw grid when window is resized
+    this.drawGrid();
   }
 
   private placeEntity(data: any): void {
@@ -114,6 +147,8 @@ export class CreateScene extends Phaser.Scene {
 
   public setSelectedEntityType(type: string | null): void {
     this.selectedEntityType = type;
+    // Grid should remain stable when selecting entities
+    // No need to redraw grid here
   }
 
   public clearAllEntities(): void {
@@ -135,5 +170,28 @@ export class CreateScene extends Phaser.Scene {
     return entities;
   }
 
-  public override update(): void {}
+  public override update(): void {
+    // Check if camera dimensions have changed and redraw grid if needed
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    if (width !== this.currentWidth || height !== this.currentHeight) {
+      this.drawGrid();
+    }
+  }
+
+  public destroy(): void {
+    // Clean up event listeners
+    this.scale.off('resize', this.handleResize, this);
+
+    // Clean up graphics
+    if (this.gridGraphics) {
+      this.gridGraphics.destroy();
+    }
+
+    // Clean up entities
+    this.placedEntities.forEach((container) => container.destroy());
+    this.placedEntities.clear();
+    this.occupiedCells.clear();
+  }
 }
