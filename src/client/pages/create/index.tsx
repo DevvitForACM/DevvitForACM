@@ -76,7 +76,7 @@ export default function Create() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-50">
       {/* Phaser Canvas */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-0">
         <PhaserContainer config={config} />
       </div>
 
@@ -125,10 +125,11 @@ export default function Create() {
                   min-w-[60px] sm:min-w-[80px] h-[64px] sm:h-[80px]
                   p-2 sm:p-3 rounded-lg border-2
                   transition-all duration-200 cursor-pointer flex-shrink-0
+                  relative z-10
                   ${
                     selectedEntity === entity.id
-                      ? 'border-blue-500 bg-blue-50 shadow-md transform scale-105'
-                      : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm hover:scale-[1.02]'
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm'
                   }
                 `}
                 style={{
@@ -136,10 +137,13 @@ export default function Create() {
                     selectedEntity === entity.id
                       ? `${entity.color}15`
                       : 'white',
+                  pointerEvents: 'auto',
                 }}
               >
-                <div className="text-xl sm:text-2xl mb-1">{entity.icon}</div>
-                <div className="text-[9px] sm:text-[10px] font-medium text-center text-gray-700 leading-tight">
+                <div className="text-xl sm:text-2xl mb-1 pointer-events-none">
+                  {entity.icon}
+                </div>
+                <div className="text-[9px] sm:text-[10px] font-medium text-center text-gray-700 leading-tight pointer-events-none">
                   {entity.name}
                 </div>
               </button>
@@ -150,7 +154,7 @@ export default function Create() {
 
       {/* Selected Indicator */}
       {selectedEntity && (
-        <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-40 bg-white rounded-lg shadow-lg border p-3 sm:p-4 min-w-[120px] sm:min-w-[160px]">
+        <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-40 bg-white rounded-lg shadow-lg border p-3 sm:p-4 min-w-[120px] sm:min-w-[160px] pointer-events-none">
           <div className="text-[10px] sm:text-xs text-gray-500 mb-2">
             Selected Entity:
           </div>
@@ -174,7 +178,7 @@ export default function Create() {
       {/* Helper */}
       {entityCount === 0 && !selectedEntity && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-          <div className="text-center bg-white/90 p-4 sm:p-8 rounded-lg max-w-xs sm:max-w-md mx-4">
+          <div className="text-center bg-white/90 p-4 sm:p-8 rounded-lg max-w-xs sm:max-w-md mx-4 pointer-events-none">
             <div className="text-4xl sm:text-6xl mb-2 sm:mb-4">🎮</div>
             <div className="text-sm sm:text-lg font-semibold mb-2">
               Start Creating!

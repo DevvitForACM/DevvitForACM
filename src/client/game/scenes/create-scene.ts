@@ -6,7 +6,7 @@ export class CreateScene extends Phaser.Scene {
   private placedEntities: Map<string, Phaser.GameObjects.Container>;
   private occupiedCells: Set<string>;
   private selectedEntityType: string | null;
-  private gridGraphics?: Phaser.GameObjects.Graphics;
+  private gridGraphics?: Phaser.GameObjects.Graphics | undefined;
   private currentWidth: number = 0;
   private currentHeight: number = 0;
 
@@ -48,50 +48,107 @@ export class CreateScene extends Phaser.Scene {
   }
 
   private drawGrid(): void {
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    // Only redraw if dimensions have changed
-    if (
-      width === this.currentWidth &&
-      height === this.currentHeight &&
-      this.gridGraphics
-    ) {
+    // Ensure camera is available before proceeding
+    if (!this.cameras?.main) {
+      console.warn('CreateScene: Camera not available for grid drawing');
       return;
     }
 
-    // Clear existing grid
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Validate dimensions are positive numbers
+    if (!width || !height || width <= 0 || height <= 0) {
+      console.warn('CreateScene: Invalid dimensions for grid drawing', {
+        width,
+        height,
+      });
+      return;
+    }
+
+    // Properly destroy existing grid graphics before creating new ones
     if (this.gridGraphics) {
-      this.gridGraphics.destroy();
+      if (this.gridGraphics.active) {
+        this.gridGraphics.destroy();
+      }
+      this.gridGraphics = undefined;
     }
 
-    // Create new grid
-    this.gridGraphics = this.add.graphics();
-    this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
+    // Create new grid graphics object
+    try {
+      this.gridGraphics = this.add.graphics();
 
-    // Draw vertical lines
-    for (let x = 0; x <= width; x += GRID_SIZE) {
-      this.gridGraphics.lineBetween(x, 0, x, height);
+      // Verify graphics object was created successfully
+      if (!this.gridGraphics) {
+        console.error('CreateScene: Failed to create grid graphics object');
+        return;
+      }
+
+      // Configure grid line style
+      this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
+
+      // Draw vertical lines
+      for (let x = 0; x <= width; x += GRID_SIZE) {
+        this.gridGraphics.lineBetween(x, 0, x, height);
+      }
+
+      // Draw horizontal lines
+      for (let y = 0; y <= height; y += GRID_SIZE) {
+        this.gridGraphics.lineBetween(0, y, width, y);
+      }
+
+      // Set grid to render behind other objects
+      this.gridGraphics.setDepth(-1);
+
+      // Update cached dimensions only after successful grid creation
+      this.currentWidth = width;
+      this.currentHeight = height;
+    } catch (error) {
+      console.error('CreateScene: Error creating grid graphics', error);
+      // Clean up partial state on error
+      if (this.gridGraphics && this.gridGraphics.active) {
+        this.gridGraphics.destroy();
+      }
+      this.gridGraphics = undefined;
     }
-
-    // Draw horizontal lines
-    for (let y = 0; y <= height; y += GRID_SIZE) {
-      this.gridGraphics.lineBetween(0, y, width, y);
-    }
-
-    this.gridGraphics.setDepth(-1);
-
-    // Update current dimensions
-    this.currentWidth = width;
-    this.currentHeight = height;
   }
 
   private handleResize(): void {
-    // Redraw grid when window is resized
+    // Primary trigger for grid updates - ensure this is the main entry point
+    // for grid redraws when dimensions change
+
+    // Get current camera dimensions
+    if (!this.cameras?.main) {
+      console.warn('CreateScene: Camera not available during resize');
+      return;
+    }
+
+    const newWidth = this.cameras.main.width;
+    const newHeight = this.cameras.main.height;
+
+    // Validate dimensions before proceeding
+    if (!newWidth || !newHeight || newWidth <= 0 || newHeight <= 0) {
+      console.warn('CreateScene: Invalid dimensions during resize', {
+        newWidth,
+        newHeight,
+      });
+      return;
+    }
+
+    // Use dimension caching to prevent unnecessary operations
+    // Only proceed if dimensions have actually changed
+    if (newWidth === this.currentWidth && newHeight === this.currentHeight) {
+      // Dimensions haven't changed, no grid update needed
+      return;
+    }
+
+    // Dimensions have changed, trigger grid redraw
     this.drawGrid();
   }
 
   private placeEntity(data: any): void {
+    // NOTE: This method places entities but should NOT trigger grid redraws
+    // Grid remains stable during entity placement - Requirements: 1.1, 2.1
     const pixelX = data.gridX * GRID_SIZE + GRID_SIZE / 2;
     const pixelY = data.gridY * GRID_SIZE + GRID_SIZE / 2;
 
@@ -134,6 +191,8 @@ export class CreateScene extends Phaser.Scene {
   }
 
   private removeEntity(entityId: string): void {
+    // NOTE: This method removes entities but should NOT trigger grid redraws
+    // Grid remains stable during entity removal - Requirements: 1.1, 2.1
     const container = this.placedEntities.get(entityId);
     if (!container) return;
 
@@ -147,11 +206,17 @@ export class CreateScene extends Phaser.Scene {
 
   public setSelectedEntityType(type: string | null): void {
     this.selectedEntityType = type;
-    // Grid should remain stable when selecting entities
-    // No need to redraw grid here
+
+    // IMPORTANT: Grid should remain stable when selecting entities
+    // DO NOT add grid redraw logic here - this would cause unnecessary
+    // visual flickering and performance issues during entity selection
+    // Grid updates should ONLY happen in handleResize() method
+    // Requirements: 1.1, 2.1 - Grid must not redraw during entity selection
   }
 
   public clearAllEntities(): void {
+    // NOTE: This method clears all entities but should NOT trigger grid redraws
+    // Grid remains stable during entity clearing - Requirements: 1.1, 2.1
     this.placedEntities.forEach((c) => c.destroy());
     this.placedEntities.clear();
     this.occupiedCells.clear();
@@ -171,23 +236,19 @@ export class CreateScene extends Phaser.Scene {
   }
 
   public override update(): void {
-    // Check if camera dimensions have changed and redraw grid if needed
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    if (width !== this.currentWidth || height !== this.currentHeight) {
-      this.drawGrid();
-    }
+    // Update method kept for future use but grid operations removed
+    // Grid updates are now handled exclusively by resize events
   }
 
   public destroy(): void {
     // Clean up event listeners
     this.scale.off('resize', this.handleResize, this);
 
-    // Clean up graphics
-    if (this.gridGraphics) {
+    // Clean up graphics with proper null checking
+    if (this.gridGraphics && this.gridGraphics.active) {
       this.gridGraphics.destroy();
     }
+    this.gridGraphics = undefined;
 
     // Clean up entities
     this.placedEntities.forEach((container) => container.destroy());
