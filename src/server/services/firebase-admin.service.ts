@@ -20,8 +20,8 @@ let serviceAccount: admin.ServiceAccount | undefined;
 if (fs.existsSync(serviceAccountPath)) {
   // Load local service account if present (convenience for local dev)
   // Keep this file out of source control.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-  serviceAccount = require(serviceAccountPath) as admin.ServiceAccount;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as admin.ServiceAccount;
   console.log('✅ Loaded service account from:', serviceAccountPath);
 } else {
   console.log('⚠️  serviceAccountKey.json not found at:', serviceAccountPath);

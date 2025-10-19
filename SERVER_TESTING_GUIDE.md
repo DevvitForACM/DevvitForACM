@@ -12,7 +12,7 @@ cd E:\devvit\DevvitForACM
 npm run build:server
 
 # Then run with env vars:
-$env:REDDIT_CLIENT_ID='UhehDgHFLwrl_-At3yHA2Q'; $env:REDDIT_CLIENT_SECRET='_mmI2GH8x5FtrQzX3tHWzgdTh1SX6Q'; $env:REDDIT_REDIRECT_URI='http://localhost:3000/auth/reddit/callback'; $env:FIREBASE_DATABASE_URL='https://chat-testing-f514c-default-rtdb.firebaseio.com'; $env:JWT_SECRET='superSecretKey123'; $env:FIREBASE_API_KEY='AIzaSyC7NX-69QrhFf88rJh_aOOzXg56_38IFtM'; $env:FIREBASE_AUTH_DOMAIN='chat-testing-f514c.firebaseapp.com'; $env:FIREBASE_PROJECT_ID='chat-testing-f514c'; $env:FIREBASE_STORAGE_BUCKET='chat-testing-f514c.firebasestorage.app'; $env:FIREBASE_MESSAGING_SENDER_ID='237719216585'; $env:FIREBASE_APP_ID='1:237719216585:web:59d3c032816ef3613cc818'; $env:FIREBASE_MEASUREMENT_ID='G-FYZL9L1QSK'; $env:PORT='3000'; node .\dist\server\index.cjs
+$env:REDDIT_CLIENT_ID='<REDDIT_CLIENT_ID>'; $env:REDDIT_CLIENT_SECRET='<REDDIT_CLIENT_SECRET>'; $env:REDDIT_REDIRECT_URI='http://localhost:3000/auth/reddit/callback'; $env:FIREBASE_DATABASE_URL='<FIREBASE_DATABASE_URL>'; $env:JWT_SECRET='<JWT_SECRET>'; $env:FIREBASE_API_KEY='<FIREBASE_API_KEY>'; $env:FIREBASE_AUTH_DOMAIN='<FIREBASE_AUTH_DOMAIN>'; $env:FIREBASE_PROJECT_ID='<FIREBASE_PROJECT_ID>'; $env:FIREBASE_STORAGE_BUCKET='<FIREBASE_STORAGE_BUCKET>'; $env:FIREBASE_MESSAGING_SENDER_ID='<FIREBASE_MESSAGING_SENDER_ID>'; $env:FIREBASE_APP_ID='<FIREBASE_APP_ID>'; $env:FIREBASE_MEASUREMENT_ID='<FIREBASE_MEASUREMENT_ID>'; $env:PORT='3000'; node .\dist\server\index.cjs
 ```
 
 Server will start at: **http://localhost:3000**
