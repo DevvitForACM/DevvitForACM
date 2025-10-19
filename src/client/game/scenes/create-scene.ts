@@ -20,163 +20,73 @@ export class CreateScene extends Phaser.Scene {
   public create(): void {
     this.drawGrid();
 
-    // Listen for resize events to redraw grid
+    // Prevent browser context menu so right-click can be used by editor
+    this.input.mouse?.disableContextMenu();
+
+    // Resize: redraw grid
     this.scale.on('resize', this.handleResize, this);
 
+    // Placement
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!this.selectedEntityType) return;
-
-      const gridX = Math.floor(pointer.x / GRID_SIZE);
-      const gridY = Math.floor(pointer.y / GRID_SIZE);
-      const cellKey = `${gridX},${gridY}`;
-
-      if (this.occupiedCells.has(cellKey)) return;
-
-      const entityInfo =
-        this.registry.get('entityTypes')[this.selectedEntityType];
-      if (!entityInfo) return;
-
-      this.placeEntity({
-        type: this.selectedEntityType,
-        gridX,
-        gridY,
-        name: entityInfo.name,
-        color: entityInfo.color,
-        icon: entityInfo.icon,
-      });
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
+      const gridX = Math.floor(wx / GRID_SIZE);
+      const gridY = Math.floor(wy / GRID_SIZE);
+      this.placeAtGrid(gridX, gridY, 0);
     });
   }
 
   private drawGrid(): void {
-    // Ensure camera is available before proceeding
-    if (!this.cameras?.main) {
-      console.warn('CreateScene: Camera not available for grid drawing');
-      return;
-    }
-
+    if (!this.cameras?.main) return;
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+    if (!width || !height || width <= 0 || height <= 0) return;
 
-    // Validate dimensions are positive numbers
-    if (!width || !height || width <= 0 || height <= 0) {
-      console.warn('CreateScene: Invalid dimensions for grid drawing', {
-        width,
-        height,
-      });
-      return;
-    }
-
-    // Properly destroy existing grid graphics before creating new ones
     if (this.gridGraphics) {
-      if (this.gridGraphics.active) {
-        this.gridGraphics.destroy();
-      }
+      if (this.gridGraphics.active) this.gridGraphics.destroy();
       this.gridGraphics = undefined;
     }
 
-    // Create new grid graphics object
-    try {
-      this.gridGraphics = this.add.graphics();
+    this.gridGraphics = this.add.graphics();
+    if (!this.gridGraphics) return;
+    this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
 
-      // Verify graphics object was created successfully
-      if (!this.gridGraphics) {
-        console.error('CreateScene: Failed to create grid graphics object');
-        return;
-      }
-
-      // Configure grid line style
-      this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
-
-      // Draw vertical lines
-      for (let x = 0; x <= width; x += GRID_SIZE) {
-        this.gridGraphics.lineBetween(x, 0, x, height);
-      }
-
-      // Draw horizontal lines
-      for (let y = 0; y <= height; y += GRID_SIZE) {
-        this.gridGraphics.lineBetween(0, y, width, y);
-      }
-
-      // Set grid to render behind other objects
-      this.gridGraphics.setDepth(-1);
-
-      // Update cached dimensions only after successful grid creation
-      this.currentWidth = width;
-      this.currentHeight = height;
-    } catch (error) {
-      console.error('CreateScene: Error creating grid graphics', error);
-      // Clean up partial state on error
-      if (this.gridGraphics && this.gridGraphics.active) {
-        this.gridGraphics.destroy();
-      }
-      this.gridGraphics = undefined;
+    for (let x = 0; x <= width; x += GRID_SIZE) {
+      this.gridGraphics.lineBetween(x, 0, x, height);
     }
+    for (let y = 0; y <= height; y += GRID_SIZE) {
+      this.gridGraphics.lineBetween(0, y, width, y);
+    }
+    this.gridGraphics.setDepth(-1);
+    this.currentWidth = width;
+    this.currentHeight = height;
   }
 
   private handleResize(): void {
-    // Primary trigger for grid updates - ensure this is the main entry point
-    // for grid redraws when dimensions change
-
-    // Get current camera dimensions
-    if (!this.cameras?.main) {
-      console.warn('CreateScene: Camera not available during resize');
-      return;
-    }
-
+    if (!this.cameras?.main) return;
     const newWidth = this.cameras.main.width;
     const newHeight = this.cameras.main.height;
-
-    // Validate dimensions before proceeding
-    if (!newWidth || !newHeight || newWidth <= 0 || newHeight <= 0) {
-      console.warn('CreateScene: Invalid dimensions during resize', {
-        newWidth,
-        newHeight,
-      });
-      return;
-    }
-
-    // Use dimension caching to prevent unnecessary operations
-    // Only proceed if dimensions have actually changed
-    if (newWidth === this.currentWidth && newHeight === this.currentHeight) {
-      // Dimensions haven't changed, no grid update needed
-      return;
-    }
-
-    // Dimensions have changed, trigger grid redraw
+    if (!newWidth || !newHeight || newWidth <= 0 || newHeight <= 0) return;
+    if (newWidth === this.currentWidth && newHeight === this.currentHeight) return;
     this.drawGrid();
   }
 
   private placeEntity(data: any): void {
-    // NOTE: This method places entities but should NOT trigger grid redraws
-    // Grid remains stable during entity placement - Requirements: 1.1, 2.1
     const pixelX = data.gridX * GRID_SIZE + GRID_SIZE / 2;
     const pixelY = data.gridY * GRID_SIZE + GRID_SIZE / 2;
 
     const container = this.add.container(pixelX, pixelY);
-    const colorValue = parseInt(data.color.replace('#', ''), 16);
-    const rect = this.add.rectangle(
-      0,
-      0,
-      GRID_SIZE - 4,
-      GRID_SIZE - 4,
-      colorValue
-    );
-    const text = this.add.text(0, 0, data.icon, {
-      fontSize: '20px',
-      color: '#fff',
-    });
+    const colorValue = parseInt(String(data.color).replace('#', ''), 16);
+    const rect = this.add.rectangle(0, 0, GRID_SIZE - 4, GRID_SIZE - 4, colorValue);
+    const text = this.add.text(0, 0, String(data.icon), { fontSize: '20px', color: '#fff' });
     text.setOrigin(0.5, 0.5);
 
     container.add([rect, text]);
     container.setSize(GRID_SIZE, GRID_SIZE);
     container.setInteractive();
 
-    container.on('pointerover', () => container.setScale(1.1));
-    container.on('pointerout', () => container.setScale(1));
     container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.rightButtonDown()) {
-        this.removeEntity(container.getData('entityId'));
-      }
+      if (pointer.rightButtonDown()) this.removeEntity(container.getData('entityId'));
     });
 
     const entityId = `${data.type}-${Date.now()}`;
@@ -191,11 +101,8 @@ export class CreateScene extends Phaser.Scene {
   }
 
   private removeEntity(entityId: string): void {
-    // NOTE: This method removes entities but should NOT trigger grid redraws
-    // Grid remains stable during entity removal - Requirements: 1.1, 2.1
     const container = this.placedEntities.get(entityId);
     if (!container) return;
-
     const gridX = container.getData('gridX');
     const gridY = container.getData('gridY');
     this.occupiedCells.delete(`${gridX},${gridY}`);
@@ -204,19 +111,14 @@ export class CreateScene extends Phaser.Scene {
     this.events.emit('entity-removed');
   }
 
+  // External API: called from Selection-Box
   public setSelectedEntityType(type: string | null): void {
     this.selectedEntityType = type;
-
-    // IMPORTANT: Grid should remain stable when selecting entities
-    // DO NOT add grid redraw logic here - this would cause unnecessary
-    // visual flickering and performance issues during entity selection
-    // Grid updates should ONLY happen in handleResize() method
-    // Requirements: 1.1, 2.1 - Grid must not redraw during entity selection
+    const cur = this.registry.get('selectedEntityType') as string | null;
+    if (cur !== type) this.registry.set('selectedEntityType', type);
   }
 
   public clearAllEntities(): void {
-    // NOTE: This method clears all entities but should NOT trigger grid redraws
-    // Grid remains stable during entity clearing - Requirements: 1.1, 2.1
     this.placedEntities.forEach((c) => c.destroy());
     this.placedEntities.clear();
     this.occupiedCells.clear();
@@ -235,22 +137,36 @@ export class CreateScene extends Phaser.Scene {
     return entities;
   }
 
-  public override update(): void {
-    // Update method kept for future use but grid operations removed
-    // Grid updates are now handled exclusively by resize events
+  public override update(): void {}
+
+  // Placement using registry as source of truth
+  private placeAtGrid(gridX: number, gridY: number, _attempt: number): void {
+    const cellKey = `${gridX},${gridY}`;
+    if (this.occupiedCells.has(cellKey)) return;
+
+    const entityTypes = this.registry.get('entityTypes') as
+      | Record<string, { name: string; color: string; icon: string }>
+      | undefined;
+    const sel = (this.registry.get('selectedEntityType') as string | null) ?? null;
+    if (!entityTypes || !sel) return;
+
+    let key = sel;
+    if (!entityTypes[key]) {
+      const match = Object.keys(entityTypes).find(
+        (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
+      );
+      if (match) key = match;
+    }
+    const info = entityTypes[key];
+    if (!info) return;
+
+    this.placeEntity({ type: key, gridX, gridY, name: info.name, color: info.color, icon: info.icon });
   }
 
   public destroy(): void {
-    // Clean up event listeners
     this.scale.off('resize', this.handleResize, this);
-
-    // Clean up graphics with proper null checking
-    if (this.gridGraphics && this.gridGraphics.active) {
-      this.gridGraphics.destroy();
-    }
+    if (this.gridGraphics && this.gridGraphics.active) this.gridGraphics.destroy();
     this.gridGraphics = undefined;
-
-    // Clean up entities
     this.placedEntities.forEach((container) => container.destroy());
     this.placedEntities.clear();
     this.occupiedCells.clear();

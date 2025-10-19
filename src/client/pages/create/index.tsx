@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
@@ -28,7 +28,8 @@ export default function Create() {
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [entityCount, setEntityCount] = useState(0);
 
-  const config = createBlankCanvasConfig('#f6f7f8');
+  // IMPORTANT: Keep Phaser game config stable to avoid destroying/recreating the scene on React re-renders
+  const config = useMemo(() => createBlankCanvasConfig('#f6f7f8'), []);
 
   useEffect(() => {
     const check = setInterval(() => {
@@ -37,7 +38,15 @@ export default function Create() {
         const s = game.scene.getScene('CreateScene') as CreateScene;
         if (s) {
           setScene(s);
+          // Provide entity types for the scene
           s.registry.set('entityTypes', ENTITY_TYPES_DATA);
+          // If a selection already exists in UI, mirror it into scene now
+          if (selectedEntity) {
+            // eslint-disable-next-line no-console
+            console.debug('[Create] scene attached: applying existing selection ->', selectedEntity);
+            s.registry.set('selectedEntityType', selectedEntity);
+            s.setSelectedEntityType(selectedEntity);
+          }
           s.events.on('entity-placed', () =>
             setEntityCount(s.getAllEntities().length)
           );
@@ -54,8 +63,24 @@ export default function Create() {
 
   const handleSelect = (id: string) => {
     setSelectedEntity(id);
-    scene?.setSelectedEntityType(id);
+    // Try immediate sync if scene is ready
+    if (scene) {
+      // eslint-disable-next-line no-console
+      console.debug('[Create] handleSelect ->', id);
+      scene.setSelectedEntityType(id);
+      scene.registry.set('selectedEntityType', id);
+    }
   };
+
+  // Ensure selection is synced once scene becomes available or when selection changes
+  useEffect(() => {
+    if (!scene) return;
+    if (!selectedEntity) return;
+    // eslint-disable-next-line no-console
+    console.debug('[Create] syncing selection to scene (effect) ->', selectedEntity);
+    scene.registry.set('selectedEntityType', selectedEntity);
+    scene.setSelectedEntityType(selectedEntity);
+  }, [scene, selectedEntity]);
 
   const handleClear = () => {
     if (confirm('Clear all?')) {
