@@ -9,9 +9,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
+import { getPhaserConfig } from "../config/game-config";
 import { loadLevel } from "../game/level/json-conversion";
 import { LevelData } from "../game/level/level-schema";
-import { getPhaserConfig } from "../config/game-config";
+import { PlayScene } from "../game/scenes/play-scene";
 
 export function useGameLoader(levelId: string) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -20,12 +21,13 @@ export function useGameLoader(levelId: string) {
   const [error, setError] = useState<string | null>(null);
   const [levelData, setLevelData] = useState<LevelData | null>(null);
 
-  // 🔹 Fetch level data from backend (with simple caching)
+  // 🔹 Fetch level data (with simple caching)
   useEffect(() => {
     let isMounted = true;
 
     async function fetchLevel() {
       try {
+        console.log(`[Loader] Fetching level: ${levelId}`);
         setLoading(true);
         setError(null);
 
@@ -33,6 +35,7 @@ export function useGameLoader(levelId: string) {
         const cached = sessionStorage.getItem(cacheKey);
 
         if (cached) {
+          console.log(`[Loader] Loaded level '${levelId}' from cache`);
           const cachedData = JSON.parse(cached) as LevelData;
           if (isMounted) setLevelData(cachedData);
           setLoading(false);
@@ -43,13 +46,17 @@ export function useGameLoader(levelId: string) {
         if (!res.ok) throw new Error(`Failed to load level ${levelId}`);
 
         const data: LevelData = await res.json();
+        console.log(`[Loader] Level data fetched:`, data);
+
         if (!data.objects || !Array.isArray(data.objects)) {
+          console.error(`[Loader] Invalid level data structure for '${levelId}'`);
           throw new Error("Invalid level data format");
         }
 
         sessionStorage.setItem(cacheKey, JSON.stringify(data));
         if (isMounted) setLevelData(data);
       } catch (err: any) {
+        console.error(`[Loader] Error loading level '${levelId}':`, err);
         if (isMounted) setError(err.message || "Failed to load level");
       } finally {
         if (isMounted) setLoading(false);
@@ -58,6 +65,7 @@ export function useGameLoader(levelId: string) {
 
     fetchLevel();
     return () => {
+      console.log(`[Loader] Cleanup fetch effect for level '${levelId}'`);
       isMounted = false;
     };
   }, [levelId]);
@@ -66,46 +74,48 @@ export function useGameLoader(levelId: string) {
   useEffect(() => {
     if (!containerRef.current || !levelData || error) return;
 
-    // Destroy any previous game instance
+    // Destroy previous instance if any
     if (gameRef.current) {
+      console.log("[Phaser] Destroying old game instance...");
       gameRef.current.destroy(true);
       gameRef.current = null;
     }
 
-    const config: Phaser.Types.Core.GameConfig = {
-      ...getPhaserConfig(),
-      parent: containerRef.current,
-      scene: {
-        preload: preloadScene,
-        create: createScene,
-      },
-    };
+    console.log("[Phaser] Initializing new game with Matter.js for level:", levelId);
 
-    const game = new Phaser.Game(config);
+    // Pass Matter config explicitly, no inline scene override
+    const config = getPhaserConfig({
+      bgColor: "#1d1d1d",
+      gravityY: 1,
+      worldWidth: 4000,
+      worldHeight: 2000,
+      moveSpeed: 220,
+      jumpVelocity: -420,
+      deadzoneXFrac: 0.25,
+      useMapControls: false,
+    });
+
+    // Make sure PlayScene loads the fetched JSON
+    // Make sure PlayScene loads the fetched JSON
+    const game = new Phaser.Game({
+      ...config,
+      parent: containerRef.current,
+      scene: class extends PlayScene {
+        override async create() {
+          console.log(`[CustomScene] Loading level '${levelId}'`);
+          await super.create();
+          loadLevel(this, levelData);
+        }
+      },
+    });
     gameRef.current = game;
 
-    function preloadScene(this: Phaser.Scene) {
-      this.load.image("player", "/assets/player.png");
-      this.load.image("platform", "/assets/platform.png");
-      this.load.image("goal", "/assets/goal.png");
-      this.load.image("enemy", "/assets/enemy.png");
-    }
-
-    function createScene(this: Phaser.Scene) {
-      if (levelData) loadLevel(this, levelData);
-    }
-
     return () => {
-      if (gameRef.current) {
-        gameRef.current.destroy(true);
-        gameRef.current = null;
-      }
+      console.log("[Phaser] Destroying game instance on cleanup");
+      gameRef.current?.destroy(true);
+      gameRef.current = null;
     };
   }, [levelData, error]);
 
-  return {
-    containerRef,
-    loading,
-    error,
-  };
+  return { containerRef, loading, error };
 }

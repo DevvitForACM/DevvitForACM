@@ -1,4 +1,6 @@
 // src/client/game/scenes/play-scene.ts
+console.log("[DEBUG] Loaded PlayScene.ts from updated source");
+
 import Phaser from "phaser";
 import { createScrollControls } from "../controls/camera-controls";
 import { loadLevel } from "../level/json-conversion";
@@ -25,10 +27,9 @@ async function fetchLevelData(levelName: string): Promise<LevelData | null> {
 }
 
 export class PlayScene extends Phaser.Scene {
-  public cameraScrollSpeed = 0;
   private useMapControls = true;
-
   private levelConfig: LevelConfig;
+  public cameraScrollSpeed = 0;
 
   constructor(level?: LevelConfig) {
     super({ key: SCENE_KEYS.PLAY });
@@ -41,33 +42,51 @@ export class PlayScene extends Phaser.Scene {
   }
 
   public async create(): Promise<void> {
+    const log = (msg: string) => {
+      console.log(`[TEST] ${msg}`);
+      const y = 20 + this.children.list.length * 18;
+      this.add.text(20, y, msg, { color: "#00ff00", fontSize: "14px" }).setScrollFactor(0);
+    };
+
     try {
-      // Wait a tick to ensure systems are initialized
+      log("✅ PlayScene.create() started");
       await new Promise((resolve) => this.time.delayedCall(0, resolve));
 
       const levelName = GAME_CONFIG.DEFAULT_LEVEL;
+      log(`📄 Attempting to load JSON: ${levelName}.json`);
+
       const jsonData = await fetchLevelData(levelName);
 
-      if (jsonData && this.matter && this.matter.world) {
-        // JSON → Matter.js scene
+      // --- Matter vs Arcade Path ---
+      // ✅ Added: Explicit Matter world verification and fallback safety
+      const matterReady = !!(this.matter && this.matter.world && !this.physics);
+
+      if (jsonData && matterReady) {
+        log("⚙️ Matter world detected — loading JSON level");
         loadLevel(this, jsonData);
-      } else {
-        // Fallback → manual Arcade-based layout from LevelConfig
+        log("🏗️ Level objects created from JSON");
+      } else if (jsonData && !matterReady) {
+        log("⚠️ Matter not initialized — using Arcade fallback");
+        this.setupArcadeFallback();
+      } else if (!jsonData) {
+        log("❌ JSON load failed — using fallback level");
         this.setupArcadeFallback();
       }
 
       // Scroll/map controls
       if (this.useMapControls && this.scene.isActive()) {
         createScrollControls(this);
+        log("🧭 Scroll controls initialized");
       }
 
-      // Camera follow
+      // Camera follow setup
       const player = this.children.getByName("player_1") as
         | Phaser.Physics.Matter.Image
         | Phaser.GameObjects.Sprite
         | undefined;
 
       if (player) {
+        log("🎯 Player found — enabling camera follow");
         this.cameras.main.startFollow(
           player,
           true,
@@ -75,7 +94,11 @@ export class PlayScene extends Phaser.Scene {
           CAMERA_CONFIG.FOLLOW_LERP
         );
         this.cameras.main.setZoom(CAMERA_CONFIG.ZOOM);
+      } else {
+        log("🚫 No player found — camera follow skipped");
       }
+
+      log("✅ PlayScene.create() completed successfully");
     } catch (err) {
       console.error("[PlayScene] Error creating scene:", err);
       this.add
@@ -90,28 +113,35 @@ export class PlayScene extends Phaser.Scene {
   /** Fallback: builds a simple Arcade-physics level using LevelConfig */
   private setupArcadeFallback(): void {
     const level = this.levelConfig;
-    this.physics.world.setBounds(0, 0, level.worldWidth, level.worldHeight);
+    const physics = this.physics;
+
+    physics.world.setBounds(0, 0, level.worldWidth, level.worldHeight);
     this.cameras.main.setBounds(0, 0, level.worldWidth, level.worldHeight);
     this.cameras.main.setBackgroundColor(level.bgColor);
 
-    const platforms = this.physics.add.staticGroup();
+    const platforms = physics.add.staticGroup();
     level.platforms?.forEach((r) => {
       const rect = this.add.rectangle(r.x, r.y, r.width, r.height, r.color ?? 0x4a8f38);
-      this.physics.add.existing(rect, true);
+      physics.add.existing(rect, true);
       platforms.add(rect as Phaser.GameObjects.GameObject);
     });
 
-    const playerCircle = this.add.circle(level.playerStartX ?? 200, level.playerStartY ?? 300, 20, 0xff0000);
-    const player = this.physics.add.existing(playerCircle, false) as unknown as Phaser.GameObjects.Arc;
+    // Simple red circle player
+    const playerCircle = this.add.circle(
+      level.playerStartX ?? 200,
+      level.playerStartY ?? 300,
+      20,
+      0xff0000
+    );
+    const player = physics.add.existing(playerCircle, false) as unknown as Phaser.GameObjects.Arc;
     const body = player.body as Phaser.Physics.Arcade.Body;
     body.setCollideWorldBounds(true);
-    this.physics.add.collider(player, platforms);
+    physics.add.collider(player, platforms);
 
     this.cameras.main.startFollow(player, true, 0.08, 0.08);
   }
 
   public override update(_time: number, delta: number): void {
-    // Scroll controls
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
     }

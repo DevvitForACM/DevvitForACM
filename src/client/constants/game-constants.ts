@@ -1,21 +1,66 @@
 // src/client/constants/game-constants.ts
 import Phaser from "phaser";
 
-/**
- * Unified game constants combining base physics, rendering, and entity settings.
- * Keeps new modular structure while preserving useful fields from old config.
- */
-
-// Game Config and Global Settings
+/* ----------------------------------------------
+   GAME CONFIGURATION
+   ---------------------------------------------- */
 export const GAME_CONFIG = {
   BACKGROUND_COLOR: "#000000",
-  DEBUG: false,
+  GRAVITY_Y: 1,
+  DEBUG: false, // should remain false in production
   SCALE_MODE: Phaser.Scale.RESIZE,
   AUTO_CENTER: Phaser.Scale.CENTER_BOTH,
   DEFAULT_LEVEL: "level1",
-} as const;
+};
 
-// Game Physics Constants
+/* ----------------------------------------------
+   ENTITY CONFIGURATION
+   ---------------------------------------------- */
+export const ENTITY_CONFIG = {
+  PLAYER_RADIUS: 20,
+  PLAYER_BOUNCE: 0.2,
+  PLAYER_FRICTION: 0.05,
+  PLAYER_RESTITUTION: 0.2,
+  PLAYER_COLOR_DEFAULT: 0xffffff,
+
+  PLATFORM_WIDTH: 100,
+  PLATFORM_HEIGHT: 20,
+  PLATFORM_COLOR_DEFAULT: 0x888888,
+};
+
+/* ----------------------------------------------
+   CAMERA & PLAYER CONFIGURATION
+   ---------------------------------------------- */
+export const CAMERA_SCROLL = {
+  VELOCITY: 5,
+  FONT_SIZE: "48px",
+  COLOR: "#ffffff",
+  LEFT_SYMBOL: "<",
+  RIGHT_SYMBOL: ">",
+  LEFT_X: 50,
+  RIGHT_X: 150,
+  BUTTON_OFFSET_Y: 50,
+};
+
+export const PLAYER_CONFIG = {
+  SPEED: 5,
+  JUMP_FORCE: 10,
+  MAX_VELOCITY: 8,
+};
+
+export const CAMERA_CONFIG = {
+  ZOOM: 1,
+  FOLLOW_LERP: 0.1,
+};
+
+export const SCENE_KEYS = {
+  PLAY: "PlayScene",
+  HOME: "HomeScene",
+};
+
+/* ----------------------------------------------
+   ADVANCED PHYSICS CONSTANTS (From main)
+   ---------------------------------------------- */
 export const PHYSICS = {
   GRAVITY_Y: 800,
   JUMP_VELOCITY: 600,
@@ -25,43 +70,73 @@ export const PHYSICS = {
   PLAYER_BOUNCE_Y: 0,
 } as const;
 
-// Player Constants
+/* ----------------------------------------------
+   PLAYER DETAILS
+   ---------------------------------------------- */
 export const PLAYER = {
-  SIZE: { WIDTH: 32, HEIGHT: 48 },
-  HEALTH: { MAX: 100, DEFAULT: 100 },
-  VISUAL: { RADIUS: 20, COLOR: 0xff0000 },
-  SPEED: 5,
-  JUMP_FORCE: 10,
-  MAX_VELOCITY: 8,
+  SIZE: {
+    WIDTH: 32,
+    HEIGHT: 48,
+  },
+  HEALTH: {
+    MAX: 100,
+    DEFAULT: 100,
+  },
+  VISUAL: {
+    RADIUS: 20,
+    COLOR: 0xff0000,
+  },
 } as const;
 
-// Entity Size Constants
+/* ----------------------------------------------
+   ENTITY SIZES
+   ---------------------------------------------- */
 export const ENTITY_SIZES = {
-  BASE: { WIDTH: 32, HEIGHT: 32 },
-  DOOR: { WIDTH: 48, HEIGHT: 64 },
-  COIN: { WIDTH: 24, HEIGHT: 24 },
-  SPRING: { WIDTH: 32, HEIGHT: 24 },
-  PLATFORM: { WIDTH: 100, HEIGHT: 20 },
+  BASE: {
+    WIDTH: 32,
+    HEIGHT: 32,
+  },
+  DOOR: {
+    WIDTH: 48,
+    HEIGHT: 64,
+  },
+  COIN: {
+    WIDTH: 24,
+    HEIGHT: 24,
+  },
+  SPRING: {
+    WIDTH: 32,
+    HEIGHT: 24,
+  },
 } as const;
 
-// Damage and Health Constants
+/* ----------------------------------------------
+   DAMAGE & HEALTH
+   ---------------------------------------------- */
 export const DAMAGE = {
   SPIKE: 25,
   ENEMY: 20,
 } as const;
 
 export const ENEMY = {
-  HEALTH: { MAX: 50, DEFAULT: 50 },
+  HEALTH: {
+    MAX: 50,
+    DEFAULT: 50,
+  },
 } as const;
 
-// Spring Constants
+/* ----------------------------------------------
+   SPRING CONSTANTS
+   ---------------------------------------------- */
 export const SPRING = {
   BOUNCE_FORCE: 600,
   COOLDOWN_TIME: 0.3,
   COMPRESSION_SCALE: 0.7,
 } as const;
 
-// Coin Constants
+/* ----------------------------------------------
+   COIN CONSTANTS
+   ---------------------------------------------- */
 export const COIN = {
   VALUE: 1,
   FLOAT_AMPLITUDE: 5,
@@ -69,7 +144,9 @@ export const COIN = {
   SPIN_SPEED: 0.2,
 } as const;
 
-// Collision Constants
+/* ----------------------------------------------
+   COLLISION CONSTANTS
+   ---------------------------------------------- */
 export const COLLISION = {
   HISTORY_LIMIT: 100,
   KNOCKBACK_FORCE: 50,
@@ -80,7 +157,9 @@ export const COLLISION = {
   },
 } as const;
 
-// Camera Constants
+/* ----------------------------------------------
+   CAMERA CONSTANTS
+   ---------------------------------------------- */
 export const CAMERA = {
   FOLLOW_LERP_X: 0.08,
   FOLLOW_LERP_Y: 0.08,
@@ -88,10 +167,11 @@ export const CAMERA = {
   DEADZONE_Y_FRAC: 0.8,
   SHAKE_DURATION: 150,
   SHAKE_INTENSITY: 0.003,
-  ZOOM: 1,
 } as const;
 
-// World Constants
+/* ----------------------------------------------
+   WORLD SETTINGS
+   ---------------------------------------------- */
 export const WORLD = {
   DEFAULT_WIDTH: 2000,
   DEFAULT_HEIGHT: 600,
@@ -99,7 +179,9 @@ export const WORLD = {
   PLATFORM_HEIGHT: 30,
 } as const;
 
-// Color Constants
+/* ----------------------------------------------
+   COLORS
+   ---------------------------------------------- */
 export const COLORS = {
   BACKGROUND: "#0f172a",
   GROUND: 0x334155,
@@ -113,7 +195,9 @@ export const COLORS = {
   DOOR_OPEN: 0x00ff00,
 } as const;
 
-// Animation Constants
+/* ----------------------------------------------
+   ANIMATIONS
+   ---------------------------------------------- */
 export const ANIMATIONS = {
   TIMEOUT: {
     DAMAGE_EFFECT: 100,
@@ -126,10 +210,4 @@ export const ANIMATIONS = {
     BOUNCE_COMPRESS: 0.8,
     NORMAL: 1.0,
   },
-} as const;
-
-// Scene Keys (kept from your version)
-export const SCENE_KEYS = {
-  PLAY: "PlayScene",
-  HOME: "HomeScene",
 } as const;

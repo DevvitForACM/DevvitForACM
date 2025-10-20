@@ -1,0 +1,7 @@
+{
+  "name": "level_empty",
+  "spawn": { "x": 0, "y": 0 },
+  "tileset": "default",
+  "entities": [],
+  "meta": {}
+}

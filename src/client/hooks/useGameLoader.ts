@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Phaser from 'phaser';
-import { createGameConfig } from '../config/game-config';
+import { getPhaserConfig } from '@/config/game-config';
 import type { LevelConfig } from '../game/level/level-types';
 
 export interface GameLoaderState {
@@ -41,7 +41,7 @@ export function useGameLoader(): GameLoaderState & GameLoaderActions {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Create new game
-      const gameConfig = createGameConfig(level);
+      const gameConfig = getPhaserConfig(level);
       const game = new Phaser.Game(gameConfig);
       
       gameRef.current = game;

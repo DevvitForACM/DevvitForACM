@@ -1,0 +1,12 @@
+{
+  "name": "level_edge_cases",
+  "spawn": { "x": 0, "y": 0 },
+  "tileset": "weirdlands",
+  "entities": [
+    { "type": "coin", "x": 0, "y": 0, "collectible": true },
+    { "type": "enemy", "x": 1, "y": 1, "speed": 0 },
+    { "type": "door", "x": 99999, "y": -100, "locked": true },
+    { "type": "spring", "x": 500, "y": 500, "strength": 0 }
+  ],
+  "meta": { "notes": "Edge values, extreme coords" }
+}

@@ -1,5 +1,5 @@
 import PhaserContainer from '@/components/phaser-container';
-import { createGameConfig } from '@/config/game-config';
+import { getPhaserConfig } from '@/config/game-config';
 import { DEFAULT_LEVEL, type LevelConfig } from '@/game/level/level-types';
 
 export default function Create() {
@@ -17,7 +17,7 @@ export default function Create() {
     ],
   };
 
-  const config = createGameConfig(level);
+  const config = getPhaserConfig(level);
 
   return (
     <main className="w-screen h-screen overflow-hidden" style={{ background: level.bgColor }}>
