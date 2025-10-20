@@ -46,7 +46,9 @@ export function getPhaserConfig(level?: LevelConfig): Phaser.Types.Core.GameConf
   };
 }
 export function createBlankCanvasConfig(
-  bgColor: string = '#f6f7f8'
+  bgColor: string = '#f6f7f8',
+  useMatter: boolean = false,
+  level?: LevelConfig
 ): Phaser.Types.Core.GameConfig {
   return {
     type: Phaser.AUTO,
@@ -54,11 +56,28 @@ export function createBlankCanvasConfig(
     backgroundColor: bgColor,
     scale: {
       mode: Phaser.Scale.RESIZE,
-      width: '100%',
-      height: '100%',
       autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: window.innerWidth,
+      height: window.innerHeight,
     },
-    // No physics needed for blank canvas
-    scene: [new CreateScene()],
+
+    physics: useMatter
+      ? {
+          default: "matter",
+          matter: {
+            gravity: { x: 0, y: level?.gravityY ?? GAME_CONFIG.GRAVITY_Y },
+            debug: GAME_CONFIG.DEBUG,
+          },
+        }
+      : {
+          default: "arcade",
+          arcade: {
+            gravity: { x: 0, y: level?.gravityY ?? 800 },
+            debug: GAME_CONFIG.DEBUG,
+          },
+        },
+
+    // Pass scene class reference — Phaser will handle instantiation
+    scene: [PlayScene],
   };
 }

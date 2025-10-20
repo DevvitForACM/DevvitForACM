@@ -1,0 +1,12 @@
+{
+  "name": "level2",
+  "spawn": { "x": 120, "y": 300 },
+  "tileset": "desert",
+  "entities": [
+    { "type": "coin", "x": 180, "y": 260 },
+    { "type": "spring", "x": 400, "y": 350, "strength": 1.4 },
+    { "type": "enemy", "x": 620, "y": 260, "ai": "patrol", "speed": 1.6 },
+    { "type": "spike", "x": 800, "y": 360 }
+  ],
+  "meta": { "timeLimit": 120, "difficulty": "medium" }
+}

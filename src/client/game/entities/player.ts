@@ -27,7 +27,7 @@ export class Player extends BaseEntity {
     this.isDead = false;
   }
 
-  public override update(delta: number): void {
+  public override update(_delta: number): void {
     this.sprite.setPosition(this.x, this.y);
 
     if (this.health <= 0 && !this.isDead) {

@@ -1,0 +1,9 @@
+{
+  "name": "level_invalid",
+  "spawn": { "x": "no-number", "y": null },
+  "entities": [
+    { "type": "coin", "x": "200" },
+    { "type": 123, "y": 300 },
+    { "type": "enemy" }
+  ]
+}

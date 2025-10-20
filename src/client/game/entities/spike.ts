@@ -20,7 +20,10 @@ export class Spike extends BaseEntity {
     this.damage = DAMAGE.SPIKE;
   }
 
-  public override update(delta: number): void {}
+  public override update(delta: number): void {
+    // reference delta to avoid "declared but its value is never read" compile error
+    void delta;
+  }
 
   public override onCollision(other: BaseEntity): void {
     if (other instanceof Player && !other.isDead) {
