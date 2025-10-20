@@ -43,7 +43,10 @@ export default function Create() {
           // If a selection already exists in UI, mirror it into scene now
           if (selectedEntity) {
             // eslint-disable-next-line no-console
-            console.debug('[Create] scene attached: applying existing selection ->', selectedEntity);
+            console.debug(
+              '[Create] scene attached: applying existing selection ->',
+              selectedEntity
+            );
             s.registry.set('selectedEntityType', selectedEntity);
             s.setSelectedEntityType(selectedEntity);
           }
@@ -77,7 +80,10 @@ export default function Create() {
     if (!scene) return;
     if (!selectedEntity) return;
     // eslint-disable-next-line no-console
-    console.debug('[Create] syncing selection to scene (effect) ->', selectedEntity);
+    console.debug(
+      '[Create] syncing selection to scene (effect) ->',
+      selectedEntity
+    );
     scene.registry.set('selectedEntityType', selectedEntity);
     scene.setSelectedEntityType(selectedEntity);
   }, [scene, selectedEntity]);
@@ -176,29 +182,6 @@ export default function Create() {
           </div>
         </div>
       </div>
-
-      {/* Selected Indicator */}
-      {selectedEntity && (
-        <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-40 bg-white rounded-lg shadow-lg border p-3 sm:p-4 min-w-[120px] sm:min-w-[160px] pointer-events-none">
-          <div className="text-[10px] sm:text-xs text-gray-500 mb-2">
-            Selected Entity:
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-lg sm:text-xl"
-              style={{
-                backgroundColor: `${ENTITY_TYPES.find((e) => e.id === selectedEntity)?.color}20`,
-                border: `2px solid ${ENTITY_TYPES.find((e) => e.id === selectedEntity)?.color}40`,
-              }}
-            >
-              {ENTITY_TYPES.find((e) => e.id === selectedEntity)?.icon}
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-gray-800">
-              {ENTITY_TYPES.find((e) => e.id === selectedEntity)?.name}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Helper */}
       {entityCount === 0 && !selectedEntity && (
