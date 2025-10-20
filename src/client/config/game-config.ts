@@ -45,3 +45,20 @@ export function getPhaserConfig(level?: LevelConfig): Phaser.Types.Core.GameConf
     scene: [useMatter ? new PlayScene() : new PlayScene(level!)],
   };
 }
+export function createBlankCanvasConfig(
+  bgColor: string = '#f6f7f8'
+): Phaser.Types.Core.GameConfig {
+  return {
+    type: Phaser.AUTO,
+    parent: 'phaser-game-container',
+    backgroundColor: bgColor,
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      width: '100%',
+      height: '100%',
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    // No physics needed for blank canvas
+    scene: [new CreateScene()],
+  };
+}
