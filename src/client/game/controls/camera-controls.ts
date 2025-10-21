@@ -29,7 +29,7 @@ export function createScrollControls(scene: ControllableScene): void {
 
   const positionControls = () => {
     const { height } = scene.scale;
-    const yPos = Math.min(height * 0.4, height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50));
+    const yPos = height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50);
     leftArrow.setPosition(
       CAMERA_SCROLL.LEFT_X ?? 50,
       yPos

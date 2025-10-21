@@ -11,6 +11,8 @@ export class CreateScene extends Phaser.Scene {
   private gridGraphics?: Phaser.GameObjects.Graphics | undefined;
   private currentWidth: number = 0;
   private currentHeight: number = 0;
+  private lastGridOffsetX: number = -1;
+  private lastGridOffsetY: number = -1;
 
   constructor() {
     super({ key: 'CreateScene' });
@@ -47,24 +49,33 @@ export class CreateScene extends Phaser.Scene {
     const height = this.cameras.main.height;
     if (!width || !height || width <= 0 || height <= 0) return;
 
-    if (this.gridGraphics) {
-      if (this.gridGraphics.active) this.gridGraphics.destroy();
-      this.gridGraphics = undefined;
+    if (!this.gridGraphics || !this.gridGraphics.active) {
+      this.gridGraphics = this.add.graphics();
+      if (!this.gridGraphics) return;
+      this.gridGraphics.setScrollFactor(0); // screen-space grid
+      this.gridGraphics.setDepth(-1);
     }
 
-    this.gridGraphics = this.add.graphics();
-    if (!this.gridGraphics) return;
+    this.gridGraphics.clear();
     this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
 
-    for (let x = 0; x <= width; x += GRID_SIZE) {
+    // Offset grid lines by camera scroll to align with world coordinates
+    const cam = this.cameras.main;
+    const scrollX = cam.scrollX;
+    const scrollY = cam.scrollY;
+    const offX = ((-scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
+    const offY = ((-scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
+    for (let x = offX; x <= width + GRID_SIZE; x += GRID_SIZE) {
       this.gridGraphics.lineBetween(x, 0, x, height);
     }
-    for (let y = 0; y <= height; y += GRID_SIZE) {
+    for (let y = offY; y <= height + GRID_SIZE; y += GRID_SIZE) {
       this.gridGraphics.lineBetween(0, y, width, y);
     }
-    this.gridGraphics.setDepth(-1);
+
     this.currentWidth = width;
     this.currentHeight = height;
+    this.lastGridOffsetX = offX;
+    this.lastGridOffsetY = offY;
   }
 
   private handleResize(): void {
@@ -182,6 +193,13 @@ export class CreateScene extends Phaser.Scene {
   public override update(_time: number, delta: number): void {
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
+      // Redraw grid when camera scroll changes to keep world-aligned grid
+      const cam = this.cameras.main;
+      const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
+      const offY = ((-cam.scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
+      if (offX !== this.lastGridOffsetX || offY !== this.lastGridOffsetY) {
+        this.drawGrid();
+      }
     }
   }
 
