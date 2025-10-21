@@ -17,3 +17,11 @@ WARP.md
 devvit.json
 .cursorignore
 .editorconfig
+
+# Firebase service account (do not commit - all possible locations)
+serviceAccountKey.json
+src/serviceAccountKey.json
+src/server/serviceAccountKey.json
+
+# Server build output
+src/server/dist

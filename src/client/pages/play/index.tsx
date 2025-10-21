@@ -10,7 +10,6 @@ export default function Play() {
     gravityY: 1100,
     moveSpeed: 260,
     jumpVelocity: 520,
-    useMapControls: true,
     hazards: [
       { x: 1200, y: 540, width: 20, height: 40, color: 0x2dd4bf },
       { x: 2500, y: 540, width: 20, height: 40, color: 0x2dd4bf },

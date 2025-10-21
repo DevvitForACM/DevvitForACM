@@ -6,19 +6,32 @@ interface PhaserContainerProps {
   className?: string;
 }
 
-export default function PhaserContainer({ config, className }: PhaserContainerProps) {
+export default function PhaserContainer({
+  config,
+  className,
+}: PhaserContainerProps) {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerId = config.parent as string;
 
   useEffect(() => {
-    if (!gameRef.current && document.getElementById(containerId)) {
-      gameRef.current = new Phaser.Game(config);
-    }
+    const initGame = () => {
+      const container = document.getElementById(containerId);
+      if (!gameRef.current && container) {
+        gameRef.current = new Phaser.Game(config);
+        // Store game on window for React component access
+        (window as any).game = gameRef.current;
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initGame, 50);
 
     return () => {
+      clearTimeout(timer);
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;
+        (window as any).game = null;
       }
     };
   }, [config, containerId]);

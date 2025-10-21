@@ -1,13 +1,37 @@
-import Phaser from 'phaser';
-import { createScrollControls } from '../controls/camera-controls';
-import type { LevelConfig, RectDef } from '../level/level-types';
-import { DEFAULT_LEVEL } from '../level/level-types';
+// src/client/game/scenes/play-scene.ts
+import Phaser from "phaser";
+import { loadLevel } from "../level/json-conversion";
+import type { LevelData } from "../level/level-schema";
+import type { LevelConfig } from "../level/level-types";
+import { CAMERA_CONFIG, GAME_CONFIG, SCENE_KEYS, PHYSICS, WORLD, COLORS } from "../../constants/game-constants";
+import { DEFAULT_LEVEL } from "../level/level-types";
 
+/**
+ * Fetches and validates a JSON level file.
+ * Falls back gracefully if missing or invalid.
+ */
+async function fetchLevelData(levelName: string): Promise<LevelData | null> {
+  try {
+    const response = await fetch(`/assets/levels/${levelName}.json`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = (await response.json()) as LevelData;
+    if (!data || typeof data !== "object") throw new Error("Invalid structure");
+    return data;
+  } catch (err) {
+    console.warn(`[PlayScene] Failed to fetch level '${levelName}':`, err);
+    return null;
+  }
+}
 
 export class PlayScene extends Phaser.Scene {
   public cameraScrollSpeed = 0;
-  constructor(private level: LevelConfig = DEFAULT_LEVEL) {
-    super({ key: 'PlayScene' });
+  private useMapControls = true;
+
+  private levelConfig: LevelConfig;
+
+  constructor(level?: LevelConfig) {
+    super({ key: SCENE_KEYS.PLAY });
+    this.levelConfig = level ?? DEFAULT_LEVEL;
   }
 
   preload() {
@@ -45,13 +69,18 @@ export class PlayScene extends Phaser.Scene {
 
   // Collision groups & debug
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
+  public init(data: { useMapControls?: boolean; level?: LevelConfig }): void {
+    this.useMapControls = data.useMapControls ?? true;
+    if (data.level) this.levelConfig = data.level;
+  }
 
-  public create(): void {
-    const W = this.level.worldWidth;
-    const H = this.level.worldHeight;
-    this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.setBackgroundColor(this.level.bgColor);
-    this.physics.world.setBounds(0, 0, W, H);
+  public async create(): Promise<void> {
+    try {
+      // Wait a tick to ensure systems are initialized
+      await new Promise((resolve) => this.time.delayedCall(0, resolve));
+
+      const levelName = GAME_CONFIG.DEFAULT_LEVEL;
+      const jsonData = await fetchLevelData(levelName);
 
     // Debug: surface whether textures actually loaded
     const keys = ['player-idle-1','player-idle-2','player-idle-3','player-idle-4','player-jump-1'];
@@ -60,24 +89,67 @@ export class PlayScene extends Phaser.Scene {
     dbg.setScrollFactor(0);
 
     // Ensure gravity for jumping
-    this.physics.world.gravity.y = this.level.gravityY;
+    this.physics.world.gravity.y = this.levelConfig.gravityY;
+      if (jsonData && this.matter && this.matter.world) {
+        // JSON → Matter.js scene
+        loadLevel(this, jsonData);
+      } else {
+        // Fallback → manual Arcade-based layout from LevelConfig
+        this.setupArcadeFallback();
+      }
 
-    // Platforms
+
+      // Camera follow
+      const player = this.children.getByName("player_1") as
+        | Phaser.Physics.Matter.Image
+        | Phaser.GameObjects.Sprite
+        | undefined;
+
+      if (player) {
+        this.cameras.main.startFollow(
+          player,
+          true,
+          CAMERA_CONFIG.FOLLOW_LERP,
+          CAMERA_CONFIG.FOLLOW_LERP
+        );
+        this.cameras.main.setZoom(CAMERA_CONFIG.ZOOM);
+      }
+    } catch (err) {
+      console.error("[PlayScene] Error creating scene:", err);
+      this.add
+        .text(50, 50, "Error loading level", {
+          color: "#ff3333",
+          fontSize: "18px",
+        })
+        .setScrollFactor(0);
+    }
+  }
+
+  /** Fallback: builds a simple Arcade-physics level using LevelConfig */
+  private setupArcadeFallback(): void {
+    const level = this.levelConfig;
+    const W = level.worldWidth;
+    const H = level.worldHeight;
+    
+    this.physics.world.setBounds(0, 0, W, H);
+    this.cameras.main.setBounds(0, 0, W, H);
+    this.cameras.main.setBackgroundColor(level.bgColor);
+
     this.platforms = this.physics.add.staticGroup();
-
-    const addPlatform = (r: RectDef) => {
-      const rect = this.add.rectangle(r.x, r.y, r.width, r.height, r.color ?? 0x4a8f38);
+    
+    const addPlatform = (r: { x: number; y: number; width: number; height: number; color?: number }) => {
+      const rect = this.add.rectangle(r.x, r.y, r.width, r.height, r.color ?? COLORS.PLATFORM_ALT);
       this.physics.add.existing(rect, true);
       this.platforms.add(rect as Phaser.GameObjects.GameObject);
     };
 
-    if (this.level.platforms && this.level.platforms.length > 0) {
-      this.level.platforms.forEach(addPlatform);
+    if (level.platforms && level.platforms.length > 0) {
+      level.platforms.forEach(addPlatform);
     } else {
-      addPlatform({ x: W / 2, y: H - 20, width: W, height: 40, color: 0x4a8f38 });
-      addPlatform({ x: 400, y: H - 150, width: 250, height: 30, color: 0x956338 });
-      addPlatform({ x: 950, y: H - 250, width: 400, height: 30, color: 0x956338 });
-      addPlatform({ x: 1600, y: H - 150, width: 250, height: 30, color: 0x956338 });
+      addPlatform({ x: W / 2, y: H - 20, width: W, height: 40, color: COLORS.PLATFORM_ALT });
+      addPlatform({ x: 400, y: H - 150, width: 250, height: 30, color: COLORS.PLATFORM });
+      addPlatform({ x: 950, y: H - 250, width: 400, height: 30, color: COLORS.PLATFORM });
+      addPlatform({ x: 1600, y: H - 150, width: 250, height: 30, color: COLORS.PLATFORM });
     }
 
     // Animations
@@ -95,15 +167,15 @@ export class PlayScene extends Phaser.Scene {
     });
 
     // Player sprite
-    const startX = this.level.playerStartX ?? 200;
-    const startY = this.level.playerStartY ?? Math.max(0, H - 100);
+    const startX = level.playerStartX ?? 200;
+    const startY = level.playerStartY ?? Math.max(0, H - 100);
     this.player = this.physics.add.sprite(startX, startY, 'player-idle-1');
     this.player.clearTint();
     this.player.setDisplaySize(48, 48);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
-    this.playerBody.setBounce(0.1, 0);
-    this.playerBody.setDragX(600);
+    this.playerBody.setBounce(PHYSICS.PLAYER_BOUNCE_X, PHYSICS.PLAYER_BOUNCE_Y);
+    this.playerBody.setDragX(PHYSICS.PLAYER_DRAG_X);
     this.player.play('player-idle');
 
     // Colliders / overlaps
@@ -111,7 +183,7 @@ export class PlayScene extends Phaser.Scene {
 
     // Camera follow (Chrome Dino-style)
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setDeadzone(this.scale.width * this.level.deadzoneXFrac, this.scale.height * 0.8);
+    this.cameras.main.setDeadzone(this.scale.width * level.deadzoneXFrac, this.scale.height * 0.8);
 
     // Input: arrows + WASD
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -126,41 +198,34 @@ export class PlayScene extends Phaser.Scene {
     // Tap to jump on mobile/touch
     this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
       if (this.playerBody?.blocked.down) {
-        this.playerBody.setVelocityY(-this.level.jumpVelocity);
+        this.playerBody.setVelocityY(-level.jumpVelocity);
       }
     });
-
-    // Optional on-screen map controls
-    if (this.level.useMapControls) {
-      createScrollControls(this);
-    }
   }
 
   public override update(_time: number, delta: number): void {
-    // Camera scroll via UI controls
-    this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
-
-    // Player movement (desktop keyboard)
-    const speed = this.level.moveSpeed;
-    const jump = this.level.jumpVelocity;
-
-    let vx = 0;
-    const left = this.wasd.left.isDown || !!this.cursors.left?.isDown;
-    const right = this.wasd.right.isDown || !!this.cursors.right?.isDown;
-    const up = this.wasd.up.isDown || !!this.cursors.up?.isDown || !!this.cursors.space?.isDown;
-
-    if (this.level.autoRun) {
-      vx = speed;
-      if (left) vx = 0;
-    } else {
-      if (left) vx = -speed;
-      else if (right) vx = speed;
+    // Scroll controls
+    if (this.cameras?.main) {
+      this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
     }
+    
+    // Only update player if we have proper refs
+    if (!this.player || !this.playerBody || !this.cursors) return;
+    
+    // Input handling
+    const left = this.cursors.left.isDown || this.wasd.left.isDown;
+    const right = this.cursors.right.isDown || this.wasd.right.isDown;
+    const up = this.cursors.up.isDown || this.wasd.up.isDown || this.cursors.space.isDown;
+    
+    let vx = 0;
+    if (left) vx = -this.levelConfig.moveSpeed;
+    if (right) vx = this.levelConfig.moveSpeed;
+    
     this.playerBody.setVelocityX(vx);
 
     const onFloor = this.playerBody.blocked.down;
     if (up && onFloor) {
-      this.playerBody.setVelocityY(-jump);
+      this.playerBody.setVelocityY(-this.levelConfig.jumpVelocity);
     }
 
     // Flip sprite based on movement direction
