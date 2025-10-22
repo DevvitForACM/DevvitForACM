@@ -35,9 +35,9 @@ export class BaseEntity {
     this.sprite.setOrigin(0.5, 0.5);
   }
 
-  public update(delta: number): void {}
+  public update(delta: number): void { void delta; }
 
-  public onCollision(other: BaseEntity): void {}
+  public onCollision(other: BaseEntity): void { void other; }
 
   /**
    * Get collision bounds for this entity

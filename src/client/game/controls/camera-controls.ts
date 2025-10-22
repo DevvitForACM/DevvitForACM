@@ -14,31 +14,36 @@ export function createScrollControls(scene: ControllableScene): void {
       fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",
       color: CAMERA_SCROLL.COLOR ?? "#ffffff",
     })
-    .setOrigin(0.5);
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(1000);
 
   const rightArrow = scene.add
     .text(0, 0, CAMERA_SCROLL.RIGHT_SYMBOL ?? ">", {
       fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",
       color: CAMERA_SCROLL.COLOR ?? "#ffffff",
     })
-    .setOrigin(0.5);
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(1000);
 
   const positionControls = () => {
     const { height } = scene.scale;
+    const yPos = height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50);
     leftArrow.setPosition(
       CAMERA_SCROLL.LEFT_X ?? 50,
-      height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50)
+      yPos
     );
     rightArrow.setPosition(
       CAMERA_SCROLL.RIGHT_X ?? 150,
-      height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50)
+      yPos
     );
   };
 
   positionControls();
 
-  leftArrow.setInteractive().setScrollFactor(0);
-  rightArrow.setInteractive().setScrollFactor(0);
+  leftArrow.setInteractive();
+  rightArrow.setInteractive();
 
   const scrollVelocity = CAMERA_SCROLL.VELOCITY ?? 5;
 

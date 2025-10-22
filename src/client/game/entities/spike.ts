@@ -11,7 +11,7 @@ export class Spike extends BaseEntity {
     id: string,
     x: number,
     y: number,
-    texture: string
+    texture: string = 'spike'
   ) {
     super(scene, id, x, y, texture);
 
@@ -20,7 +20,7 @@ export class Spike extends BaseEntity {
     this.damage = DAMAGE.SPIKE;
   }
 
-  public override update(delta: number): void {}
+  public override update(delta: number): void { void delta; }
 
   public override onCollision(other: BaseEntity): void {
     if (other instanceof Player && !other.isDead) {

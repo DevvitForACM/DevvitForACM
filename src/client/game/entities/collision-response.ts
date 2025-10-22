@@ -130,6 +130,7 @@ export class CollisionResponse {
    * Handle trigger collisions (switches, doors, etc.)
    */
   private static handleTriggerCollision(event: CollisionEvent): void {
+    void event; // placeholder to satisfy noUnusedParameters
     // Custom trigger logic would go here
   }
 
@@ -153,6 +154,7 @@ export class CollisionResponse {
   private static createCollectEffect(entityA: BaseEntity, entityB: BaseEntity): void {
     const collector = entityA instanceof Player ? entityA : entityB;
     const collected = entityA instanceof Player ? entityB : entityA;
+    void collector; // currently unused, reserved for future features
     
     // Scale effect
     collected.sprite.setScale(1.2);

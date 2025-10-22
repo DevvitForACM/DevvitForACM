@@ -13,53 +13,58 @@ import type { LevelConfig } from "../game/level/level-types";
 export function getPhaserConfig(level?: LevelConfig): Phaser.Types.Core.GameConfig {
   const useMatter = !level; // If no explicit level config, default to Matter.js + JSON levels
 
-  return {
-    type: Phaser.AUTO,
-    parent: "phaser-game-container",
-    backgroundColor: useMatter
-      ? GAME_CONFIG.BACKGROUND_COLOR
-      : level?.bgColor ?? "#000000",
-
-    scale: {
-      mode: Phaser.Scale.RESIZE,
-      width: "100%",
-      height: "100%",
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-    },
-
-    physics: useMatter
-      ? {
-          default: "matter",
-          matter: {
-            gravity: { x: 0, y: GAME_CONFIG.GRAVITY_Y },
-            debug: GAME_CONFIG.DEBUG,
-          } satisfies Phaser.Types.Physics.Matter.MatterWorldConfig,
-        }
-      : {
-          default: "arcade",
-          arcade: {
-            gravity: { x: 0, y: level?.gravityY ?? 800 },
-            debug: false,
-          },
-        },
-
-    scene: [useMatter ? new PlayScene() : new PlayScene(level!)],
-  };
-}
-export function createBlankCanvasConfig(
-  bgColor: string = '#f6f7f8'
-): Phaser.Types.Core.GameConfig {
+export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConfig {
   return {
     type: Phaser.AUTO,
     parent: 'phaser-game-container',
-    backgroundColor: bgColor,
+    backgroundColor: level.bgColor,
+    render: { pixelArt: true, antialias: false },
     scale: {
       mode: Phaser.Scale.RESIZE,
       width: '100%',
       height: '100%',
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    // No physics needed for blank canvas
-    scene: [new CreateScene()],
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { x: 0, y: level.gravityY },
+        debug: false
+      }
+    },
+    scene: [new PlayScene(level)],
   };
+}
+
+export function createBlankCanvasConfig(backgroundColor: string = '#f6f7f8'): Phaser.Types.Core.GameConfig {
+  return {
+    type: Phaser.AUTO,
+    parent: 'phaser-game-container',
+    backgroundColor,
+    render: { pixelArt: true, antialias: false },
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      width: '100%',
+      height: '100%',
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    physics: {
+      default: 'matter',
+      matter: {
+        gravity: { x: 0, y: 0.8 },
+        debug: false
+      },
+      arcade: {
+        gravity: { x: 0, y: 800 },
+        debug: false,
+      },
+    },
+    // Register both scenes so we can start PlayScene from the Create page
+    scene: [new CreateScene(), new PlayScene(DEFAULT_LEVEL)],
+  };
+}
+
+// Lightweight base config for consumers that want to supply their own scene
+export function getPhaserConfig(): Phaser.Types.Core.GameConfig {
+  return createBlankCanvasConfig('#000000');
 }

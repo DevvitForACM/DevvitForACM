@@ -30,6 +30,14 @@ export enum LevelObjectType {
   Obstacle = "obstacle",
   Trigger = "trigger",
   Decoration = "decoration",
+  UpvoteDown = "upvote-1",
+  UpvoteLeft = "upvote-2",
+  UpvoteUp = "upvote-3",
+  UpvoteRight = "upvote-4",
+  DownvoteDown = "downvote-1",
+  DownvoteLeft = "downvote-2",
+  DownvoteUp = "downvote-3",
+  DownvoteRight = "downvote-4",
 }
 
 /**

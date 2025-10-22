@@ -29,7 +29,7 @@ export const DEFAULT_LEVEL: LevelConfig = {
   moveSpeed: 240,
   jumpVelocity: 480,
   deadzoneXFrac: 0.35,
-  bgColor: '#f6f7f8',
+  bgColor: 'black',
   useMapControls: true,
   autoRun: false,
   playerStartX: 200,

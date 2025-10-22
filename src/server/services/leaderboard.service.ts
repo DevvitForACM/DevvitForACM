@@ -83,13 +83,13 @@ export class LeaderboardService {
     return Object.keys(snapshot.val()).length;
   }
 
-  static setupRealtimeListener(
+  static async setupRealtimeListener(
     callback: (entries: LeaderboardEntry[]) => void,
     limit: number = 10
-  ): () => void {
+  ): Promise<() => void> {
     const leaderboardPath = LeaderboardModel.getLeaderboardPath();
     
-    return this.firebaseService.onValue(
+    return await this.firebaseService.onValue(
       leaderboardPath,
       {
         orderBy: 'score',

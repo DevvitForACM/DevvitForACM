@@ -10,7 +10,7 @@ export const GAME_CONFIG = {
   DEBUG: false, // should remain false in production
   SCALE_MODE: Phaser.Scale.RESIZE,
   AUTO_CENTER: Phaser.Scale.CENTER_BOTH,
-  DEFAULT_LEVEL: "level1",
+  DEFAULT_LEVEL: "level",
 };
 
 /* ----------------------------------------------
@@ -34,12 +34,12 @@ export const ENTITY_CONFIG = {
 export const CAMERA_SCROLL = {
   VELOCITY: 5,
   FONT_SIZE: "48px",
-  COLOR: "#ffffff",
+  COLOR: "#111111", // dark for light canvas visibility
   LEFT_SYMBOL: "<",
   RIGHT_SYMBOL: ">",
   LEFT_X: 50,
   RIGHT_X: 150,
-  BUTTON_OFFSET_Y: 50,
+  BUTTON_OFFSET_Y: 120, // move above bottom toolbar
 };
 
 export const PLAYER_CONFIG = {

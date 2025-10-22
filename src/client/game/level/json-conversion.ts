@@ -95,6 +95,16 @@ function createGameObject(
       return createPlayer(scene, obj);
     case LevelObjectType.Platform:
       return createPlatform(scene, obj);
+    case LevelObjectType.UpvoteDown:
+    case LevelObjectType.UpvoteLeft:
+    case LevelObjectType.UpvoteUp:
+    case LevelObjectType.UpvoteRight:
+      return createUpvote(scene, obj);
+    case LevelObjectType.DownvoteDown:
+    case LevelObjectType.DownvoteLeft:
+    case LevelObjectType.DownvoteUp:
+    case LevelObjectType.DownvoteRight:
+      return createDownvote(scene, obj);
     default:
       return null;
   }
@@ -102,25 +112,21 @@ function createGameObject(
 
 function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const radius = ENTITY_CONFIG.PLAYER_RADIUS;
-  const color = obj.visual?.tint ?? ENTITY_CONFIG.PLAYER_COLOR_DEFAULT;
 
-  const player = scene.matter.add.image(obj.position.x, obj.position.y, "", undefined, {
+  // Use the loaded player sprite; no fallback circle
+  const textureKey = 'player-idle-1';
+
+  const player = scene.matter.add.image(obj.position.x, obj.position.y, textureKey, undefined, {
     restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
     friction: ENTITY_CONFIG.PLAYER_FRICTION,
   });
 
   player.setCircle(radius);
-  player.setTint(color);
   player.setName(obj.id);
   player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
   player.setFixedRotation();
 
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(color);
-  graphics.fillCircle(obj.position.x, obj.position.y, radius);
-  graphics.name = obj.id;
-
-  return graphics;
+  return player;
 }
 
 function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
@@ -138,6 +144,27 @@ function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjec
   graphics.name = obj.id;
 
   return graphics;
+}
+
+function createUpvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  // Map enum value to asset suffix 1..4
+  const suffix = String(obj.type).split('-')[1];
+  const key = `upvote${suffix}`;
+  const img = scene.add.image(x, y, key);
+  img.name = obj.id;
+  return img;
+}
+
+function createDownvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  const suffix = String(obj.type).split('-')[1];
+  const key = `downvote${suffix}`;
+  const img = scene.add.image(x, y, key);
+  img.name = obj.id;
+  return img;
 }
 
 function validateLevel(level: LevelData): void {
