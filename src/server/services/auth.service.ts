@@ -3,14 +3,9 @@ import { adminDb, safeAdminAuth } from './firebase-admin.service';
 import jwt from 'jsonwebtoken';
 
 // Read JWT secret from environment. Do not fall back to a hardcoded value in production.
-let JWT_SECRET: string | undefined = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET environment variable must be set in production.');
-  } else {
-    JWT_SECRET = 'dev-secret';
-    console.warn('⚠️  Using hardcoded JWT secret for development. Set JWT_SECRET in your environment for production.');
-  }
+  console.warn('⚠️  JWT_SECRET is not set in environment. Server JWT operations will fail without it.');
 }
 const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
 const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET;

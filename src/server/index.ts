@@ -1,3 +1,5 @@
+// Load environment variables from project root .env before anything else
+import './config/loadEnv';
 import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import leaderboardRoutes from './routes/leaderboard.routes';

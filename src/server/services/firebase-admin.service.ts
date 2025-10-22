@@ -8,31 +8,30 @@ if (!process.env.FIREBASE_DATABASE_URL && typeof require !== 'undefined') {
 }
 
 import * as admin from 'firebase-admin';
-import path from 'path';
-import fs from 'fs';
+// no filesystem imports needed; credentials come from environment variables
 
-// Look for serviceAccountKey.json in project root (E:\devvit\DevvitForACM\serviceAccountKey.json)
-// This works for both dev and built code since we use an absolute path from cwd
-const projectRoot = process.cwd();
-const serviceAccountPath = path.join(projectRoot, 'serviceAccountKey.json');
+// Build service account credentials from environment variables if provided.
+// Required fields for a service account credential are project_id, client_email and private_key.
 let serviceAccount: admin.ServiceAccount | undefined;
-
-if (fs.existsSync(serviceAccountPath)) {
-  // Load local service account if present (convenience for local dev)
-  // Keep this file out of source control.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as admin.ServiceAccount;
-  console.log('✅ Loaded service account from:', serviceAccountPath);
+if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+  // Private key in env commonly contains literal "\n" sequences. Replace them with actual newlines.
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY as string;
+  const privateKey = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
+  serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey,
+  } as admin.ServiceAccount;
+  console.log('✅ Using Firebase service account from environment variables');
 } else {
-  console.log('⚠️  serviceAccountKey.json not found at:', serviceAccountPath);
-  console.log('   Place your Firebase service account JSON at the project root, or set GOOGLE_APPLICATION_CREDENTIALS env var');
+  console.log('⚠️  Firebase service account environment variables not fully provided (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)');
+  console.log('   Falling back to application default credentials or limited test mode.');
 }
 
 let firebaseInitialized = false;
 
 if (!admin.apps.length) {
   const options: admin.AppOptions = {};
-  let hasCredentials = false;
 
   // Always set database URL if available
   const databaseUrl = process.env.FIREBASE_DATABASE_URL;
@@ -48,16 +47,14 @@ if (!admin.apps.length) {
   }
 
   if (serviceAccount) {
-    options.credential = admin.credential.cert(serviceAccount as admin.ServiceAccount);
-    console.log('✅ Using service account for Firebase Admin');
-    hasCredentials = true;
+  options.credential = admin.credential.cert(serviceAccount as admin.ServiceAccount);
+  console.log('✅ Using service account (from env) for Firebase Admin');
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    options.credential = admin.credential.applicationDefault();
-    console.log('✅ Using application default credentials for Firebase Admin');
-    hasCredentials = true;
+  options.credential = admin.credential.applicationDefault();
+  console.log('✅ Using application default credentials for Firebase Admin');
   } else {
     // For development/testing, initialize without credentials but with project info
-    console.log('⚠️  No service account found, initializing Firebase Admin for database-only access');
+    console.log('⚠️  No service account provided, initializing Firebase Admin for database-only access');
     console.log('   User authentication will work in limited mode.');
   }
 
