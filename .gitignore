@@ -13,11 +13,10 @@ dist
 .cursor
 .vscode
 .git
-WARP.md
 devvit.json
 .cursorignore
 .editorconfig
-
+ 
 # Firebase service account (do not commit - all possible locations)
 serviceAccountKey.json
 src/serviceAccountKey.json
