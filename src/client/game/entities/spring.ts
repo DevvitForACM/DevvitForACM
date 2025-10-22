@@ -11,7 +11,7 @@ export class Spring extends BaseEntity {
     id: string,
     x: number,
     y: number,
-    texture: string
+    texture: string = 'spring'
   ) {
     super(scene, id, x, y, texture);
 

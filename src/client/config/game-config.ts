@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PlayScene } from '../game/scenes/play-scene';
 import { CreateScene } from '../game/scenes/create-scene';
 import type { LevelConfig } from '../game/level/level-types';
+import { DEFAULT_LEVEL } from '../game/level/level-types';
 
 export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConfig {
   return {
@@ -18,7 +19,7 @@ export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConf
     physics: {
       default: 'arcade',
       arcade: {
-        gravity: { y: level.gravityY },
+        gravity: { x: 0, y: level.gravityY },
         debug: false
       }
     },
@@ -41,10 +42,20 @@ export function createBlankCanvasConfig(backgroundColor: string = '#f6f7f8'): Ph
     physics: {
       default: 'matter',
       matter: {
-        gravity: { y: 0.8 },
+        gravity: { x: 0, y: 0.8 },
         debug: false
-      }
+      },
+      arcade: {
+        gravity: { x: 0, y: 800 },
+        debug: false,
+      },
     },
-    scene: [new CreateScene()],
+    // Register both scenes so we can start PlayScene from the Create page
+    scene: [new CreateScene(), new PlayScene(DEFAULT_LEVEL)],
   };
+}
+
+// Lightweight base config for consumers that want to supply their own scene
+export function getPhaserConfig(): Phaser.Types.Core.GameConfig {
+  return createBlankCanvasConfig('#000000');
 }

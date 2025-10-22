@@ -15,13 +15,13 @@ import fs from 'fs';
 // This works for both dev and built code since we use an absolute path from cwd
 const projectRoot = process.cwd();
 const serviceAccountPath = path.join(projectRoot, 'serviceAccountKey.json');
-let serviceAccount: admin.ServiceAccount | undefined;
+let serviceAccount: any | undefined;
 
 if (fs.existsSync(serviceAccountPath)) {
   // Load local service account if present (convenience for local dev)
   // Keep this file out of source control.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as admin.ServiceAccount;
+serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as any;
   console.log('✅ Loaded service account from:', serviceAccountPath);
 } else {
   console.log('⚠️  serviceAccountKey.json not found at:', serviceAccountPath);
@@ -31,8 +31,7 @@ if (fs.existsSync(serviceAccountPath)) {
 let firebaseInitialized = false;
 
 if (!admin.apps.length) {
-  const options: admin.AppOptions = {};
-  let hasCredentials = false;
+  const options: any = {};
 
   // Always set database URL if available
   const databaseUrl = process.env.FIREBASE_DATABASE_URL;
@@ -48,13 +47,13 @@ if (!admin.apps.length) {
   }
 
   if (serviceAccount) {
-    options.credential = admin.credential.cert(serviceAccount as admin.ServiceAccount);
+    options.credential = (admin as any).credential.cert(serviceAccount as any);
     console.log('✅ Using service account for Firebase Admin');
-    hasCredentials = true;
+
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    options.credential = admin.credential.applicationDefault();
+    options.credential = (admin as any).credential.applicationDefault();
     console.log('✅ Using application default credentials for Firebase Admin');
-    hasCredentials = true;
+
   } else {
     // For development/testing, initialize without credentials but with project info
     console.log('⚠️  No service account found, initializing Firebase Admin for database-only access');

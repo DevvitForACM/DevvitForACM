@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { redditCallback, redditAuthStatus } from '../controllers/auth.controller';
 import { requireAuth, AuthedRequest } from '../middlewares/auth';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
 const router = Router();
 

@@ -3,7 +3,7 @@ import Phaser from "phaser";
 import { loadLevel } from "../level/json-conversion";
 import type { LevelData } from "../level/level-schema";
 import type { LevelConfig } from "../level/level-types";
-import { CAMERA_CONFIG, GAME_CONFIG, SCENE_KEYS, PHYSICS, WORLD, COLORS } from "../../constants/game-constants";
+import { CAMERA_CONFIG, GAME_CONFIG, SCENE_KEYS, PHYSICS, COLORS } from "../../constants/game-constants";
 import { DEFAULT_LEVEL } from "../level/level-types";
 
 /**
@@ -25,7 +25,8 @@ async function fetchLevelData(levelName: string): Promise<LevelData | null> {
 
 export class PlayScene extends Phaser.Scene {
   public cameraScrollSpeed = 0;
-  private useMapControls = true;
+  private fromEditor = false;
+  private editorLevelData?: LevelData;
 
   private levelConfig: LevelConfig;
 
@@ -44,8 +45,12 @@ export class PlayScene extends Phaser.Scene {
       console.warn(msg);
     });
 
-    // Load spike texture and player frames from publicDir (vite.config.ts -> ../../assets)
-    this.load.image('spike', `${base}Spikes.png`);
+    // Load Reddit upvote/downvote directional assets and grass textures
+    for (let i = 1; i <= 4; i++) {
+      this.load.image(`upvote${i}`, `${base}upvote${i}.png`);
+      this.load.image(`downvote${i}`, `${base}downvote${i}.png`);
+    }
+    this.load.image('grass', `${base}Grass.png`);
 
     // Load player animations from individual frames
     for (let i = 1; i <= 4; i++) {
@@ -53,6 +58,11 @@ export class PlayScene extends Phaser.Scene {
     }
     for (let i = 1; i <= 5; i++) {
       this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
+    }
+
+    // Load coin animation frames (assets/Animations/Coin/coin_2_1..4.png)
+    for (let i = 1; i <= 4; i++) {
+      this.load.image(`coin-${i}`, `${base}Animations/Coin/coin_2_${i}.png`);
     }
   }
 
@@ -69,9 +79,16 @@ export class PlayScene extends Phaser.Scene {
 
   // Collision groups & debug
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
-  public init(data: { useMapControls?: boolean; level?: LevelConfig }): void {
-    this.useMapControls = data.useMapControls ?? true;
-    if (data.level) this.levelConfig = data.level;
+  public init(data: { useMapControls?: boolean; level?: LevelConfig; levelData?: LevelData }): void {
+    if (data.levelData) {
+      this.editorLevelData = data.levelData;
+      this.fromEditor = true;
+    } else if (data.level) {
+      this.levelConfig = data.level;
+      this.fromEditor = true;
+    } else {
+      this.fromEditor = false;
+    }
   }
 
   public async create(): Promise<void> {
@@ -79,8 +96,11 @@ export class PlayScene extends Phaser.Scene {
       // Wait a tick to ensure systems are initialized
       await new Promise((resolve) => this.time.delayedCall(0, resolve));
 
-      const levelName = GAME_CONFIG.DEFAULT_LEVEL;
-      const jsonData = await fetchLevelData(levelName);
+      let jsonData: LevelData | null = null;
+      if (!this.fromEditor) {
+        const levelName = GAME_CONFIG.DEFAULT_LEVEL;
+        jsonData = await fetchLevelData(levelName);
+      }
 
     // Debug: surface whether textures actually loaded
     const keys = ['player-idle-1','player-idle-2','player-idle-3','player-idle-4','player-jump-1'];
@@ -88,14 +108,30 @@ export class PlayScene extends Phaser.Scene {
     const dbg = this.add.text(8, 8, missing.length ? `Missing: ${missing.join(', ')}` : 'Player frames OK', { color: '#111', fontSize: '12px' });
     dbg.setScrollFactor(0);
 
-    // Ensure gravity for jumping
-    this.physics.world.gravity.y = this.levelConfig.gravityY;
-      if (jsonData && this.matter && this.matter.world) {
+    // Ensure gravity for jumping (guard for whichever physics is available)
+    if ((this.physics as any)?.world) {
+      this.physics.world.gravity.y = this.levelConfig.gravityY;
+    } else if ((this.matter as any)?.world) {
+      // Map Arcade gravity (px/s^2) to Matter's unit (~1 = earth gravity)
+      const gy = Math.max(0, this.levelConfig.gravityY) / 1000;
+      this.matter.world.setGravity(0, gy || 1);
+    }
+
+      if (this.editorLevelData && (this.matter as any)?.world) {
+        // Use editor-provided JSON level
+        loadLevel(this, this.editorLevelData);
+      } else if (jsonData && (this.matter as any)?.world) {
         // JSON → Matter.js scene
         loadLevel(this, jsonData);
-      } else {
+      } else if ((this.physics as any)?.world) {
         // Fallback → manual Arcade-based layout from LevelConfig
         this.setupArcadeFallback();
+      } else if ((this.matter as any)?.world) {
+        // Fallback → build from LevelConfig using Matter when Arcade isn't available
+        this.setupMatterFallback();
+      } else {
+        // As a last resort, create a bare scene without physics
+        this.add.text(20, 20, 'No physics plugins available', { color: '#f33' }).setScrollFactor(0);
       }
 
 
@@ -123,6 +159,42 @@ export class PlayScene extends Phaser.Scene {
         })
         .setScrollFactor(0);
     }
+  }
+
+  /** Fallback: builds a simple Matter-physics level using LevelConfig */
+  private setupMatterFallback(): void {
+    const level = this.levelConfig;
+    const W = level.worldWidth;
+    const H = level.worldHeight;
+
+    this.cameras.main.setBounds(0, 0, W, H);
+    this.cameras.main.setBackgroundColor(level.bgColor);
+    this.matter.world.setBounds(0, 0, W, H);
+
+    // Platforms as static bodies
+    if (level.platforms && level.platforms.length > 0) {
+      level.platforms.forEach((r) => {
+        this.matter.add.rectangle(r.x, r.y, r.width, r.height, { isStatic: true, label: 'platform' });
+        // Optional visual
+        this.add.rectangle(r.x, r.y, r.width, r.height, r.color ?? COLORS.PLATFORM_ALT).setDepth(-1);
+      });
+    } else {
+      this.matter.add.rectangle(W / 2, H - 20, W, 40, { isStatic: true });
+      this.add.rectangle(W / 2, H - 20, W, 40, COLORS.PLATFORM_ALT).setDepth(-1);
+    }
+
+    // Player as Matter body
+    const startX = level.playerStartX ?? 200;
+    const startY = level.playerStartY ?? Math.max(0, H - 100);
+    const player = this.matter.add.image(startX, startY, 'player-idle-1');
+    player.setCircle(20);
+    player.setBounce(0.1);
+    player.setFriction(0.05);
+    player.setFixedRotation();
+    player.setName('player_1');
+
+    // Camera follow
+    this.cameras.main.startFollow(player, true, 0.08, 0.08);
   }
 
   /** Fallback: builds a simple Arcade-physics level using LevelConfig */
@@ -165,6 +237,16 @@ export class PlayScene extends Phaser.Scene {
       frameRate: 10,
       repeat: -1,
     });
+
+    // Coin spin animation (loops)
+    if (!this.anims.exists('coin-spin')) {
+      this.anims.create({
+        key: 'coin-spin',
+        frames: [1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frameRate: 4,
+        repeat: -1,
+      });
+    }
 
     // Player sprite
     const startX = level.playerStartX ?? 200;

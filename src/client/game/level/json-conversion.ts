@@ -95,6 +95,16 @@ function createGameObject(
       return createPlayer(scene, obj);
     case LevelObjectType.Platform:
       return createPlatform(scene, obj);
+    case LevelObjectType.UpvoteDown:
+    case LevelObjectType.UpvoteLeft:
+    case LevelObjectType.UpvoteUp:
+    case LevelObjectType.UpvoteRight:
+      return createUpvote(scene, obj);
+    case LevelObjectType.DownvoteDown:
+    case LevelObjectType.DownvoteLeft:
+    case LevelObjectType.DownvoteUp:
+    case LevelObjectType.DownvoteRight:
+      return createDownvote(scene, obj);
     default:
       return null;
   }
@@ -134,6 +144,27 @@ function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjec
   graphics.name = obj.id;
 
   return graphics;
+}
+
+function createUpvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  // Map enum value to asset suffix 1..4
+  const suffix = String(obj.type).split('-')[1];
+  const key = `upvote${suffix}`;
+  const img = scene.add.image(x, y, key);
+  img.name = obj.id;
+  return img;
+}
+
+function createDownvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  const suffix = String(obj.type).split('-')[1];
+  const key = `downvote${suffix}`;
+  const img = scene.add.image(x, y, key);
+  img.name = obj.id;
+  return img;
 }
 
 function validateLevel(level: LevelData): void {
