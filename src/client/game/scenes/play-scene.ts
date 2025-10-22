@@ -102,27 +102,32 @@ export class PlayScene extends Phaser.Scene {
         jsonData = await fetchLevelData(levelName);
       }
 
-    // Debug: surface whether textures actually loaded
-    const keys = ['player-idle-1','player-idle-2','player-idle-3','player-idle-4','player-jump-1'];
-    const missing = keys.filter((k) => !this.textures.exists(k));
-    const dbg = this.add.text(8, 8, missing.length ? `Missing: ${missing.join(', ')}` : 'Player frames OK', { color: '#111', fontSize: '12px' });
-    dbg.setScrollFactor(0);
+      // Debug: surface whether textures actually loaded
+      const keys = ['player-idle-1','player-idle-2','player-idle-3','player-idle-4','player-jump-1'];
+      const missing = keys.filter((k) => !this.textures.exists(k));
+      const dbg = this.add.text(8, 8, missing.length ? `Missing: ${missing.join(', ')}` : 'Player frames OK', { color: '#111', fontSize: '12px' });
+      dbg.setScrollFactor(0);
 
-    // Ensure gravity for jumping (guard for whichever physics is available)
-    if ((this.physics as any)?.world) {
-      this.physics.world.gravity.y = this.levelConfig.gravityY;
-    } else if ((this.matter as any)?.world) {
-      // Map Arcade gravity (px/s^2) to Matter's unit (~1 = earth gravity)
-      const gy = Math.max(0, this.levelConfig.gravityY) / 1000;
-      this.matter.world.setGravity(0, gy || 1);
-    }
+      // Ensure gravity for jumping (guard for whichever physics is available)
+      if ((this.physics as any)?.world) {
+        this.physics.world.gravity.y = this.levelConfig.gravityY;
+      } else if ((this.matter as any)?.world) {
+        // Map Arcade gravity (px/s^2) to Matter's unit (~1 = earth gravity)
+        const gy = Math.max(0, this.levelConfig.gravityY) / 1000;
+        this.matter.world.setGravity(0, gy || 1);
+      }
 
       if (this.editorLevelData && (this.matter as any)?.world) {
         // Use editor-provided JSON level
         loadLevel(this, this.editorLevelData);
+        // If bounds are present in editor data, bind camera to them for sane zooming
+        const b = this.editorLevelData.settings?.bounds;
+        if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
       } else if (jsonData && (this.matter as any)?.world) {
         // JSON → Matter.js scene
         loadLevel(this, jsonData);
+        const b = jsonData.settings?.bounds;
+        if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
       } else if ((this.physics as any)?.world) {
         // Fallback → manual Arcade-based layout from LevelConfig
         this.setupArcadeFallback();
@@ -133,7 +138,6 @@ export class PlayScene extends Phaser.Scene {
         // As a last resort, create a bare scene without physics
         this.add.text(20, 20, 'No physics plugins available', { color: '#f33' }).setScrollFactor(0);
       }
-
 
       // Camera follow
       const player = this.children.getByName("player_1") as
@@ -148,7 +152,9 @@ export class PlayScene extends Phaser.Scene {
           CAMERA_CONFIG.FOLLOW_LERP,
           CAMERA_CONFIG.FOLLOW_LERP
         );
-        this.cameras.main.setZoom(CAMERA_CONFIG.ZOOM);
+        // If launched from the editor, use a slightly closer zoom for readability
+        this.cameras.main.setZoom(this.fromEditor ? 2 : CAMERA_CONFIG.ZOOM);
+        this.cameras.main.roundPixels = true;
       }
     } catch (err) {
       console.error("[PlayScene] Error creating scene:", err);
