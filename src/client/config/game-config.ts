@@ -1,8 +1,17 @@
-import Phaser from 'phaser';
-import { PlayScene } from '../game/scenes/play-scene';
-import { CreateScene } from '../game/scenes/create-scene';
-import type { LevelConfig } from '../game/level/level-types';
-import { DEFAULT_LEVEL } from '../game/level/level-types';
+// src/client/config/game-config.ts
+import Phaser from "phaser";
+import { PlayScene } from "../game/scenes/play-scene";
+import { CreateScene } from "../game/scenes/create-scene";
+import { GAME_CONFIG } from "../constants/game-constants";
+import type { LevelConfig } from "../game/level/level-types";
+
+/**
+ * Returns a Phaser Game Configuration.
+ * Supports both Matter.js (for physics-heavy levels)
+ * and Arcade (for simpler platformer-style levels).
+ */
+export function getPhaserConfig(level?: LevelConfig): Phaser.Types.Core.GameConfig {
+  const useMatter = !level; // If no explicit level config, default to Matter.js + JSON levels
 
 export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConfig {
   return {
