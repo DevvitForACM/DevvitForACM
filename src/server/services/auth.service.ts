@@ -2,14 +2,22 @@ import fetch from 'node-fetch';
 import { adminDb, safeAdminAuth } from './firebase-admin.service';
 import jwt from 'jsonwebtoken';
 
+// Helper lookup to accept either SNAKE_CASE or camelCase environment keys
+function firstEnv(...names: string[]) {
+  for (const n of names) {
+    if (typeof process.env[n] !== 'undefined' && process.env[n] !== '') return process.env[n];
+  }
+  return undefined;
+}
+
 // Read JWT secret from environment. Do not fall back to a hardcoded value in production.
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = firstEnv('JWT_SECRET', 'jwtSecret');
 if (!JWT_SECRET) {
   console.warn('⚠️  JWT_SECRET is not set in environment. Server JWT operations will fail without it.');
 }
-const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
-const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET;
-const REDDIT_REDIRECT_URI = process.env.REDDIT_REDIRECT_URI;
+const REDDIT_CLIENT_ID = firstEnv('REDDIT_CLIENT_ID', 'redditClientId');
+const REDDIT_CLIENT_SECRET = firstEnv('REDDIT_CLIENT_SECRET', 'redditClientSecret');
+const REDDIT_REDIRECT_URI = firstEnv('REDDIT_REDIRECT_URI', 'redditRedirectUri');
 
 if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
   console.error('⚠️  Missing Reddit OAuth credentials:');

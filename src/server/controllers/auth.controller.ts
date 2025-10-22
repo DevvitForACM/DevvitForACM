@@ -32,7 +32,7 @@ export async function redditCallback(req: Request, res: Response) {
   }
 }
 
-export async function redditAuthStatus(req: Request, res: Response) {
+export async function redditAuthStatus(_req: Request, res: Response) {
   const clientId = process.env.REDDIT_CLIENT_ID;
   const redirectUri = process.env.REDDIT_REDIRECT_URI;
   const hasCredentials = !!(clientId && process.env.REDDIT_CLIENT_SECRET && redirectUri);

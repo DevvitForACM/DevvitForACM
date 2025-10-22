@@ -7,19 +7,29 @@ if (!process.env.FIREBASE_DATABASE_URL && typeof require !== 'undefined') {
   }
 }
 
+// Helper to accept either uppercase or camelCase env keys
+function firstEnv(...names: string[]) {
+  for (const n of names) {
+    if (typeof process.env[n] !== 'undefined' && process.env[n] !== '') return process.env[n];
+  }
+  return undefined;
+}
+
 import * as admin from 'firebase-admin';
 // no filesystem imports needed; credentials come from environment variables
 
 // Build service account credentials from environment variables if provided.
 // Required fields for a service account credential are project_id, client_email and private_key.
 let serviceAccount: admin.ServiceAccount | undefined;
-if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-  // Private key in env commonly contains literal "\n" sequences. Replace them with actual newlines.
-  const rawKey = process.env.FIREBASE_PRIVATE_KEY as string;
-  const privateKey = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
+const saProjectId = firstEnv('FIREBASE_PROJECT_ID', 'firebaseProjectId');
+const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail');
+const saPrivateKeyRaw = firstEnv('FIREBASE_PRIVATE_KEY', 'firebasePrivateKey');
+if (saClientEmail && saPrivateKeyRaw && saProjectId) {
+  // Private key in env commonly contains literal "\\n" sequences. Replace them with actual newlines.
+  const privateKey = saPrivateKeyRaw.includes('\\n') ? saPrivateKeyRaw.replace(/\\n/g, '\n') : saPrivateKeyRaw;
   serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    projectId: saProjectId,
+    clientEmail: saClientEmail,
     privateKey,
   } as admin.ServiceAccount;
   console.log('✅ Using Firebase service account from environment variables');
@@ -34,16 +44,16 @@ if (!admin.apps.length) {
   const options: admin.AppOptions = {};
 
   // Always set database URL if available
-  const databaseUrl = process.env.FIREBASE_DATABASE_URL;
+  const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl');
   if (databaseUrl) {
     options.databaseURL = databaseUrl;
     console.log('✅ Using Firebase Database URL:', databaseUrl);
   }
 
   // Set project ID from environment
-  if (process.env.FIREBASE_PROJECT_ID) {
-    options.projectId = process.env.FIREBASE_PROJECT_ID;
-    console.log('✅ Using Firebase Project ID:', process.env.FIREBASE_PROJECT_ID);
+  if (saProjectId) {
+    options.projectId = saProjectId;
+    console.log('✅ Using Firebase Project ID:', saProjectId);
   }
 
   if (serviceAccount) {
