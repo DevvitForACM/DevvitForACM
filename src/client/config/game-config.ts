@@ -12,6 +12,13 @@ import type { LevelConfig } from "../game/level/level-types";
  */
 export function getPhaserConfig(level?: LevelConfig): Phaser.Types.Core.GameConfig {
   const useMatter = !level; // If no explicit level config, default to Matter.js + JSON levels
+  
+  if (useMatter) {
+    return createBlankCanvasConfig();
+  } else {
+    return createGameConfig(level!);
+  }
+}
 
 export function createGameConfig(level: LevelConfig): Phaser.Types.Core.GameConfig {
   return {
@@ -60,11 +67,11 @@ export function createBlankCanvasConfig(backgroundColor: string = '#f6f7f8'): Ph
       },
     },
     // Register both scenes so we can start PlayScene from the Create page
-    scene: [new CreateScene(), new PlayScene(DEFAULT_LEVEL)],
+    scene: [new CreateScene(), new PlayScene()],
   };
 }
 
 // Lightweight base config for consumers that want to supply their own scene
-export function getPhaserConfig(): Phaser.Types.Core.GameConfig {
+export function getBasePhaserConfig(): Phaser.Types.Core.GameConfig {
   return createBlankCanvasConfig('#000000');
 }
