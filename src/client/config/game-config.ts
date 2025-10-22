@@ -2,7 +2,6 @@
 import Phaser from "phaser";
 import { PlayScene } from "../game/scenes/play-scene";
 import { CreateScene } from "../game/scenes/create-scene";
-import { GAME_CONFIG } from "../constants/game-constants";
 import type { LevelConfig } from "../game/level/level-types";
 
 /**

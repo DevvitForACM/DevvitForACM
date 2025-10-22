@@ -22,9 +22,17 @@ if (fs.existsSync(serviceAccountPath)) {
   // Keep this file out of source control.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as any;
-  console.log('✅ Loaded service account from:', serviceAccountPath);
+  console.log('Loaded service account from:', serviceAccountPath);
+} else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) as any;
+    console.log('Loaded service account from environment variable');
+  } catch (err) {
+    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', err);
+  }
 } else {
-  console.log('⚠️  serviceAccountKey.json not found at:', serviceAccountPath);
+  console.log('serviceAccountKey.json not found at:', serviceAccountPath);
   console.log('   Place your Firebase service account JSON at the project root, or set GOOGLE_APPLICATION_CREDENTIALS env var');
 }
 
@@ -37,35 +45,35 @@ if (!admin.apps.length) {
   const databaseUrl = process.env.FIREBASE_DATABASE_URL;
   if (databaseUrl) {
     options.databaseURL = databaseUrl;
-    console.log('✅ Using Firebase Database URL:', databaseUrl);
+    console.log('Using Firebase Database URL:', databaseUrl);
   }
 
   // Set project ID from environment
   if (process.env.FIREBASE_PROJECT_ID) {
     options.projectId = process.env.FIREBASE_PROJECT_ID;
-    console.log('✅ Using Firebase Project ID:', process.env.FIREBASE_PROJECT_ID);
+    console.log('Using Firebase Project ID:', process.env.FIREBASE_PROJECT_ID);
   }
 
   if (serviceAccount) {
     options.credential = (admin as any).credential.cert(serviceAccount as any);
-    console.log('✅ Using service account for Firebase Admin');
+    console.log('Using service account for Firebase Admin');
 
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     options.credential = (admin as any).credential.applicationDefault();
-    console.log('✅ Using application default credentials for Firebase Admin');
+    console.log('Using application default credentials for Firebase Admin');
 
   } else {
     // For development/testing, initialize without credentials but with project info
-    console.log('⚠️  No service account found, initializing Firebase Admin for database-only access');
+    console.log('No service account found, initializing Firebase Admin for database-only access');
     console.log('   User authentication will work in limited mode.');
   }
 
   try {
     admin.initializeApp(options);
-    console.log('✅ Firebase Admin initialized');
+    console.log('Firebase Admin initialized');
     firebaseInitialized = true;
   } catch (err) {
-    console.error('⚠️  Firebase Admin initialization failed:', err);
+    console.error('Firebase Admin initialization failed:', err);
     console.log('   Will run in test mode. Some features may not work.');
     // Don't throw - allow server to start for testing
   }
@@ -77,27 +85,27 @@ export const adminDb = (() => {
     if (firebaseInitialized && admin.apps && admin.apps.length > 0) {
       // Try to use real database if Firebase is initialized
       if (typeof (admin as any).database === 'function') {
-        console.log('✅ Using real Firebase Realtime Database');
+        console.log('Using real Firebase Realtime Database');
         return (admin as any).database();
       }
     }
     
-    console.warn('⚠️  Using mock database - data will not persist');
+    console.warn('Using mock database - data will not persist');
     return {
       ref: (path: string) => ({
         set: (data: any) => {
-          console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
+          console.log(`Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
         get: () => Promise.resolve({ val: () => null })
       })
     } as any;
   } catch (err: any) {
-    console.warn('⚠️  Database initialization failed, using mock:', err.message);
+    console.warn('Database initialization failed, using mock:', err.message);
     return {
       ref: (path: string) => ({
         set: (data: any) => {
-          console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
+          console.log(`Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
         get: () => Promise.resolve({ val: () => null })

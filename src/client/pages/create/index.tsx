@@ -43,6 +43,13 @@ export default function Create() {
   const [scene, setScene] = useState<CreateScene | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [entityCount, setEntityCount] = useState(0);
+  const [
+    saveBanner,
+    setSaveBanner,
+  ] = useState<{
+    status: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   // IMPORTANT: Keep Phaser game config stable to avoid destroying/recreating the scene on React re-renders
   const config = useMemo(() => createBlankCanvasConfig('#f6f7f8'), []);
@@ -116,6 +123,8 @@ export default function Create() {
     if (!scene) return;
     const GRID = 32;
     const entities = scene.getAllEntities();
+    // eslint-disable-next-line no-console
+    console.info('[Create] Saving level… entities:', entities.length);
 
     const ground = entities.filter((e: any) => {
       const t = String(e.type).toLowerCase().trim();
@@ -179,6 +188,19 @@ export default function Create() {
     const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
     const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
 
+    // Shift everything down so the lowest ground row sits near the bottom of the bounds for saved JSON too.
+    {
+      const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
+      if (platformYs.length > 0) {
+        const minGroundY = Math.min(...platformYs);
+        const desiredFloorY = height - 40; // margin from bottom
+        const deltaY = desiredFloorY - minGroundY;
+        if (Math.abs(deltaY) > 1) {
+          objects.forEach(o => { o.position.y += deltaY; });
+        }
+      }
+    }
+
     const levelData: LevelData = {
       version: LEVEL_SCHEMA_VERSION,
       name: 'Editor Level',
@@ -190,15 +212,30 @@ export default function Create() {
       objects,
     };
 
-    // Save to localStorage and download file
-    localStorage.setItem('editorLevelJSON', JSON.stringify(levelData));
-    const blob = new Blob([JSON.stringify(levelData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'level.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    // Save to localStorage and download file (with debug)
+    try {
+      const outStr = JSON.stringify(levelData);
+      localStorage.setItem('editorLevelJSON', outStr);
+      const bytes = outStr.length;
+      const msg = `Saved level.json (${objects.length} objects, ${bytes} bytes)`;
+      // eslint-disable-next-line no-console
+      console.info('[Create] Save OK ->', { bytes, objects: objects.length, bounds: levelData.settings.bounds });
+      setSaveBanner({ status: 'success', message: msg });
+      setTimeout(() => setSaveBanner(null), 2500);
+
+      const blob = new Blob([JSON.stringify(levelData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'level.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[Create] Save failed:', e);
+      setSaveBanner({ status: 'error', message: 'Save failed — check console' });
+      setTimeout(() => setSaveBanner(null), 3000);
+    }
   };
 
   const handlePlay = () => {
@@ -206,8 +243,10 @@ export default function Create() {
     // Prefer JSON from localStorage if saved; otherwise build one on the fly
     const saved = localStorage.getItem('editorLevelJSON');
     let levelData: LevelData | null = null;
-    if (saved) {
+    if (!levelData && saved) {
       try { levelData = JSON.parse(saved) as LevelData; } catch {}
+      // eslint-disable-next-line no-console
+      console.debug('[Create] Play: using saved JSON from localStorage ->', !!levelData);
     }
     if (!levelData) {
       const GRID = 32;
@@ -253,6 +292,18 @@ export default function Create() {
       });
       const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
       const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
+      
+      // Shift everything down so the lowest ground row sits near the bottom of the bounds.
+      const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
+      if (platformYs.length > 0) {
+        const minGroundY = Math.min(...platformYs);
+        const desiredFloorY = height - 40; // leave some margin from the bottom
+        const deltaY = desiredFloorY - minGroundY;
+        if (Math.abs(deltaY) > 1) {
+          objects.forEach(o => { o.position.y += deltaY; });
+        }
+      }
+      
       levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#000000', bounds: { width, height } }, objects };
     }
 
@@ -308,6 +359,19 @@ export default function Create() {
           </div>
         </div>
       </div>
+
+      {/* Save banner */}
+      {saveBanner && (
+        <div
+          className={`absolute top-14 right-3 z-[60] px-3 py-2 rounded shadow text-sm font-medium ${
+            saveBanner.status === 'success'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-rose-600 text-white'
+          }`}
+        >
+          {saveBanner.message}
+        </div>
+      )}
 
       {/* Bottom Toolbox */}
       <div className="absolute bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t">

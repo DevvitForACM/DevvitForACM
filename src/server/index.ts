@@ -1,3 +1,10 @@
+// Load environment variables first
+try {
+  require('dotenv').config();
+} catch (err) {
+  console.warn('dotenv not available, continuing without it');
+}
+
 import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import leaderboardRoutes from './routes/leaderboard.routes';
