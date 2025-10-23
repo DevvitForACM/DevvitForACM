@@ -14,15 +14,26 @@ function firstEnv(...names: string[]) {
   }
   return undefined;
 }
-
 import * as admin from 'firebase-admin';
-// no filesystem imports needed; credentials come from environment variables
+
+// Minimal local types to avoid depending on firebase-admin's exported type names
+type ServiceAccount = {
+  projectId?: string | undefined;
+  clientEmail?: string | undefined;
+  privateKey?: string | undefined;
+};
+
+type AppOptions = {
+  credential?: any;
+  databaseURL?: string;
+  projectId?: string;
+};
 
 // Build service account credentials from environment variables if provided.
 // Required fields for a service account credential are project_id, client_email and private_key.
-let serviceAccount: admin.ServiceAccount | undefined;
+let serviceAccount: ServiceAccount | undefined;
 const saProjectId = firstEnv('FIREBASE_PROJECT_ID', 'firebaseProjectId');
-const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail');
+const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail');
 const saPrivateKeyRaw = firstEnv('FIREBASE_PRIVATE_KEY', 'firebasePrivateKey');
 if (saClientEmail && saPrivateKeyRaw && saProjectId) {
   // Private key in env commonly contains literal "\\n" sequences. Replace them with actual newlines.
@@ -31,7 +42,7 @@ if (saClientEmail && saPrivateKeyRaw && saProjectId) {
     projectId: saProjectId,
     clientEmail: saClientEmail,
     privateKey,
-  } as admin.ServiceAccount;
+  } as ServiceAccount;
   console.log('✅ Using Firebase service account from environment variables');
 } else {
   console.log('⚠️  Firebase service account environment variables not fully provided (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)');
@@ -41,13 +52,13 @@ if (saClientEmail && saPrivateKeyRaw && saProjectId) {
 let firebaseInitialized = false;
 
 if (!admin.apps.length) {
-  const options: admin.AppOptions = {};
+  const options: AppOptions = {};
 
   // Always set database URL if available
   const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl');
   if (databaseUrl) {
     options.databaseURL = databaseUrl;
-    console.log('Using Firebase Database URL:', databaseUrl);
+    console.log('✅ Using Firebase Database URL:', databaseUrl);
   }
 
   // Set project ID from environment
@@ -57,11 +68,11 @@ if (!admin.apps.length) {
   }
 
   if (serviceAccount) {
-  options.credential = admin.credential.cert(serviceAccount as admin.ServiceAccount);
-  console.log('✅ Using service account (from env) for Firebase Admin');
+    options.credential = admin.credential.cert(serviceAccount as ServiceAccount);
+    console.log('✅ Using service account (from env) for Firebase Admin');
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  options.credential = admin.credential.applicationDefault();
-  console.log('✅ Using application default credentials for Firebase Admin');
+    options.credential = admin.credential.applicationDefault();
+    console.log('✅ Using application default credentials for Firebase Admin');
   } else {
     // For development/testing, initialize without credentials but with project info
     console.log('⚠️  No service account provided, initializing Firebase Admin for database-only access');
@@ -70,10 +81,10 @@ if (!admin.apps.length) {
 
   try {
     admin.initializeApp(options);
-    console.log('Firebase Admin initialized');
+    console.log('✅ Firebase Admin initialized');
     firebaseInitialized = true;
   } catch (err) {
-    console.error('Firebase Admin initialization failed:', err);
+    console.error('⚠️  Firebase Admin initialization failed:', err);
     console.log('   Will run in test mode. Some features may not work.');
     // Don't throw - allow server to start for testing
   }
@@ -85,27 +96,27 @@ export const adminDb = (() => {
     if (firebaseInitialized && admin.apps && admin.apps.length > 0) {
       // Try to use real database if Firebase is initialized
       if (typeof (admin as any).database === 'function') {
-        console.log('Using real Firebase Realtime Database');
+        console.log('✅ Using real Firebase Realtime Database');
         return (admin as any).database();
       }
     }
     
-    console.warn('Using mock database - data will not persist');
+    console.warn('⚠️  Using mock database - data will not persist');
     return {
       ref: (path: string) => ({
         set: (data: any) => {
-          console.log(`Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
+          console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
         get: () => Promise.resolve({ val: () => null })
       })
     } as any;
   } catch (err: any) {
-    console.warn('Database initialization failed, using mock:', err.message);
+    console.warn('⚠️  Database initialization failed, using mock:', err.message);
     return {
       ref: (path: string) => ({
         set: (data: any) => {
-          console.log(`Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
+          console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
         get: () => Promise.resolve({ val: () => null })

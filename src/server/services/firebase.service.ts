@@ -14,7 +14,7 @@ import {
   DataSnapshot,
   Database,
 } from 'firebase/database';
-import { loadFirebaseConfig } from '../config/firebase.config';
+import { firebaseConfig } from '../config/firebase.config';
 
 interface QueryOptions {
   orderBy?: string;
@@ -38,7 +38,6 @@ export class FirebaseService {
 
   private async initializeFirebase() {
     try {
-      const firebaseConfig = await loadFirebaseConfig();
       const app = initializeApp(firebaseConfig);
       this.database = getDatabase(app);
       console.log('Firebase initialized successfully');

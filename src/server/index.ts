@@ -4,9 +4,6 @@ import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
-// Ensure firebase-admin is initialized on server start
-import './services/firebase-admin.service';
-
 // Detect if running in Devvit context or standalone
 const isDevvitContext = process.env.DEVVIT_EXECUTION_ID !== undefined;
 

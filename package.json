@@ -15,7 +15,7 @@
     "dev": "concurrently -k -p \"[{name}]\" -n \"CLIENT,SERVER,DEVVIT\" -c \"blue,green,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:devvit\"",
     "dev:client": "cd src/client && vite build --watch",
     "dev:server": "cd src/server && vite build --watch",
-    "dev:devvit": "npx @devvit/cli playtest",
+    "dev:devvit": "dotenv -e .env -- npx @devvit/cli playtest",
     "dev:local": "npm run build:local && node dist/local-server/local-dev.cjs",
     "dev:vite": "cd src/client && vite --port 7474",
     "lint": "eslint ./src",
