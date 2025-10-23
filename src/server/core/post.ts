@@ -8,6 +8,7 @@ export const createPost = async () => {
 
   return await reddit.submitCustomPost({
     splash: {
+      // Splash Screen Configuration
       appDisplayName: 'acmdevvit',
       backgroundUri: 'default-splash.png',
       buttonLabel: 'Tap to Start',

@@ -5,6 +5,7 @@ import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/ty
 import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
+import levelRoutes from './routes/levels.routes';
 // Ensure firebase-admin is initialized on server start
 import './services/firebase-admin.service';
 import { logFirebaseHealth, checkFirebaseHealth } from './utils/firebase-health-check';
@@ -213,6 +214,9 @@ function startServer() {
   // Admin routes - protected by admin middleware
   app.use('/api/admin', adminRoutes);
 
+  // level routes
+  app.use('/api/levels', levelRoutes);  
+  
   // Health check for standalone mode
   if (!isDevvitContext) {
     app.get('/health', async (_req, res) => {

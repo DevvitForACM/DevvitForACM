@@ -22,7 +22,7 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
 
   // validate shape
   if (typeof payload.uid !== 'string' || typeof payload.username !== 'string') {
-    return res.status(401).json({ error: 'Invalid token payload' });
+  return res.status(401).json({ error: 'Invalid token payload' });
   }
 
   req.user = { uid: payload.uid, username: payload.username };
