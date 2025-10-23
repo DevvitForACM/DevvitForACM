@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "krishnadevvit",
+  "name": "devvit",
   "version": "0.0.0",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -17,6 +17,9 @@
     "dev:server": "cd src/server && vite build --watch",
     "dev:devvit": "npx @devvit/cli playtest",
     "dev:local": "npm run build:local && node dist/local-server/local-dev.cjs",
+    "dev:frontend": "cd src/client && vite --port 5173",
+    "dev:backend": "npm run build:local && node dist/local-server/local-dev.cjs",
+    "start:local": "concurrently -k -p \"[{name}]\" -n \"FRONTEND,BACKEND\" -c \"cyan,yellow\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:vite": "cd src/client && vite --port 7474",
     "lint": "eslint ./src",
     "lint:fix": "eslint --fix ./src",

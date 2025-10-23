@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevvitForACM - Local Development</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f6f7f8;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .app-frame {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: 80vh;
+        }
+        .app-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .status {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-ok {
+            background: #e8f5e8;
+            color: #2d5a2d;
+        }
+        .status-error {
+            background: #ffeaea;
+            color: #d63031;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 DevvitForACM - Local Development</h1>
+            <p>Testing your app locally before deploying to Reddit</p>
+            
+            <div class="status" id="status">
+                <div class="status-item status-ok">Frontend: Ready</div>
+                <div class="status-item status-ok">Backend: Ready</div>
+                <div class="status-item status-ok">Firebase: Connected</div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <strong>Available Endpoints:</strong><br>
+                • <a href="http://localhost:3000/health" target="_blank">Health Check</a><br>
+                • <a href="http://localhost:3000/api/leaderboard" target="_blank">Leaderboard API</a><br>
+                • <a href="http://localhost:3000/auth/reddit" target="_blank">Reddit Auth</a>
+            </div>
+        </div>
+        
+        <div class="app-frame">
+            <iframe src="dist/client/index.html" title="DevvitForACM App"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Check backend status
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                console.log('Backend status:', data);
+            } catch (error) {
+                console.error('Backend not available:', error);
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML = `
+                    <div class="status-item status-error">Backend: Not Running</div>
+                    <div class="status-item status-ok">Frontend: Ready</div>
+                `;
+            }
+        }
+        
+        // Check status on load
+        setTimeout(checkStatus, 1000);
+    </script>
+</body>
+</html>

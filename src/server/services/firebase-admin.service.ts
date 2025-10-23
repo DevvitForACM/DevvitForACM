@@ -7,6 +7,8 @@ if (!process.env.FIREBASE_DATABASE_URL && typeof require !== 'undefined') {
   }
 }
 
+import * as admin from 'firebase-admin';
+
 // Helper to accept either uppercase or camelCase env keys
 function firstEnv(...names: string[]) {
   for (const n of names) {
@@ -15,89 +17,174 @@ function firstEnv(...names: string[]) {
   return undefined;
 }
 
-import * as admin from 'firebase-admin';
-// no filesystem imports needed; credentials come from environment variables
+// Validate required environment variables
+function validateEnvironmentVariables(): { isValid: boolean; missingVars: string[] } {
+  const requiredVars = [
+    { key: 'FIREBASE_PROJECT_ID', aliases: ['FIREBASE_PROJECT_ID', 'firebaseProjectId'] },
+    { key: 'FIREBASE_DATABASE_URL', aliases: ['FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl'] },
+    { key: 'FIREBASE_CLIENT_EMAIL', aliases: ['FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail'] },
+    { key: 'FIREBASE_PRIVATE_KEY', aliases: ['FIREBASE_PRIVATE_KEY', 'firebasePrivateKey'] }
+  ];
 
-// Build service account credentials from environment variables if provided.
-// Required fields for a service account credential are project_id, client_email and private_key.
-let serviceAccount: admin.ServiceAccount | undefined;
-const saProjectId = firstEnv('FIREBASE_PROJECT_ID', 'firebaseProjectId');
-const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail');
-const saPrivateKeyRaw = firstEnv('FIREBASE_PRIVATE_KEY', 'firebasePrivateKey');
-if (saClientEmail && saPrivateKeyRaw && saProjectId) {
-  // Private key in env commonly contains literal "\\n" sequences. Replace them with actual newlines.
-  const privateKey = saPrivateKeyRaw.includes('\\n') ? saPrivateKeyRaw.replace(/\\n/g, '\n') : saPrivateKeyRaw;
-  serviceAccount = {
-    projectId: saProjectId,
-    clientEmail: saClientEmail,
-    privateKey,
-  } as admin.ServiceAccount;
-  console.log('✅ Using Firebase service account from environment variables');
-} else {
-  console.log('⚠️  Firebase service account environment variables not fully provided (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)');
-  console.log('   Falling back to application default credentials or limited test mode.');
+  const missingVars: string[] = [];
+
+  for (const { key, aliases } of requiredVars) {
+    if (!firstEnv(...aliases)) {
+      missingVars.push(key);
+    }
+  }
+
+  return {
+    isValid: missingVars.length === 0,
+    missingVars
+  };
 }
 
-let firebaseInitialized = false;
+// Initialize Firebase Admin SDK
+class FirebaseAdminService {
+  private static instance: FirebaseAdminService;
+  private initialized = false;
+  private initializationError: Error | null = null;
 
-if (!admin.apps.length) {
-  const options: admin.AppOptions = {};
+  constructor() {
+    if (FirebaseAdminService.instance) {
+      return FirebaseAdminService.instance;
+    }
 
-  // Always set database URL if available
-  const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl');
-  if (databaseUrl) {
-    options.databaseURL = databaseUrl;
-    console.log('✅ Using Firebase Database URL:', databaseUrl);
+    this.initializeFirebaseAdmin();
+    FirebaseAdminService.instance = this;
   }
 
-  // Set project ID from environment
-  if (saProjectId) {
-    options.projectId = saProjectId;
-    console.log('✅ Using Firebase Project ID:', saProjectId);
+  private initializeFirebaseAdmin(): void {
+    try {
+      // Skip initialization if already initialized
+      if (admin.apps.length > 0) {
+        console.log('✅ Firebase Admin already initialized');
+        this.initialized = true;
+        return;
+      }
+
+      // Validate environment variables
+      const { isValid, missingVars } = validateEnvironmentVariables();
+
+      if (!isValid) {
+        const errorMsg = `Missing required Firebase environment variables: ${missingVars.join(', ')}`;
+        console.error('❌ Firebase Admin initialization failed:', errorMsg);
+        console.error('   Please check your .env file and ensure all required variables are set.');
+        this.initializationError = new Error(errorMsg);
+        return;
+      }
+
+      // Build service account credentials from environment variables
+      const saProjectId = firstEnv('FIREBASE_PROJECT_ID', 'firebaseProjectId')!;
+      const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail')!;
+      const saPrivateKeyRaw = firstEnv('FIREBASE_PRIVATE_KEY', 'firebasePrivateKey')!;
+      const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl')!;
+
+      // Private key in env commonly contains literal "\\n" sequences. Replace them with actual newlines.
+      const privateKey = saPrivateKeyRaw.includes('\\n')
+        ? saPrivateKeyRaw.replace(/\\n/g, '\n')
+        : saPrivateKeyRaw;
+
+      const serviceAccount: admin.ServiceAccount = {
+        projectId: saProjectId,
+        clientEmail: saClientEmail,
+        privateKey,
+      };
+
+      const options: admin.AppOptions = {
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: databaseUrl,
+        projectId: saProjectId,
+      };
+
+      admin.initializeApp(options);
+
+      console.log('✅ Firebase Admin SDK initialized successfully');
+      console.log(`   Project ID: ${saProjectId}`);
+      console.log(`   Database URL: ${databaseUrl}`);
+      console.log(`   Service Account: ${saClientEmail}`);
+
+      this.initialized = true;
+    } catch (error) {
+      const errorMsg = `Firebase Admin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error('❌', errorMsg);
+      this.initializationError = new Error(errorMsg);
+    }
   }
 
-  if (serviceAccount) {
-  options.credential = admin.credential.cert(serviceAccount as admin.ServiceAccount);
-  console.log('✅ Using service account (from env) for Firebase Admin');
-  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  options.credential = admin.credential.applicationDefault();
-  console.log('✅ Using application default credentials for Firebase Admin');
-  } else {
-    // For development/testing, initialize without credentials but with project info
-    console.log('⚠️  No service account provided, initializing Firebase Admin for database-only access');
-    console.log('   User authentication will work in limited mode.');
+  public isInitialized(): boolean {
+    return this.initialized;
   }
+
+  public getInitializationError(): Error | null {
+    return this.initializationError;
+  }
+
+  public throwIfNotInitialized(): void {
+    if (!this.initialized) {
+      throw this.initializationError || new Error('Firebase Admin SDK not initialized');
+    }
+  }
+}
+
+// Create singleton instance
+const firebaseAdminService = new FirebaseAdminService();
+
+// Export Firebase Admin Database with proper error handling
+export const getAdminDatabase = () => {
+  firebaseAdminService.throwIfNotInitialized();
 
   try {
-    admin.initializeApp(options);
-    console.log('✅ Firebase Admin initialized');
-    firebaseInitialized = true;
-  } catch (err) {
-    console.error('⚠️  Firebase Admin initialization failed:', err);
-    console.log('   Will run in test mode. Some features may not work.');
-    // Don't throw - allow server to start for testing
+    return admin.database();
+  } catch (error) {
+    throw new Error(`Failed to get Firebase Admin Database: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-}
+};
 
-// Export a guarded adminDb to provide a clearer error when the DB isn't available or not initialized.
+// Export Firebase Admin Auth with proper error handling
+export const getAdminAuth = (): admin.auth.Auth => {
+  firebaseAdminService.throwIfNotInitialized();
+
+  try {
+    return admin.auth();
+  } catch (error) {
+    throw new Error(`Failed to get Firebase Admin Auth: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Export Firebase Admin Firestore with proper error handling
+export const getAdminFirestore = () => {
+  firebaseAdminService.throwIfNotInitialized();
+
+  try {
+    return admin.firestore();
+  } catch (error) {
+    throw new Error(`Failed to get Firebase Admin Firestore: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Legacy exports for backward compatibility
 export const adminDb = (() => {
   try {
-    if (firebaseInitialized && admin.apps && admin.apps.length > 0) {
-      // Try to use real database if Firebase is initialized
-      if (typeof (admin as any).database === 'function') {
-        console.log('✅ Using real Firebase Realtime Database');
-        return (admin as any).database();
-      }
+    if (firebaseAdminService.isInitialized()) {
+      return getAdminDatabase();
     }
-    
-    console.warn('⚠️  Using mock database - data will not persist');
+
+    console.warn('⚠️  Firebase Admin not initialized, using mock database');
     return {
       ref: (path: string) => ({
         set: (data: any) => {
           console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
-        get: () => Promise.resolve({ val: () => null })
+        get: () => Promise.resolve({ val: () => null }),
+        push: () => ({ key: 'mock-key' }),
+        remove: () => Promise.resolve(),
+        update: (_data: any) => Promise.resolve(),
+        once: () => Promise.resolve({ val: () => null }),
+        on: () => () => { },
+        off: () => { }
       })
     } as any;
   } catch (err: any) {
@@ -114,23 +201,22 @@ export const adminDb = (() => {
   }
 })();
 
-// Safe wrapper for admin.auth() that handles initialization errors
 export const safeAdminAuth = () => {
   try {
-    if (!firebaseInitialized || !admin.apps || !admin.apps.length) {
-      throw new Error('Firebase Admin not initialized - running in test mode');
-    }
-    // Try to get auth, but it might fail without proper credentials
-    return admin.auth();
+    return getAdminAuth();
   } catch (err: any) {
     console.warn('Firebase Admin Auth not available:', err.message);
-    console.warn('Running in limited mode - user creation will be simulated');
+    console.warn('Running in limited mode - user operations will be simulated');
     // Return a mock auth object that simulates successful operations
     return {
       getUser: (uid: string) => Promise.reject(new Error(`User ${uid} not found in test mode`)),
-      createUser: (userData: any) => Promise.resolve({ uid: userData.uid || 'test-uid', displayName: userData.displayName })
+      createUser: (userData: any) => Promise.resolve({ uid: userData.uid || 'test-uid', displayName: userData.displayName }),
+      updateUser: (uid: string, userData: any) => Promise.resolve({ uid, ...userData }),
+      deleteUser: (_uid: string) => Promise.resolve(),
+      listUsers: () => Promise.resolve({ users: [] })
     } as any;
   }
 };
 
-export {admin};
+// Export the service instance and admin for advanced usage
+export { firebaseAdminService, admin };

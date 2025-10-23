@@ -18,17 +18,29 @@ const envMap: Record<string, string[]> = {
   FIREBASE_APP_ID: ['FIREBASE_APP_ID', 'firebaseAppId'],
   FIREBASE_MEASUREMENT_ID: ['FIREBASE_MEASUREMENT_ID', 'firebaseMeasurementId'],
   FIREBASE_DATABASE_URL: ['FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl'],
+  FIREBASE_CLIENT_EMAIL: ['FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail'],
+  FIREBASE_PRIVATE_KEY: ['FIREBASE_PRIVATE_KEY', 'firebasePrivateKey'],
 };
 
-const missingVars = Object.entries(envMap)
-  .filter(([_key, aliases]) => !firstEnv(...aliases))
-  .map(([key]) => key);
-if (missingVars.length > 0) {
-  console.warn('⚠️  Missing Firebase environment variables:', missingVars.join(', '));
-  console.warn('   Some Firebase features may not work properly.');
+// Separate client-side and admin-side required variables
+const clientRequiredVars = ['FIREBASE_API_KEY', 'FIREBASE_AUTH_DOMAIN', 'FIREBASE_PROJECT_ID', 'FIREBASE_APP_ID'];
+const adminRequiredVars = ['FIREBASE_PROJECT_ID', 'FIREBASE_DATABASE_URL', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+
+const missingClientVars = clientRequiredVars.filter(key => !firstEnv(...(envMap[key] as string[])));
+const missingAdminVars = adminRequiredVars.filter(key => !firstEnv(...(envMap[key] as string[])));
+
+if (missingClientVars.length > 0) {
+  console.warn('⚠️  Missing Firebase client environment variables:', missingClientVars.join(', '));
+  console.warn('   Client-side Firebase features may not work properly.');
+}
+
+if (missingAdminVars.length > 0) {
+  console.warn('⚠️  Missing Firebase Admin environment variables:', missingAdminVars.join(', '));
+  console.warn('   Server-side admin operations may not work properly.');
 }
 
 const measurementId = firstEnv(...(envMap.FIREBASE_MEASUREMENT_ID as string[]));
+const databaseURL = firstEnv(...(envMap.FIREBASE_DATABASE_URL as string[]));
 
 export const firebaseConfig = {
   apiKey: firstEnv(...envMap.FIREBASE_API_KEY as string[]) || 'fake-api-key',
@@ -37,5 +49,14 @@ export const firebaseConfig = {
   storageBucket: firstEnv(...envMap.FIREBASE_STORAGE_BUCKET as string[]) || 'fake-project.appspot.com',
   messagingSenderId: firstEnv(...envMap.FIREBASE_MESSAGING_SENDER_ID as string[]) || '123456789',
   appId: firstEnv(...envMap.FIREBASE_APP_ID as string[]) || '1:123456789:web:fake',
-  ...(measurementId ? { measurementId } : {})
+  ...(measurementId ? { measurementId } : {}),
+  ...(databaseURL ? { databaseURL } : {})
+};
+
+// Export admin-specific configuration
+export const firebaseAdminConfig = {
+  projectId: firstEnv(...envMap.FIREBASE_PROJECT_ID as string[]),
+  databaseURL: firstEnv(...envMap.FIREBASE_DATABASE_URL as string[]),
+  clientEmail: firstEnv(...envMap.FIREBASE_CLIENT_EMAIL as string[]),
+  privateKey: firstEnv(...envMap.FIREBASE_PRIVATE_KEY as string[])
 };
