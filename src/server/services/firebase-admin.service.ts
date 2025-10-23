@@ -47,7 +47,7 @@ if (!admin.apps.length) {
   const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl');
   if (databaseUrl) {
     options.databaseURL = databaseUrl;
-    console.log('✅ Using Firebase Database URL:', databaseUrl);
+    console.log('Using Firebase Database URL:', databaseUrl);
   }
 
   // Set project ID from environment
@@ -70,10 +70,10 @@ if (!admin.apps.length) {
 
   try {
     admin.initializeApp(options);
-    console.log('✅ Firebase Admin initialized');
+    console.log('Firebase Admin initialized');
     firebaseInitialized = true;
   } catch (err) {
-    console.error('⚠️  Firebase Admin initialization failed:', err);
+    console.error('Firebase Admin initialization failed:', err);
     console.log('   Will run in test mode. Some features may not work.');
     // Don't throw - allow server to start for testing
   }
@@ -85,27 +85,27 @@ export const adminDb = (() => {
     if (firebaseInitialized && admin.apps && admin.apps.length > 0) {
       // Try to use real database if Firebase is initialized
       if (typeof (admin as any).database === 'function') {
-        console.log('✅ Using real Firebase Realtime Database');
+        console.log('Using real Firebase Realtime Database');
         return (admin as any).database();
       }
     }
     
-    console.warn('⚠️  Using mock database - data will not persist');
+    console.warn('Using mock database - data will not persist');
     return {
       ref: (path: string) => ({
         set: (data: any) => {
-          console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
+          console.log(`Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
         get: () => Promise.resolve({ val: () => null })
       })
     } as any;
   } catch (err: any) {
-    console.warn('⚠️  Database initialization failed, using mock:', err.message);
+    console.warn('Database initialization failed, using mock:', err.message);
     return {
       ref: (path: string) => ({
         set: (data: any) => {
-          console.log(`💾 Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
+          console.log(`Mock DB SET ${path}:`, JSON.stringify(data, null, 2));
           return Promise.resolve();
         },
         get: () => Promise.resolve({ val: () => null })
