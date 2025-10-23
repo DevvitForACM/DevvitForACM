@@ -6,6 +6,7 @@ import {
   deleteUser, 
   updateUserRole 
 } from '../controllers/admin.controller';
+import adminLevelRoutes from './admin-levels.routes';
 
 const router = Router();
 
@@ -37,5 +38,8 @@ router.get('/users', getAllUsers);
 router.get('/users/:username', validateUsername, getUserByUsername);
 router.delete('/users/:username', validateUsername, deleteUser);
 router.put('/users/:username/role', validateUsername, updateUserRole);
+
+// Admin level management routes
+router.use('/levels', adminLevelRoutes);
 
 export default router;
