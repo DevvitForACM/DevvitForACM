@@ -1,23 +1,19 @@
 import fetch from 'node-fetch';
 import { adminDb, safeAdminAuth } from './firebase-admin.service';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET, REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_REDIRECT_URI } from '../variables';
 
-// Helper lookup to accept either SNAKE_CASE or camelCase environment keys
-function firstEnv(...names: string[]) {
-  for (const n of names) {
-    if (typeof process.env[n] !== 'undefined' && process.env[n] !== '') return process.env[n];
-  }
-  return undefined;
-}
-
-// Read JWT secret from environment. Do not fall back to a hardcoded value in production.
-const JWT_SECRET = firstEnv('JWT_SECRET', 'jwtSecret');
+// Keep warnings for missing values
 if (!JWT_SECRET) {
   console.warn('⚠️  JWT_SECRET is not set in environment. Server JWT operations will fail without it.');
 }
-const REDDIT_CLIENT_ID = firstEnv('REDDIT_CLIENT_ID', 'redditClientId');
-const REDDIT_CLIENT_SECRET = firstEnv('REDDIT_CLIENT_SECRET', 'redditClientSecret');
-const REDDIT_REDIRECT_URI = firstEnv('REDDIT_REDIRECT_URI', 'redditRedirectUri');
+if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
+  console.error('⚠️  Missing Reddit OAuth credentials:');
+  console.error('   REDDIT_CLIENT_ID:', REDDIT_CLIENT_ID ? '✓ Set' : '❌ Missing');
+  console.error('   REDDIT_CLIENT_SECRET:', REDDIT_CLIENT_SECRET ? '✓ Set' : '❌ Missing');
+  console.error('   REDDIT_REDIRECT_URI:', REDDIT_REDIRECT_URI ? '✓ Set' : '❌ Missing');
+  console.error('   Please check your .env file');
+}
 
 if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
   console.error('⚠️  Missing Reddit OAuth credentials:');
@@ -42,7 +38,7 @@ interface RedditUser {
 
 async function exchangeRedditCode(code: string): Promise<{ access_token: string; [k: string]: unknown }> {
   if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
-    throw new Error('Reddit OAuth credentials not configured. Please check your .env file.');
+    throw new Error('Reddit OAuth credentials not configured. Please check your configuration.');
   }
 
   // Reddit requires Basic auth with client_id:client_secret

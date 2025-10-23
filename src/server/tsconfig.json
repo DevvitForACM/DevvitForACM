@@ -5,14 +5,14 @@
 
     "types": ["node"],
 
-    "rootDir": ".",
+  "rootDir": "../..",
 
     "outDir": "../../dist/types/server",
 
     "tsBuildInfoFile": "../../dist/tsconfig.tsbuildinfo"
   },
   // https://github.com/Microsoft/TypeScript/issues/25636
-  "include": ["**/*", "**/*.json"],
+  "include": ["**/*", "**/*.json", "../../variables.ts"],
   "exclude": ["**/*.test.ts"],
   "references": [{ "path": "../shared" }]
 }

@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { createOrGetUserFromReddit } from '../services/auth.service';
+import { REDDIT_CLIENT_ID, REDDIT_REDIRECT_URI, PORT } from '../variables';
+import { settings } from '@devvit/web/server';
 
 export async function redditCallback(req: Request, res: Response) {
   const { code, state } = req.query;
@@ -33,14 +35,18 @@ export async function redditCallback(req: Request, res: Response) {
 }
 
 export async function redditAuthStatus(_req: Request, res: Response) {
-  const clientId = process.env.REDDIT_CLIENT_ID;
-  const redirectUri = process.env.REDDIT_REDIRECT_URI;
+  const clientId = REDDIT_CLIENT_ID;
+  const redirectUri = REDDIT_REDIRECT_URI;
+  const newvar = await settings.get('redditClientId');
+  console.log('Newvar from settings:', newvar);
+
+  // Note: REDDIT_CLIENT_SECRET is still read from process.env in auth.service; keep that behavior there
   const hasCredentials = !!(clientId && process.env.REDDIT_CLIENT_SECRET && redirectUri);
   
   return res.json({
     service: 'Reddit OAuth Backend',
     status: 'running',
-    port: process.env.PORT || 3000,
+  port: PORT || 3000,
     timestamp: new Date().toISOString(),
     config: {
       hasRedditCredentials: hasCredentials,

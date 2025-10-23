@@ -1,4 +1,6 @@
 // Load environment variables first if not already loaded
+import { settings } from '@devvit/web/server';
+
 if (!process.env.FIREBASE_DATABASE_URL && typeof require !== 'undefined') {
   try {
     require('dotenv').config();
@@ -15,6 +17,14 @@ function firstEnv(...names: string[]) {
   return undefined;
 }
 import * as admin from 'firebase-admin';
+import {
+  FIREBASE_DATABASE_URL,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_CLIENT_EMAIL,
+  FIREBASE_PRIVATE_KEY,
+  
+} from '../variables' ;
+// console.log('JWT_SECRET_new in firebase-admin.service:', JWT_SECRET_new);
 
 // Minimal local types to avoid depending on firebase-admin's exported type names
 type ServiceAccount = {
@@ -32,9 +42,9 @@ type AppOptions = {
 // Build service account credentials from environment variables if provided.
 // Required fields for a service account credential are project_id, client_email and private_key.
 let serviceAccount: ServiceAccount | undefined;
-const saProjectId = firstEnv('FIREBASE_PROJECT_ID', 'firebaseProjectId');
-const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail');
-const saPrivateKeyRaw = firstEnv('FIREBASE_PRIVATE_KEY', 'firebasePrivateKey');
+const saProjectId = firstEnv('FIREBASE_PROJECT_ID', 'firebaseProjectId') || FIREBASE_PROJECT_ID;
+const saClientEmail = firstEnv('FIREBASE_CLIENT_EMAIL', 'firebaseClientEmail') || FIREBASE_CLIENT_EMAIL;
+const saPrivateKeyRaw = firstEnv('FIREBASE_PRIVATE_KEY', 'firebasePrivateKey') || FIREBASE_PRIVATE_KEY;
 if (saClientEmail && saPrivateKeyRaw && saProjectId) {
   // Private key in env commonly contains literal "\\n" sequences. Replace them with actual newlines.
   const privateKey = saPrivateKeyRaw.includes('\\n') ? saPrivateKeyRaw.replace(/\\n/g, '\n') : saPrivateKeyRaw;
@@ -43,6 +53,7 @@ if (saClientEmail && saPrivateKeyRaw && saProjectId) {
     clientEmail: saClientEmail,
     privateKey,
   } as ServiceAccount;
+  
   console.log('✅ Using Firebase service account from environment variables');
 } else {
   console.log('⚠️  Firebase service account environment variables not fully provided (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)');
@@ -55,7 +66,7 @@ if (!admin.apps.length) {
   const options: AppOptions = {};
 
   // Always set database URL if available
-  const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl');
+  const databaseUrl = firstEnv('FIREBASE_DATABASE_URL', 'firebaseDatabaseUrl') || FIREBASE_DATABASE_URL;
   if (databaseUrl) {
     options.databaseURL = databaseUrl;
     console.log('✅ Using Firebase Database URL:', databaseUrl);
