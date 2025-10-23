@@ -18,7 +18,10 @@ export default function Play() {
   const config = getPhaserConfig(level);
 
   return (
-    <main className="w-screen h-screen overflow-hidden" style={{ background: level.bgColor }}>
+    <main
+      className="w-screen h-screen overflow-hidden"
+      style={{ background: level.bgColor }}
+    >
       <PhaserContainer config={config} />
     </main>
   );

@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 export default function Home() {
   const { navigate, location } = useRouting();
 
-  useEffect(() => {
-  }, [location]);
+  useEffect(() => {}, [location]);
 
   return (
     <div className="p-8 text-center">

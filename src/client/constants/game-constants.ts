@@ -1,4 +1,3 @@
-// src/client/constants/game-constants.ts
 import Phaser from "phaser";
 
 /* ----------------------------------------------
