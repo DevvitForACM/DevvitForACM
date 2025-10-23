@@ -9,6 +9,7 @@ import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
+import partyRoutes from './routes/party.routes';
 // Ensure firebase-admin is initialized on server start
 import './services/firebase-admin.service';
 
@@ -202,6 +203,9 @@ app.use('/api/leaderboard', leaderboardRoutes);
 
 // Auth routes (Reddit OAuth)
 app.use('/auth', authRoutes);
+
+// Party routes
+app.use('/api/party', partyRoutes);
 
 // Health check for standalone mode
 if (!isDevvitContext) {
