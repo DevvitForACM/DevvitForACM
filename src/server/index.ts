@@ -2,8 +2,11 @@ import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
+import levelRoutes from './routes/levels.routes';
 // Ensure firebase-admin is initialized on server start
 import './services/firebase-admin.service';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Detect if running in Devvit context or standalone
 const isDevvitContext = process.env.DEVVIT_EXECUTION_ID !== undefined;
@@ -195,6 +198,8 @@ app.use('/api/leaderboard', leaderboardRoutes);
 
 // Auth routes (Reddit OAuth)
 app.use('/auth', authRoutes);
+// level routes
+app.use('/api/levels', levelRoutes);
 
 // Health check for standalone mode
 if (!isDevvitContext) {
@@ -228,3 +233,6 @@ initializeServer().catch(err => {
   console.error('Failed to initialize server:', err);
   process.exit(1);
 });
+
+
+

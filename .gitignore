@@ -24,3 +24,4 @@ src/server/serviceAccountKey.json
 
 # Server build output
 src/server/dist
+serviceAccount.json
