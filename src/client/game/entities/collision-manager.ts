@@ -9,9 +9,6 @@ export interface CollisionBounds {
 }
 
 export class CollisionManager {
-  /**
-   * Check if two axis-aligned bounding boxes (AABB) are colliding
-   */
   public static checkAABB(boundsA: CollisionBounds, boundsB: CollisionBounds): boolean {
     return (
       boundsA.x < boundsB.x + boundsB.width &&
@@ -21,11 +18,7 @@ export class CollisionManager {
     );
   }
 
-  /**
-   * Check collisions between all entities
-   */
   public static checkCollisions(entities: BaseEntity[]): void {
-    // Only check active entities
     const activeEntities = entities.filter(entity => entity.active && entity.canCollide);
 
     for (let i = 0; i < activeEntities.length; i++) {
@@ -34,20 +27,14 @@ export class CollisionManager {
         const entityB = activeEntities[j];
 
         if (entityA && entityB && this.checkAABB(entityA.getBounds(), entityB.getBounds())) {
-          // Trigger collision events for both entities
           entityA.onCollision(entityB);
           entityB.onCollision(entityA);
-          
-          // Handle collision response
           CollisionResponse.handleCollision(entityA, entityB);
         }
       }
     }
   }
 
-  /**
-   * Check collision between a specific entity and all others
-   */
   public static checkEntityCollisions(entity: BaseEntity, others: BaseEntity[]): BaseEntity[] {
     if (!entity.active || !entity.canCollide) {
       return [];
@@ -63,11 +50,8 @@ export class CollisionManager {
 
       if (this.checkAABB(entityBounds, other.getBounds())) {
         collisions.push(other);
-        // Trigger collision events
         entity.onCollision(other);
         other.onCollision(entity);
-        
-        // Handle collision response
         CollisionResponse.handleCollision(entity, other);
       }
     }
@@ -75,9 +59,6 @@ export class CollisionManager {
     return collisions;
   }
 
-  /**
-   * Get the collision side between two entities
-   */
   public static getCollisionSide(entityA: BaseEntity, entityB: BaseEntity): 'top' | 'bottom' | 'left' | 'right' {
     const boundsA = entityA.getBounds();
     const boundsB = entityB.getBounds();

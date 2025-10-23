@@ -27,7 +27,6 @@ export class Spring extends BaseEntity {
 
       if (this.cooldownTimer <= 0) {
         this.cooldownTimer = 0;
-
         this.sprite.setScale(1, 1);
       }
     }
@@ -41,11 +40,8 @@ export class Spring extends BaseEntity {
   }
 
   private bounce(player: Player): void {
-    // Apply upward velocity to player (would need physics integration)
-    // For now, just move player up
-    player.y -= this.bounceForce / 10; // Simplified bounce
+    player.y -= this.bounceForce / 10;
     
-    // Visual effect
     this.sprite.setTint(0x00ff00);
     setTimeout(() => {
       this.sprite.clearTint();
@@ -56,7 +52,6 @@ export class Spring extends BaseEntity {
     if (this.cooldownTimer > 0) return;
 
     this.cooldownTimer = 0.3;
-
     this.sprite.setScale(1, 0.7);
   }
 

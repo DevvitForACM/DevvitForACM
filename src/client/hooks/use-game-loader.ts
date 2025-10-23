@@ -1,111 +1,96 @@
-/**
- * use-game-loader.ts
- * ------------------------------------------------
- * React hook to initialize and manage a Phaser Game.
- * Loads levels dynamically from backend API and converts
- * them using json-conversion.ts.
- * ------------------------------------------------
- */
+import { useState, useEffect, useRef } from 'react';
+import Phaser from 'phaser';
+import { createGameConfig } from '@/config/game-config';
+import type { LevelConfig } from '@/game/level/level-types';
 
-import { useEffect, useRef, useState } from "react";
-import Phaser from "phaser";
-import { loadLevel } from "../game/level/json-conversion";
-import { LevelData } from "../game/level/level-schema";
-import { getPhaserConfig } from "../config/game-config";
+export interface GameLoaderState {
+  isLoading: boolean;
+  isLoaded: boolean;
+  error: string | null;
+  game: Phaser.Game | null;
+}
 
-export function useGameLoader(levelId: string) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+export interface GameLoaderActions {
+  loadGame: (level: LevelConfig) => Promise<void>;
+  destroyGame: () => void;
+  restartGame: () => Promise<void>;
+}
+
+export function useGameLoader(): GameLoaderState & GameLoaderActions {
+  const [state, setState] = useState<GameLoaderState>({
+    isLoading: false,
+    isLoaded: false,
+    error: null,
+    game: null,
+  });
+
   const gameRef = useRef<Phaser.Game | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [levelData, setLevelData] = useState<LevelData | null>(null);
+  const currentLevelRef = useRef<LevelConfig | null>(null);
 
-  // 🔹 Fetch level data from backend (with simple caching)
-  useEffect(() => {
-    let isMounted = true;
+  const loadGame = async (level: LevelConfig): Promise<void> => {
+    try {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    async function fetchLevel() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const cacheKey = `level_${levelId}`;
-        const cached = sessionStorage.getItem(cacheKey);
-
-        if (cached) {
-          const cachedData = JSON.parse(cached) as LevelData;
-          if (isMounted) setLevelData(cachedData);
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch(`/api/levels/${levelId}`);
-        if (!res.ok) throw new Error(`Failed to load level ${levelId}`);
-
-        const data: LevelData = await res.json();
-        if (!data.objects || !Array.isArray(data.objects)) {
-          throw new Error("Invalid level data format");
-        }
-
-        sessionStorage.setItem(cacheKey, JSON.stringify(data));
-        if (isMounted) setLevelData(data);
-      } catch (err: any) {
-        if (isMounted) setError(err.message || "Failed to load level");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    fetchLevel();
-    return () => {
-      isMounted = false;
-    };
-  }, [levelId]);
-
-  // 🔹 Initialize Phaser once data is ready
-  useEffect(() => {
-    if (!containerRef.current || !levelData || error) return;
-
-    // Destroy any previous game instance
-    if (gameRef.current) {
-      gameRef.current.destroy(true);
-      gameRef.current = null;
-    }
-
-    const config: Phaser.Types.Core.GameConfig = {
-      ...getPhaserConfig(),
-      parent: containerRef.current,
-      scene: {
-        preload: preloadScene,
-        create: createScene,
-      },
-    };
-
-    const game = new Phaser.Game(config);
-    gameRef.current = game;
-
-    function preloadScene(this: Phaser.Scene) {
-      this.load.image("player", "/assets/player.png");
-      this.load.image("platform", "/assets/platform.png");
-      this.load.image("goal", "/assets/goal.png");
-      this.load.image("enemy", "/assets/enemy.png");
-    }
-
-    function createScene(this: Phaser.Scene) {
-      if (levelData) loadLevel(this, levelData);
-    }
-
-    return () => {
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;
       }
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const gameConfig = createGameConfig(level);
+      const game = new Phaser.Game(gameConfig);
+      
+      gameRef.current = game;
+      currentLevelRef.current = level;
+
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        isLoaded: true,
+        game: game,
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load game';
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+    }
+  };
+
+  const destroyGame = (): void => {
+    if (gameRef.current) {
+      gameRef.current.destroy(true);
+      gameRef.current = null;
+      currentLevelRef.current = null;
+    }
+
+    setState({
+      isLoading: false,
+      isLoaded: false,
+      error: null,
+      game: null,
+    });
+  };
+
+  const restartGame = async (): Promise<void> => {
+    if (currentLevelRef.current) {
+      await loadGame(currentLevelRef.current);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      destroyGame();
     };
-  }, [levelData, error]);
+  }, []);
 
   return {
-    containerRef,
-    loading,
-    error,
+    ...state,
+    loadGame,
+    destroyGame,
+    restartGame,
   };
 }

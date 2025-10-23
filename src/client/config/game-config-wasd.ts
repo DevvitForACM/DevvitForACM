@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { WasdScene } from '../game/scenes/wasd-scene';
+import { WasdScene } from '@/game/scenes/wasd-scene';
 
 export const wasdGameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

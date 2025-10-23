@@ -43,15 +43,8 @@ export default function Create() {
   const [scene, setScene] = useState<CreateScene | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [entityCount, setEntityCount] = useState(0);
-  const [
-    saveBanner,
-    setSaveBanner,
-  ] = useState<{
-    status: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  const [saveBanner, setSaveBanner] = useState<{ status: 'success' | 'error'; message: string; } | null>(null);
 
-  // IMPORTANT: Keep Phaser game config stable to avoid destroying/recreating the scene on React re-renders
   const config = useMemo(() => createBlankCanvasConfig('#f6f7f8'), []);
 
   useEffect(() => {
@@ -61,57 +54,43 @@ export default function Create() {
         const s = game.scene.getScene('CreateScene') as CreateScene;
         if (s) {
           setScene(s);
-          // Provide entity types for the scene
           s.registry.set('entityTypes', ENTITY_TYPES_DATA);
-          // If a selection already exists in UI, mirror it into scene now
+
           if (selectedEntity) {
-            // eslint-disable-next-line no-console
-            console.debug(
-              '[Create] scene attached: applying existing selection ->',
-              selectedEntity
-            );
             s.registry.set('selectedEntityType', selectedEntity);
             s.setSelectedEntityType(selectedEntity);
           }
-          s.events.on('entity-placed', () =>
-            setEntityCount(s.getAllEntities().length)
-          );
-          s.events.on('entity-removed', () =>
-            setEntityCount(s.getAllEntities().length)
-          );
+
+          s.events.on('entity-placed', () => setEntityCount(s.getAllEntities().length));
+          s.events.on('entity-removed', () => setEntityCount(s.getAllEntities().length));
           s.events.on('entities-cleared', () => setEntityCount(0));
+
           clearInterval(check);
         }
       }
     }, 100);
+
     return () => clearInterval(check);
   }, []);
 
   const handleSelect = (id: string) => {
-    // Toggle selection: clicking the active item deselects it
     const next = selectedEntity === id ? null : id;
     setSelectedEntity(next);
+
     if (scene) {
-      // eslint-disable-next-line no-console
-      console.debug('[Create] handleSelect ->', next);
       scene.setSelectedEntityType(next);
       scene.registry.set('selectedEntityType', next);
     }
   };
 
-  // Ensure selection is synced once scene becomes available or when selection changes
   useEffect(() => {
     if (!scene) return;
-    // eslint-disable-next-line no-console
-    console.debug('[Create] syncing selection to scene (effect) ->', selectedEntity);
     scene.registry.set('selectedEntityType', selectedEntity ?? null);
     scene.setSelectedEntityType(selectedEntity ?? null);
   }, [scene, selectedEntity]);
 
   const handleClear = () => {
-    // Unconditional clear for reliability
     scene?.clearAllEntities();
-    // Also clear current selection in both UI and scene registry
     setSelectedEntity(null);
     if (scene) {
       scene.setSelectedEntityType(null);
@@ -121,32 +100,34 @@ export default function Create() {
 
   const handleSave = () => {
     if (!scene) return;
+
     const GRID = 32;
     const entities = scene.getAllEntities();
-    // eslint-disable-next-line no-console
-    console.info('[Create] Saving level… entities:', entities.length);
 
     const ground = entities.filter((e: any) => {
       const t = String(e.type).toLowerCase().trim();
       return t === 'ground' || t === 'grass' || t === 'tile';
     });
 
-    // Build LevelData JSON
     const objects: LevelObject[] = [];
 
-    // Player from placed entity (singleton)
     const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
     const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
     const playerY = playerEnt ? playerEnt.gridY * GRID + GRID / 2 : 200;
-    objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
-    // Handle directional upvote/downvote entities
+    objects.push({
+      id: 'player_1',
+      type: LevelObjectType.Player,
+      position: { x: playerX, y: playerY },
+      physics: { type: PhysicsType.Dynamic }
+    });
+
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
       if (t.startsWith('upvote-') || t.startsWith('downvote-')) {
         const x = e.gridX * GRID + GRID / 2;
         const y = e.gridY * GRID + GRID / 2;
-        // Map entity type to LevelObjectType enum
+
         let levelType: LevelObjectType;
         switch (t) {
           case 'upvote-1': levelType = LevelObjectType.UpvoteDown; break;
@@ -157,23 +138,26 @@ export default function Create() {
           case 'downvote-2': levelType = LevelObjectType.DownvoteLeft; break;
           case 'downvote-3': levelType = LevelObjectType.DownvoteUp; break;
           case 'downvote-4': levelType = LevelObjectType.DownvoteRight; break;
-          default: return; // skip unknown types
+          default: return;
         }
-        objects.push({ 
-          id: `${t.replace('-', '_')}_${idx + 1}`, 
-          type: levelType, 
-          position: { x, y } 
+
+        objects.push({
+          id: `${t.replace('-', '_')}_${idx + 1}`,
+          type: levelType,
+          position: { x, y }
         });
       }
     });
 
-    // Door -> Goal (singleton optional)
     const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
     if (doorEnt) {
-      objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: doorEnt.gridY * GRID + GRID / 2 } });
+      objects.push({
+        id: 'goal_1',
+        type: LevelObjectType.Goal,
+        position: { x: doorEnt.gridX * GRID + GRID / 2, y: doorEnt.gridY * GRID + GRID / 2 }
+      });
     }
 
-    // Platforms from ground cells
     ground.forEach((g: any, i: number) => {
       objects.push({
         id: `platform_${i + 1}`,
@@ -188,16 +172,15 @@ export default function Create() {
     const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
     const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
 
-    // Shift everything down so the lowest ground row sits near the bottom of the bounds for saved JSON too.
-    {
-      const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
-      if (platformYs.length > 0) {
-        const minGroundY = Math.min(...platformYs);
-        const desiredFloorY = height - 40; // margin from bottom
-        const deltaY = desiredFloorY - minGroundY;
-        if (Math.abs(deltaY) > 1) {
-          objects.forEach(o => { o.position.y += deltaY; });
-        }
+    const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
+    if (platformYs.length > 0) {
+      const minGroundY = Math.min(...platformYs);
+      const desiredFloorY = height - 40;
+      const deltaY = desiredFloorY - minGroundY;
+      if (Math.abs(deltaY) > 1) {
+        objects.forEach(o => {
+          o.position.y += deltaY;
+        });
       }
     }
 
@@ -212,14 +195,12 @@ export default function Create() {
       objects,
     };
 
-    // Save to localStorage and download file (with debug)
     try {
       const outStr = JSON.stringify(levelData);
       localStorage.setItem('editorLevelJSON', outStr);
       const bytes = outStr.length;
       const msg = `Saved level.json (${objects.length} objects, ${bytes} bytes)`;
-      // eslint-disable-next-line no-console
-      console.info('[Create] Save OK ->', { bytes, objects: objects.length, bounds: levelData.settings.bounds });
+
       setSaveBanner({ status: 'success', message: msg });
       setTimeout(() => setSaveBanner(null), 2500);
 
@@ -231,8 +212,6 @@ export default function Create() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[Create] Save failed:', e);
       setSaveBanner({ status: 'error', message: 'Save failed — check console' });
       setTimeout(() => setSaveBanner(null), 3000);
     }
@@ -240,14 +219,16 @@ export default function Create() {
 
   const handlePlay = () => {
     if (!scene) return;
-    // Prefer JSON from localStorage if saved; otherwise build one on the fly
+
     const saved = localStorage.getItem('editorLevelJSON');
     let levelData: LevelData | null = null;
-    if (!levelData && saved) {
-      try { levelData = JSON.parse(saved) as LevelData; } catch {}
-      // eslint-disable-next-line no-console
-      console.debug('[Create] Play: using saved JSON from localStorage ->', !!levelData);
+
+    if (saved) {
+      try {
+        levelData = JSON.parse(saved) as LevelData;
+      } catch {}
     }
+
     if (!levelData) {
       const GRID = 32;
       const entities = scene.getAllEntities();
@@ -255,23 +236,35 @@ export default function Create() {
         const t = String(e.type).toLowerCase().trim();
         return t === 'ground' || t === 'grass' || t === 'tile';
       });
+
       const objects: LevelObject[] = [];
-      // Player from placed entity (singleton)
+
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
       const playerY = playerEnt ? playerEnt.gridY * GRID + GRID / 2 : 200;
-      objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
-      // Door -> Goal (singleton optional)
+
+      objects.push({
+        id: 'player_1',
+        type: LevelObjectType.Player,
+        position: { x: playerX, y: playerY },
+        physics: { type: PhysicsType.Dynamic }
+      });
+
       const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
       if (doorEnt) {
-        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: doorEnt.gridY * GRID + GRID / 2 } });
+        objects.push({
+          id: 'goal_1',
+          type: LevelObjectType.Goal,
+          position: { x: doorEnt.gridX * GRID + GRID / 2, y: doorEnt.gridY * GRID + GRID / 2 }
+        });
       }
-      // Handle directional upvote/downvote entities in play mode too
+
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
         if (t.startsWith('upvote-') || t.startsWith('downvote-')) {
           const x = e.gridX * GRID + GRID / 2;
           const y = e.gridY * GRID + GRID / 2;
+
           let levelType: LevelObjectType;
           switch (t) {
             case 'upvote-1': levelType = LevelObjectType.UpvoteDown; break;
@@ -284,30 +277,53 @@ export default function Create() {
             case 'downvote-4': levelType = LevelObjectType.DownvoteRight; break;
             default: return;
           }
-          objects.push({ id: `${t.replace('-', '_')}_${idx + 1}`, type: levelType, position: { x, y } });
+
+          objects.push({
+            id: `${t.replace('-', '_')}_${idx + 1}`,
+            type: levelType,
+            position: { x, y }
+          });
         }
       });
+
       ground.forEach((g: any, i: number) => {
-        objects.push({ id: `platform_${i + 1}`, type: LevelObjectType.Platform, position: { x: g.gridX * GRID + GRID / 2, y: g.gridY * GRID + GRID / 2 }, scale: { x: 1, y: 1 }, physics: { type: PhysicsType.Static, isCollidable: true }, visual: { tint: COLORS.PLATFORM_ALT } });
+        objects.push({
+          id: `platform_${i + 1}`,
+          type: LevelObjectType.Platform,
+          position: { x: g.gridX * GRID + GRID / 2, y: g.gridY * GRID + GRID / 2 },
+          scale: { x: 1, y: 1 },
+          physics: { type: PhysicsType.Static, isCollidable: true },
+          visual: { tint: COLORS.PLATFORM_ALT }
+        });
       });
+
       const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
       const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
-      
-      // Shift everything down so the lowest ground row sits near the bottom of the bounds.
+
       const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
       if (platformYs.length > 0) {
         const minGroundY = Math.min(...platformYs);
-        const desiredFloorY = height - 40; // leave some margin from the bottom
+        const desiredFloorY = height - 40;
         const deltaY = desiredFloorY - minGroundY;
         if (Math.abs(deltaY) > 1) {
-          objects.forEach(o => { o.position.y += deltaY; });
+          objects.forEach(o => {
+            o.position.y += deltaY;
+          });
         }
       }
-      
-      levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#000000', bounds: { width, height } }, objects };
+
+      levelData = {
+        version: LEVEL_SCHEMA_VERSION,
+        name: 'Editor Level',
+        settings: {
+          gravity: { x: 0, y: 1 },
+          backgroundColor: '#000000',
+          bounds: { width, height }
+        },
+        objects
+      };
     }
 
-    // Start PlayScene with LevelData JSON (Matter loader path)
     scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
   };
 
@@ -323,12 +339,10 @@ export default function Create() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-50">
-      {/* Phaser Canvas */}
       <div className="absolute inset-0 z-0">
         <PhaserContainer config={config} />
       </div>
 
-      {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-white shadow-md">
         <div className="flex items-center justify-between p-3 sm:p-4">
           <div className="text-xs sm:text-sm text-gray-600">
@@ -360,20 +374,14 @@ export default function Create() {
         </div>
       </div>
 
-      {/* Save banner */}
       {saveBanner && (
-        <div
-          className={`absolute top-14 right-3 z-[60] px-3 py-2 rounded shadow text-sm font-medium ${
-            saveBanner.status === 'success'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-rose-600 text-white'
-          }`}
-        >
+        <div className={`absolute top-14 right-3 z-[60] px-3 py-2 rounded shadow text-sm font-medium ${
+          saveBanner.status === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+        }`}>
           {saveBanner.message}
         </div>
       )}
 
-      {/* Bottom Toolbox */}
       <div className="absolute bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t">
         <div className="overflow-x-auto">
           <div className="flex gap-2 sm:gap-3 p-2 sm:p-4 min-h-[80px] sm:min-h-[100px]">
@@ -384,25 +392,15 @@ export default function Create() {
                   key={entity.id}
                   onClick={() => !disabled && handleSelect(entity.id)}
                   disabled={disabled}
-                  className={`
-                    flex flex-col items-center justify-center
-                    min-w-[60px] sm:min-w-[80px] h-[64px] sm:h-[80px]
-                    p-2 sm:p-3 rounded-lg border-2
-                    transition-all duration-200 flex-shrink-0
-                    relative z-10
-                    ${
-                      selectedEntity === entity.id
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : disabled
-                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm cursor-pointer'
-                    }
-                  `}
+                  className={`flex flex-col items-center justify-center min-w-[60px] sm:min-w-[80px] h-[64px] sm:h-[80px] p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 flex-shrink-0 relative z-10 ${
+                    selectedEntity === entity.id
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : disabled
+                      ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm cursor-pointer'
+                  }`}
                   style={{
-                    backgroundColor:
-                      selectedEntity === entity.id
-                        ? `${entity.color}15`
-                        : 'white',
+                    backgroundColor: selectedEntity === entity.id ? `${entity.color}15` : 'white',
                     pointerEvents: 'auto',
                   }}
                 >
@@ -419,14 +417,11 @@ export default function Create() {
         </div>
       </div>
 
-      {/* Helper */}
       {entityCount === 0 && !selectedEntity && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
           <div className="text-center bg-white/90 p-4 sm:p-8 rounded-lg max-w-xs sm:max-w-md mx-4 pointer-events-none">
             <div className="text-4xl sm:text-6xl mb-2 sm:mb-4">🎮</div>
-            <div className="text-sm sm:text-lg font-semibold mb-2">
-              Start Creating!
-            </div>
+            <div className="text-sm sm:text-lg font-semibold mb-2">Start Creating!</div>
             <div className="text-xs sm:text-sm text-gray-600 space-y-1">
               <div>1. Click entity below</div>
               <div>2. Click canvas to place</div>

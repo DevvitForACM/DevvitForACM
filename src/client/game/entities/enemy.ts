@@ -36,14 +36,11 @@ export class Enemy extends BaseEntity {
 
   public override onCollision(other: BaseEntity): void {
     if (other instanceof Player && !this.isDead && !other.isDead) {
-      // Damage is applied by the player's collision handler
-      // We could add attack animations or sound effects here
       this.performAttack();
     }
   }
 
   private performAttack(): void {
-    // Visual feedback for attack
     this.sprite.setTint(0xff4444);
     setTimeout(() => {
       this.sprite.clearTint();
@@ -61,7 +58,6 @@ export class Enemy extends BaseEntity {
 
   public die(): void {
     this.isDead = true;
-
     this.sprite.setAlpha(0.3);
   }
 }

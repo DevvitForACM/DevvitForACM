@@ -3,7 +3,6 @@ import { getPhaserConfig } from '@/config/game-config';
 import { DEFAULT_LEVEL, type LevelConfig } from '@/game/level/level-types';
 
 export default function Play() {
-  // Example: configure props per level; can be sourced from props, query, or state
   const level: LevelConfig = {
     ...DEFAULT_LEVEL,
     worldWidth: 8000,

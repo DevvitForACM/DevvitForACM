@@ -1,26 +1,5 @@
-/**
- * level-schema.ts
- * --------------------------------------------
- * Defines the TypeScript schema for JSON-based game levels.
- * This schema is versioned, modular, and designed for scalable use
- * with Phaser or any other rendering engine.
- * --------------------------------------------
- */
-
-//////////////////////////
-// 🔹 ENUMS AND CONSTANTS
-//////////////////////////
-
-/**
- * Version number for backward compatibility.
- * Allows older levels to remain supported after schema upgrades.
- */
 export const LEVEL_SCHEMA_VERSION = "1.0.0";
 
-/**
- * Supported object types that can appear in a level.
- * Extend this list as your game evolves.
- */
 export enum LevelObjectType {
   Player = "player",
   Enemy = "enemy",
@@ -40,9 +19,6 @@ export enum LevelObjectType {
   DownvoteRight = "downvote-4",
 }
 
-/**
- * Common tags or layers — useful for selective collision or rendering.
- */
 export enum LevelLayer {
   Background = "background",
   Middleground = "middleground",
@@ -50,9 +26,6 @@ export enum LevelLayer {
   UI = "ui",
 }
 
-/**
- * Possible physics body types (useful for Matter.js or Arcade Physics).
- */
 export enum PhysicsType {
   Static = "static",
   Dynamic = "dynamic",
@@ -60,22 +33,15 @@ export enum PhysicsType {
   None = "none",
 }
 
-//////////////////////////
-// 🔹 CORE INTERFACES
-//////////////////////////
-
-/**
- * Base interface for all game objects in a level.
- */
 export interface BaseObject {
-  id: string; // unique identifier
+  id: string;
   type: LevelObjectType;
-  name?: string; // optional label for editor/debugging
+  name?: string;
   position: {
     x: number;
     y: number;
   };
-  rotation?: number; // degrees
+  rotation?: number;
   scale?: {
     x: number;
     y: number;
@@ -84,50 +50,35 @@ export interface BaseObject {
   visible?: boolean;
 }
 
-/**
- * Physics and collision properties applied to physical objects.
- */
 export interface PhysicsProperties {
   type: PhysicsType;
   isCollidable?: boolean;
   gravityScale?: number;
   friction?: number;
-  restitution?: number; // bounce
+  restitution?: number;
   density?: number;
 }
 
-/**
- * Sprite and texture properties for rendering.
- */
 export interface VisualProperties {
-  texture?: string; // key for loaded texture
+  texture?: string;
   frame?: string | number;
-  tint?: number; // optional color tint
+  tint?: number;
   alpha?: number;
 }
 
-/**
- * Optional AI or behavior metadata for dynamic objects.
- */
 export interface BehaviorProperties {
   movementPattern?: "patrol" | "follow" | "idle";
   speed?: number;
-  targetId?: string; // used in 'follow' pattern
-  triggerEvents?: string[]; // e.g., onEnter, onCollision
+  targetId?: string;
+  triggerEvents?: string[];
 }
 
-/**
- * Extended interface for any object with additional data.
- */
 export interface LevelObject extends BaseObject {
   physics?: PhysicsProperties;
   visual?: VisualProperties;
   behavior?: BehaviorProperties;
-  properties?: Record<string, any>; // flexible custom attributes
+  properties?: Record<string, any>;
 }
-
-
-
 
 export interface LegacyLevelFormat {
   world: {
@@ -150,11 +101,6 @@ export interface LegacyLevelFormat {
   }[];
 }
 
-
-
-/**
- * Defines background, gravity, and other environment-wide settings.
- */
 export interface LevelSettings {
   gravity?: {
     x: number;
@@ -169,11 +115,8 @@ export interface LevelSettings {
   };
 }
 
-/**
- * The main structure of a level JSON file.
- */
 export interface LevelData {
-  version: string; // should match LEVEL_SCHEMA_VERSION
+  version: string;
   name: string;
   description?: string;
   settings: LevelSettings;
@@ -186,14 +129,6 @@ export interface LevelData {
   };
 }
 
-//////////////////////////
-// 🔹 EXAMPLE TEMPLATE
-//////////////////////////
-
-/**
- * A minimal example of what a JSON level might look like.
- * This is useful for testing and schema validation.
- */
 export const exampleLevel: LevelData = {
   version: LEVEL_SCHEMA_VERSION,
   name: "Sample Level 1",
@@ -226,4 +161,3 @@ export const exampleLevel: LevelData = {
     difficulty: "easy",
   },
 };
-

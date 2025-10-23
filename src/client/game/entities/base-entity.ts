@@ -31,7 +31,6 @@ export class BaseEntity {
     this.collisionOffsetY = 0;
 
     this.sprite = scene.add.sprite(x, y, texture);
-
     this.sprite.setOrigin(0.5, 0.5);
   }
 
@@ -39,9 +38,6 @@ export class BaseEntity {
 
   public onCollision(other: BaseEntity): void { void other; }
 
-  /**
-   * Get collision bounds for this entity
-   */
   public getBounds(): CollisionBounds {
     return {
       x: this.x - this.width / 2 + this.collisionOffsetX,
@@ -51,9 +47,6 @@ export class BaseEntity {
     };
   }
 
-  /**
-   * Set collision bounds offset from center
-   */
   public setCollisionOffset(x: number, y: number): void {
     this.collisionOffsetX = x;
     this.collisionOffsetY = y;
@@ -61,7 +54,6 @@ export class BaseEntity {
 
   public destroy(): void {
     this.active = false;
-
     this.sprite.destroy();
   }
 }

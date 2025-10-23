@@ -1,16 +1,10 @@
-// src/client/config/game-config.ts
 import Phaser from "phaser";
-import { PlayScene } from "../game/scenes/play-scene";
-import { CreateScene } from "../game/scenes/create-scene";
-import type { LevelConfig } from "../game/level/level-types";
+import { PlayScene } from "@/game/scenes/play-scene";
+import { CreateScene } from "@/game/scenes/create-scene";
+import type { LevelConfig } from "@/game/level/level-types";
 
-/**
- * Returns a Phaser Game Configuration.
- * Supports both Matter.js (for physics-heavy levels)
- * and Arcade (for simpler platformer-style levels).
- */
 export function getPhaserConfig(level?: LevelConfig): Phaser.Types.Core.GameConfig {
-  const useMatter = !level; // If no explicit level config, default to Matter.js + JSON levels
+  const useMatter = !level;
   
   if (useMatter) {
     return createBlankCanvasConfig();
@@ -65,12 +59,10 @@ export function createBlankCanvasConfig(backgroundColor: string = '#f6f7f8'): Ph
         debug: false,
       },
     },
-    // Register both scenes so we can start PlayScene from the Create page
     scene: [new CreateScene(), new PlayScene()],
   };
 }
 
-// Lightweight base config for consumers that want to supply their own scene
 export function getBasePhaserConfig(): Phaser.Types.Core.GameConfig {
   return createBlankCanvasConfig('#000000');
 }

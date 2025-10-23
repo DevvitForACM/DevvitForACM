@@ -4,7 +4,7 @@ import { Spike } from './spike';
 import { Coin } from './coin';
 import { Enemy } from './enemy';
 import { Spring } from './spring';
-import { PLAYER, COLLISION } from '../../constants/game-constants';
+import { PLAYER, COLLISION } from '@/constants/game-constants';
 
 export class Player extends BaseEntity {
   public health: number;
@@ -41,16 +41,13 @@ export class Player extends BaseEntity {
 
     if (other instanceof Spike) {
       this.takeDamage(other.damage);
-      // Add knockback effect
       this.knockback(other);
     } else if (other instanceof Coin && !other.isCollected) {
       other.collect();
-      // Could trigger score increase here
     } else if (other instanceof Enemy && !other.isDead) {
       this.takeDamage(other.damage);
       this.knockback(other);
     } else if (other instanceof Spring) {
-      // Spring bounce effect will be handled by Spring entity
     }
   }
 
@@ -87,7 +84,6 @@ export class Player extends BaseEntity {
   }
 
   private knockback(other: BaseEntity): void {
-    // Simple knockback effect - push player away from the entity that hit them
     const pushForce = COLLISION.KNOCKBACK_FORCE;
     const deltaX = this.x - other.x;
     const deltaY = this.y - other.y;

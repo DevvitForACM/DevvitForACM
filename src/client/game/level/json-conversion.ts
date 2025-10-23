@@ -8,7 +8,7 @@ import {
   LEVEL_SCHEMA_VERSION,
   LegacyLevelFormat,
 } from "./level-schema";
-import { ENTITY_CONFIG } from "../../constants/game-constants"; // ✅ added import
+import { ENTITY_CONFIG } from "@/constants/game-constants";
 
 export function loadLevel(
   scene: Phaser.Scene,
@@ -112,8 +112,6 @@ function createGameObject(
 
 function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const radius = ENTITY_CONFIG.PLAYER_RADIUS;
-
-  // Use the loaded player sprite; no fallback circle
   const textureKey = 'player-idle-1';
 
   const player = scene.matter.add.image(obj.position.x, obj.position.y, textureKey, undefined, {
@@ -149,7 +147,6 @@ function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjec
 function createUpvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
-  // Map enum value to asset suffix 1..4
   const suffix = String(obj.type).split('-')[1];
   const key = `upvote${suffix}`;
   const img = scene.add.image(x, y, key);

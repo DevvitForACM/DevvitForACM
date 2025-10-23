@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CAMERA_SCROLL } from "../../constants/game-constants";
+import { CAMERA_SCROLL } from "@/constants/game-constants";
 
 interface ControllableScene extends Phaser.Scene {
   cameraScrollSpeed: number;
@@ -8,7 +8,6 @@ interface ControllableScene extends Phaser.Scene {
 export function createScrollControls(scene: ControllableScene): void {
   scene.cameraScrollSpeed = 0;
 
-  // Use constants for symbols and styling
   const leftArrow = scene.add
     .text(0, 0, CAMERA_SCROLL.LEFT_SYMBOL ?? "<", {
       fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",

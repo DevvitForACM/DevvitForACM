@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { BaseEntity } from './base-entity';
 import { Player } from './player';
-import { DAMAGE, ENTITY_SIZES, ANIMATIONS } from '../../constants/game-constants';
+import { DAMAGE, ENTITY_SIZES, ANIMATIONS } from '@/constants/game-constants';
 
 export class Spike extends BaseEntity {
   public damage: number;
@@ -24,14 +24,11 @@ export class Spike extends BaseEntity {
 
   public override onCollision(other: BaseEntity): void {
     if (other instanceof Player && !other.isDead) {
-      // Damage is applied by the player's collision handler
-      // We could add visual effects here like particles or screen shake
       this.createDamageEffect();
     }
   }
 
   private createDamageEffect(): void {
-    // Simple visual feedback - flash red
     this.sprite.setTint(0xff0000);
     setTimeout(() => {
       this.sprite.clearTint();

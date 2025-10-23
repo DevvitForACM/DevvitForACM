@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BaseEntity } from './base-entity';
 
 export class Tile extends BaseEntity {
-  public isGround: boolean; // false=lava
+  public isGround: boolean;
 
   constructor(
     scene: Phaser.Scene,

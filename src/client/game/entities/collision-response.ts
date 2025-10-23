@@ -22,13 +22,9 @@ export class CollisionResponse {
   private static collisionHistory: CollisionEvent[] = [];
   private static readonly HISTORY_LIMIT = 100;
 
-  /**
-   * Handle collision response between two entities
-   */
   public static handleCollision(entityA: BaseEntity, entityB: BaseEntity): void {
     const collisionSide = CollisionManager.getCollisionSide(entityA, entityB);
     
-    // Create collision event
     const event: CollisionEvent = {
       entityA,
       entityB,
@@ -37,18 +33,11 @@ export class CollisionResponse {
       timestamp: Date.now()
     };
 
-    // Add to history
     this.addToHistory(event);
-
-    // Apply collision response
     this.applyCollisionResponse(event);
   }
 
-  /**
-   * Determine the type of collision based on entity types
-   */
   private static determineCollisionType(entityA: BaseEntity, entityB: BaseEntity): CollisionType {
-    // Player vs others
     if (entityA instanceof Player || entityB instanceof Player) {
       const other = entityA instanceof Player ? entityB : entityA;
       
@@ -66,9 +55,6 @@ export class CollisionResponse {
     return CollisionType.TRIGGER;
   }
 
-  /**
-   * Apply the appropriate collision response
-   */
   private static applyCollisionResponse(event: CollisionEvent): void {
     switch (event.type) {
       case CollisionType.DAMAGE:
@@ -89,56 +75,28 @@ export class CollisionResponse {
     }
   }
 
-  /**
-   * Handle damage-dealing collisions
-   */
   private static handleDamageCollision(event: CollisionEvent): void {
-    // Visual effects
     this.createImpactEffect(event.entityA, event.entityB);
-    
-    // Screen shake effect could be added here
     this.createScreenShake();
   }
 
-  /**
-   * Handle collection collisions
-   */
   private static handleCollectCollision(event: CollisionEvent): void {
-    // Particle effects
     this.createCollectEffect(event.entityA, event.entityB);
-    
-    // Sound effect trigger could be added here
   }
 
-  /**
-   * Handle bounce collisions
-   */
   private static handleBounceCollision(event: CollisionEvent): void {
-    // Bounce visual effects
     this.createBounceEffect(event.entityA, event.entityB);
   }
 
-  /**
-   * Handle blocking collisions (solid objects)
-   */
   private static handleBlockCollision(event: CollisionEvent): void {
-    // Prevent overlap by pushing entities apart
     this.separateEntities(event.entityA, event.entityB, event.side);
   }
 
-  /**
-   * Handle trigger collisions (switches, doors, etc.)
-   */
   private static handleTriggerCollision(event: CollisionEvent): void {
-    void event; // placeholder to satisfy noUnusedParameters
-    // Custom trigger logic would go here
+    void event;
   }
 
-  /**
-   * Create impact visual effect
-   */
   private static createImpactEffect(entityA: BaseEntity, entityB: BaseEntity): void {
-    // Flash both entities briefly
     entityA.sprite.setTint(0xff0000);
     entityB.sprite.setTint(0xff0000);
     
@@ -148,37 +106,26 @@ export class CollisionResponse {
     }, 100);
   }
 
-  /**
-   * Create collection visual effect
-   */
   private static createCollectEffect(entityA: BaseEntity, entityB: BaseEntity): void {
     const collector = entityA instanceof Player ? entityA : entityB;
     const collected = entityA instanceof Player ? entityB : entityA;
-    void collector; // currently unused, reserved for future features
+    void collector;
     
-    // Scale effect
     collected.sprite.setScale(1.2);
     setTimeout(() => {
       collected.sprite.setScale(1.0);
     }, 150);
   }
 
-  /**
-   * Create bounce visual effect
-   */
   private static createBounceEffect(entityA: BaseEntity, entityB: BaseEntity): void {
     const bouncer = entityA instanceof Player ? entityB : entityA;
     
-    // Compress effect
     bouncer.sprite.setScale(1.0, 0.8);
     setTimeout(() => {
       bouncer.sprite.setScale(1.0, 1.0);
     }, 200);
   }
 
-  /**
-   * Separate overlapping entities
-   */
   private static separateEntities(entityA: BaseEntity, entityB: BaseEntity, side: string): void {
     const boundsA = entityA.getBounds();
     const boundsB = entityB.getBounds();
@@ -188,7 +135,6 @@ export class CollisionResponse {
     const overlapY = Math.min(boundsA.y + boundsA.height, boundsB.y + boundsB.height) - 
                      Math.max(boundsA.y, boundsB.y);
     
-    // Push entities apart based on collision side
     if (side === 'left' || side === 'right') {
       const pushX = overlapX / 2;
       if (side === 'left') {
@@ -210,36 +156,21 @@ export class CollisionResponse {
     }
   }
 
-  /**
-   * Create screen shake effect
-   */
   private static createScreenShake(): void {
-    // Screen shake would be implemented with camera shake in the scene
-    // This is a placeholder for the effect trigger
   }
 
-  /**
-   * Add collision event to history
-   */
   private static addToHistory(event: CollisionEvent): void {
     this.collisionHistory.push(event);
     
-    // Keep history size manageable
     if (this.collisionHistory.length > this.HISTORY_LIMIT) {
       this.collisionHistory.shift();
     }
   }
 
-  /**
-   * Get recent collision events
-   */
   public static getCollisionHistory(limit: number = 10): CollisionEvent[] {
     return this.collisionHistory.slice(-limit);
   }
 
-  /**
-   * Clear collision history
-   */
   public static clearHistory(): void {
     this.collisionHistory = [];
   }

@@ -5,7 +5,6 @@ export default function Home() {
   const { navigate, location } = useRouting();
 
   useEffect(() => {
-    // Page loaded
   }, [location]);
 
   return (
