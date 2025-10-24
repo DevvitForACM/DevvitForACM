@@ -107,6 +107,8 @@ function createGameObject(
       return createSpring(scene, obj);
     case LevelObjectType.Spike:
       return createSpike(scene, obj);
+    case LevelObjectType.Coin:
+      return createCoin(scene, obj);
     default:
       return null;
   }
@@ -118,7 +120,7 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   // Use the loaded player sprite; no fallback circle
   const textureKey = 'player-idle-1';
 
-  const player = scene.matter.add.image(obj.position.x, obj.position.y, textureKey, undefined, {
+  const player = scene.matter.add.sprite(obj.position.x, obj.position.y, textureKey, undefined, {
     restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
     friction: ENTITY_CONFIG.PLAYER_FRICTION,
   });
@@ -128,6 +130,7 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   player.setName(obj.id);
   player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
   player.setFixedRotation();
+  (player as any).setDepth?.(10);
 
   return player;
 }
@@ -143,8 +146,20 @@ function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjec
 
   // Use grass texture if available, otherwise fallback to colored rectangle
   if (scene.textures.exists('grass')) {
-    const grassImg = scene.add.image(x, y, 'grass');
+    // Optional filler first to eliminate any transparent borders in the art
+    if (scene.textures.exists('grass-filler')) {
+      const filler = scene.add.image(x - width / 2, y - height / 2, 'grass-filler');
+      filler.setOrigin(0, 0);
+      filler.setDisplaySize(width, height);
+      filler.setDepth(-2);
+      filler.name = obj.id + '_filler';
+    }
+
+    // Top-left anchor to avoid subpixel seams between adjacent tiles
+    const grassImg = scene.add.image(x - width / 2, y - height / 2, 'grass');
+    grassImg.setOrigin(0, 0);
     grassImg.setDisplaySize(width, height);
+    grassImg.setDepth(-1);
     grassImg.name = obj.id;
     return grassImg;
   } else {
@@ -163,6 +178,7 @@ function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   const img = scene.add.image(x, y, 'spring');
   img.setDisplaySize(32, 24);
   img.name = obj.id;
+  img.setDepth(5);
   return img;
 }
 
@@ -172,7 +188,20 @@ function createSpike(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.
   const img = scene.add.image(x, y, 'spike');
   img.setDisplaySize(32, 32);
   img.name = obj.id;
+  img.setDepth(5);
   return img;
+}
+
+function createCoin(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  const sprite = scene.add.sprite(x, y, 'coin-1');
+  sprite.setDisplaySize(24, 24);
+  sprite.setDepth(6);
+  sprite.setData('isCoin', true);
+  try { sprite.play('coin-spin'); } catch {}
+  sprite.name = obj.id;
+  return sprite;
 }
 
 function validateLevel(level: LevelData): void {

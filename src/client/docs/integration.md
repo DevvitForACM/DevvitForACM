@@ -1,6 +1,6 @@
 # Integration Notes
 
-This document captures all changes implemented during the chat—from first iteration to the latest fix—and how they fit together.
+This document captures all changes implemented during the chat—from first iteration to the latest fix—and how they fit together. It includes Play/Editor transitions, grid math, assets, physics, input, and animation.
 
 ## Overview
 - Project: Devvit-based level editor + play mode (Phaser)
@@ -54,13 +54,55 @@ Fixes implemented:
 
 Result: Returning from Play shows a clean editor grid with the exact entities you placed; no PlayScene sprites remain.
 
+### 6) PlayScene Controls, Camera and Physics Polishing (subsequent changes)
+- Camera bounds normalized to 0,0 at top-left; scrollY recalculated to keep ground visible when switching zooms.
+- Player now uses Matter sprite in Play so animations work; added simple edge-guard and last-safe-position respawn.
+- Implemented grid-step movement for Matter mode: one tile per keypress with debounce and tween for smooth motion; jump is a single-tile hop.
+- Reduced movement speed; added deadzone; clamped camera to content; prevented touch jump from firing on desktop clicks.
+- Grass platforms render with top-left anchoring and an optional filler layer to eliminate seams; set display depths so player is always above terrain.
+- Coins implemented and collected by proximity; run/idle/jump animations wired to assets; animation fps reduced.
+
+## Challenges and Resolutions
+
+1) Play→Editor object leakage (Snoo visible in editor)
+- Cause: Scenes sharing a canvas; stopping Play didn’t destroy its display list.
+- Resolution: Explicitly remove all PlayScene children and stop scene; restart CreateScene and restore entities via snapshot. Also rebind event listeners and reset camera scroll on wake.
+
+2) Editor entities disappearing or duplicating after return
+- Cause: React kept a stale scene reference; event listeners were attached multiple times.
+- Resolution: Acquire new CreateScene instance after restart, removeAllListeners, reattach, and restore snapshot.
+
+3) Inverted Y and mismatched coordinates between editor and play
+- Cause: Editor used bottom-left origin; Play used top-left; conversion used sign-only.
+- Resolution: Convert Y using level height: y = height - (gridY * GRID + GRID/2). Camera bounds normalized and scrolled to bottom.
+
+4) Gaps between ground tiles in Play
+- Cause: Center-anchored sprites and transparent edges in art produced seams.
+- Resolution: Top-left anchor with filler underlay; roundPixels; display depths set so player renders above terrain.
+
+5) Camera flying into empty space and fast movement
+- Cause: No clamp to content; continuous velocity and large speeds.
+- Resolution: Clamp to last object extent; add deadzone; reduce speed; switch to grid-step movement with tween and debounce for Matter mode.
+
+6) Player falling into void and not respawning
+- Cause: No safety logic when walking off platforms.
+- Resolution: Edge guard (support check) and last-safe-position respawn.
+
+7) Touch/mouse input interactions
+- Cause: Tap-to-jump handler triggered on desktop clicks; editor used right-click for removal.
+- Resolution: Ignore desktop clicks in Play tap handler; in editor, tap with no selection removes; clicks on UI are ignored.
+
+8) Animations too fast / not playing
+- Cause: Assets naming mismatch and frame rates high; Matter image can’t animate.
+- Resolution: Map to real file names, switched player to Matter sprite, created idle/run/jump animations; reduced fps (idle 4, run 8, jump 6).
+
 ## Files Touched (high level)
-- `src/client/pages/create/index.tsx` — start/stop flow, restart CreateScene, rebind listeners, restore snapshot.
+- `src/client/pages/create/index.tsx` — start/stop flow, restart CreateScene, rebind listeners, restore snapshot; Y-conversion uses level height; includes coins in level JSON; resets camera scroll on wake.
 - `src/client/game/scenes/create-scene.ts` — grid, placement math, public `placeEntity`, new `restoreSnapshot`, cleanup.
-- `src/client/game/scenes/play-scene.ts` — preload, gravity, camera bounds, and a fixed conditional (`else if (jsonData && matter)`), general rendering tweaks.
+- `src/client/game/scenes/play-scene.ts` — preload, gravity, camera bounds, fixed conditional, debug overlay, content clamping, Matter grid-step movement, one-tile jump, edge-guard + respawn, touch jump guard, run/idle/jump animations and slower fps.
 - `src/client/game/controls/camera-controls.ts` — 4‑way controls and input guards.
-- `src/client/game/level/json-conversion.ts` — platform/asset helpers; grass usage.
-- `src/client/game/level/level-schema.ts` — enum updates for Spring/Spike.
+- `src/client/game/level/json-conversion.ts` — platform/asset helpers; grass usage; top-left anchoring with filler; display depths; player switched to Matter sprite; coin creation.
+- `src/client/game/level/level-schema.ts` — enum updates for Spring/Spike and Coin.
 - `src/client/constants/game-constants.ts` — camera constants, sizes, etc.
 - `assets` — added Spring/Spikes; removed upvote/downvote variants.
 

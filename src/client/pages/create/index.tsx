@@ -121,24 +121,29 @@ export default function Create() {
       return t === 'ground' || t === 'grass' || t === 'tile';
     });
 
+    // Compute bounds first so we can convert Y using height (bottom-left origin -> top-left origin)
+    const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
+    const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
+    const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+
     // Build LevelData JSON
     const objects: LevelObject[] = [];
 
     // Player from placed entity (singleton)
     const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
     const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-    // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
-    const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
+    const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
     objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
-    // Handle spring and spike entities
+    // Handle spring, spike, coin entities
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t === 'spring' || t === 'spike') {
+      if (t === 'spring' || t === 'spike' || t === 'coin') {
         const x = e.gridX * GRID + GRID / 2;
-        // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
-        const y = -(e.gridY + 1) * GRID + GRID / 2;
-        const levelType = t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
+        const y = toY(e.gridY);
+        let levelType: LevelObjectType = LevelObjectType.Spring;
+        if (t === 'spike') levelType = LevelObjectType.Spike;
+        else if (t === 'coin') levelType = LevelObjectType.Coin;
         objects.push({ 
           id: `${t}_${idx + 1}`, 
           type: levelType, 
@@ -150,25 +155,20 @@ export default function Create() {
     // Door -> Goal (singleton optional)
     const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
     if (doorEnt) {
-      // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
-      objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: -(doorEnt.gridY + 1) * GRID + GRID / 2 } });
+      objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) } });
     }
 
     // Platforms from ground cells
     ground.forEach((g: any, i: number) => {
-      // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
       objects.push({
         id: `platform_${i + 1}`,
         type: LevelObjectType.Platform,
-        position: { x: g.gridX * GRID + GRID / 2, y: -(g.gridY + 1) * GRID + GRID / 2 },
+        position: { x: g.gridX * GRID + GRID / 2, y: toY(g.gridY) },
         scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT },
         physics: { type: PhysicsType.Static, isCollidable: true },
         visual: { tint: COLORS.PLATFORM_ALT },
       });
     });
-
-    const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
-    const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
 
     const levelData: LevelData = {
       version: LEVEL_SCHEMA_VERSION,
@@ -229,31 +229,35 @@ export default function Create() {
         return t === 'ground' || t === 'grass' || t === 'tile';
       });
       const objects: LevelObject[] = [];
+      // Compute bounds first to convert Y using height
+      const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
+      const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
+      const toY = (gy: number) => height - (gy * GRID + GRID / 2);
       // Player from placed entity (singleton)
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
+      const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
       objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
       // Door -> Goal (singleton optional)
       const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
       if (doorEnt) {
-        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: -(doorEnt.gridY + 1) * GRID + GRID / 2 } });
+        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) } });
       }
-      // Handle spring and spike entities in play mode too
+      // Handle spring, spike, coin entities in play mode too
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike') {
+        if (t === 'spring' || t === 'spike' || t === 'coin') {
           const x = e.gridX * GRID + GRID / 2;
-          const y = -(e.gridY + 1) * GRID + GRID / 2;
-          const levelType = t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
+          const y = toY(e.gridY);
+          let levelType: LevelObjectType = LevelObjectType.Spring;
+          if (t === 'spike') levelType = LevelObjectType.Spike;
+          else if (t === 'coin') levelType = LevelObjectType.Coin;
           objects.push({ id: `${t}_${idx + 1}`, type: levelType, position: { x, y } });
         }
       });
       ground.forEach((g: any, i: number) => {
-        objects.push({ id: `platform_${i + 1}`, type: LevelObjectType.Platform, position: { x: g.gridX * GRID + GRID / 2, y: -(g.gridY + 1) * GRID + GRID / 2 }, scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT }, physics: { type: PhysicsType.Static, isCollidable: true }, visual: { tint: COLORS.PLATFORM_ALT } });
+        objects.push({ id: `platform_${i + 1}`, type: LevelObjectType.Platform, position: { x: g.gridX * GRID + GRID / 2, y: toY(g.gridY) }, scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT }, physics: { type: PhysicsType.Static, isCollidable: true }, visual: { tint: COLORS.PLATFORM_ALT } });
       });
-      const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
-      const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
       
       levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#87CEEB', bounds: { width, height } }, objects };
     }
@@ -292,6 +296,13 @@ export default function Create() {
           // Re-attach event listeners (first clear any prior ones on this scene)
           createScene.events.removeAllListeners();
           createScene.registry.set('entityTypes', ENTITY_TYPES_DATA);
+
+          // Ensure camera starts with Y=0 at bottom of view
+          if (createScene.cameras?.main) {
+            const cam = createScene.cameras.main;
+            cam.scrollY = -cam.height;
+          }
+
           createScene.events.on('entity-placed', () =>
             setEntityCount(createScene.getAllEntities().length)
           );
