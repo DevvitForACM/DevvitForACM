@@ -18,7 +18,32 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-8">
+        {/* Game Title */}
+        <div className="text-center mb-4">
+          <h1
+            className="text-7xl font-bold text-white mb-2 transform hover:scale-105 transition-transform duration-300"
+            style={{
+              fontFamily: '"Courier New", monospace',
+              textShadow: '6px 6px 0 #333, 12px 12px 0 #666, 18px 18px 0 #999',
+              letterSpacing: '8px',
+              imageRendering: 'pixelated',
+              filter: 'contrast(1.3) brightness(1.1)',
+            }}
+          >
+            NAME
+          </h1>
+          <div
+            className="text-2xl font-bold text-yellow-300 tracking-wider animate-pulse"
+            style={{
+              fontFamily: '"Courier New", monospace',
+              textShadow: '3px 3px 0 #B8860B, 6px 6px 0 #8B6914',
+              letterSpacing: '4px',
+            }}
+          >
+            ADVENTURE AWAITS
+          </div>
+        </div>
         <button
           onClick={() => navigate('/play')}
           className="relative group transform transition-transform hover:scale-105 w-80 active:translate-y-1"
@@ -38,7 +63,7 @@ export default function Home() {
               filter: 'contrast(1.2)',
             }}
           >
-            🎮 PLAY GAME
+            PLAY GAME
           </div>
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-100"></div>
           <div
@@ -70,7 +95,7 @@ export default function Home() {
               filter: 'contrast(1.2)',
             }}
           >
-            🔨 CREATE WORLD
+            CREATE LEVEL
           </div>
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-100"></div>
           <div
