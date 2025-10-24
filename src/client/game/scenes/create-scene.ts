@@ -242,10 +242,13 @@ export class CreateScene extends Phaser.Scene {
     container.setData('isBaseline', !!data.isBaseline);
 
     container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Ensure we catch right-click reliably and prevent browser menu
+      // Support mouse and touch. On mobile, there is no right-click; tapping with no selection removes the entity.
+      const evt: any = pointer.event as any;
+      const pointerType = evt?.pointerType as string | undefined; // 'mouse' | 'touch' | 'pen'
       const isRight = pointer.rightButtonDown() || (pointer.button === 2);
-      if (!isRight) return;
-      (pointer.event as MouseEvent)?.preventDefault?.();
+      const isTouch = Boolean((pointer as any).wasTouch || pointerType === 'touch');
+      const isPrimaryLike = isRight || (typeof pointer.leftButtonDown === 'function' && pointer.leftButtonDown()) || isTouch;
+
       const entityId = container.getData('entityId') as string;
       const gridX = container.getData('gridX') as number;
       const gridY = container.getData('gridY') as number;
@@ -254,24 +257,35 @@ export class CreateScene extends Phaser.Scene {
         | Record<string, { name: string; color: string; icon: string }>
         | undefined;
 
-      if (sel && entityTypes && (entityTypes[sel] || Object.keys(entityTypes).some(k => k.toLowerCase().trim() === sel.toLowerCase().trim()))) {
-        // Normalize selection key
-        let key = sel;
-        if (!entityTypes[key]) {
-          const match = Object.keys(entityTypes).find(
-            (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
-          );
-          if (match) key = match;
+      // If no selection, any tap/click removes the entity (mobile-friendly)
+      if (!sel) {
+        if (isPrimaryLike) {
+          (evt as MouseEvent | PointerEvent | undefined)?.preventDefault?.();
+          this.removeEntity(entityId);
         }
-        // Replace existing entity with selected type at same grid
-        const info2 = entityTypes[key];
-        if (!info2) return;
-        this.removeEntity(entityId);
-        this.placeEntity({ type: key, gridX, gridY, name: info2.name, color: info2.color, icon: info2.icon });
-      } else {
-        // No selection -> simple remove
-        this.removeEntity(entityId);
+        return;
       }
+
+      // With a selection, only right-click (or long-press equivalents) should replace
+      if (!(entityTypes && (entityTypes[sel] || Object.keys(entityTypes).some(k => k.toLowerCase().trim() === sel.toLowerCase().trim())))) {
+        return;
+      }
+
+      if (!isRight && !isTouch) return; // keep replacement as an explicit action
+
+      // Normalize selection key
+      let key = sel;
+      if (!entityTypes[key]) {
+        const match = Object.keys(entityTypes).find(
+          (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
+        );
+        if (match) key = match;
+      }
+      const info2 = entityTypes[key];
+      if (!info2) return;
+      (evt as MouseEvent | PointerEvent | undefined)?.preventDefault?.();
+      this.removeEntity(entityId);
+      this.placeEntity({ type: key, gridX, gridY, name: info2.name, color: info2.color, icon: info2.icon });
     });
 
     const entityId = `${data.type}-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
