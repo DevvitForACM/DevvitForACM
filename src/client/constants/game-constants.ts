@@ -56,6 +56,7 @@ export const CAMERA_CONFIG = {
 export const SCENE_KEYS = {
   PLAY: "PlayScene",
   HOME: "HomeScene",
+  CREATE: "CreateScene",
 };
 
 /* ----------------------------------------------

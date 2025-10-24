@@ -6,6 +6,7 @@ const BASELINE_Y = 0; // default ground row (y=0)
 
 export class CreateScene extends Phaser.Scene {
   public cameraScrollSpeed: number = 0;
+  public cameraScrollSpeedY: number = 0;
   private placedEntities: Map<string, Phaser.GameObjects.Container>;
   private occupiedCells: Set<string>;
   private gridGraphics?: Phaser.GameObjects.Graphics | undefined;
@@ -13,6 +14,7 @@ export class CreateScene extends Phaser.Scene {
   private currentHeight: number = 0;
   private lastGridOffsetX: number = -1;
   private lastGridOffsetY: number = -1;
+  private coordinateText?: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'CreateScene' });
@@ -22,11 +24,9 @@ export class CreateScene extends Phaser.Scene {
 
   preload(): void {
     const base = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
-    // Load Reddit upvote/downvote directional assets
-    for (let i = 1; i <= 4; i++) {
-      this.load.image(`upvote${i}`, `${base}upvote${i}.png`);
-      this.load.image(`downvote${i}`, `${base}downvote${i}.png`);
-    }
+    // Load spring and spike assets
+    this.load.image('spring', `${base}Spring.png`);
+    this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
     this.load.image('grass-filler', `${base}Grass-filler.png`);
     
@@ -47,6 +47,11 @@ export class CreateScene extends Phaser.Scene {
 
   public create(): void {
     this.drawGrid();
+    
+    // Set initial camera scroll so (0,0) appears at bottom-left of the visible canvas
+    // Camera shows from scrollY to scrollY+height
+    // We want to show Y=0 at the bottom, so scroll to negative height
+    this.cameras.main.scrollY = -this.cameras.main.height;
 
     // Render pixels snapped to integers to avoid hairline seams
     this.cameras.main.roundPixels = true;
@@ -88,15 +93,52 @@ export class CreateScene extends Phaser.Scene {
       });
     }
 
-    // Initial baseline ground in view
-    this.ensureBaselineForView();
+    // Create coordinate display text
+    this.coordinateText = this.add.text(10, 70, '', {
+      fontSize: '14px',
+      color: '#333',
+      backgroundColor: '#fff',
+      padding: { x: 8, y: 4 },
+    });
+    this.coordinateText.setScrollFactor(0);
+    this.coordinateText.setDepth(1000);
+    this.coordinateText.setVisible(false);
+    this.coordinateText.setData('isUIElement', true);
 
-    // Placement
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    // Show coordinates on hover (Y increases upward from bottom-left)
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.worldX;
       const wy = pointer.worldY;
       const gridX = Math.floor(wx / GRID_SIZE);
-      const gridY = Math.floor(wy / GRID_SIZE);
+      // Invert Y: convert Phaser Y (down is positive) to grid Y (up is positive)
+      const gridY = -Math.floor(wy / GRID_SIZE) - 1;
+      if (this.coordinateText) {
+        this.coordinateText.setText(`Grid: (${gridX}, ${gridY})`);
+        this.coordinateText.setVisible(true);
+      }
+    });
+
+    // Hide coordinates when pointer leaves
+    this.input.on('pointerout', () => {
+      if (this.coordinateText) {
+        this.coordinateText.setVisible(false);
+      }
+    });
+
+    // Placement
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Don't place if clicking on UI controls (check if pointer hit any interactive game object)
+      const hitObjects = this.input.hitTestPointer(pointer);
+      const hitUI = hitObjects.some((obj: any) => 
+        obj.getData && (obj.getData('isScrollControl') || obj.getData('isUIElement'))
+      );
+      if (hitUI) return;
+
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
+      const gridX = Math.floor(wx / GRID_SIZE);
+      // Invert Y: convert Phaser Y (down is positive) to grid Y (up is positive)
+      const gridY = -Math.floor(wy / GRID_SIZE) - 1;
       this.placeAtGrid(gridX, gridY, 0);
     });
   }
@@ -145,22 +187,19 @@ export class CreateScene extends Phaser.Scene {
     this.drawGrid();
   }
 
-  private placeEntity(data: any): void {
+  public placeEntity(data: any): void {
     const pixelX = Math.round(data.gridX * GRID_SIZE + GRID_SIZE / 2);
-    const pixelY = Math.round(data.gridY * GRID_SIZE + GRID_SIZE / 2);
+    // Invert Y: convert grid Y (up is positive) to Phaser Y (down is positive)
+    const pixelY = Math.round(-(data.gridY + 1) * GRID_SIZE + GRID_SIZE / 2);
 
     const container = this.add.container(pixelX, pixelY);
 
     const t = String(data.type).toLowerCase().trim();
-    // Handle directional downvote variants
-    if (t.startsWith('downvote-') && t.length > 9) {
-      const direction = t.split('-')[1];
-      const assetKey = `downvote${direction}`;
-      if (this.textures.exists(assetKey)) {
-        const sprite = this.add.image(0, 0, assetKey);
-        sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-        container.add(sprite);
-      }
+    // Handle spike
+    if (t === 'spike' && this.textures.exists('spike')) {
+      const sprite = this.add.image(0, 0, 'spike');
+      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
+      container.add(sprite);
     } else if (t === 'coin' && this.textures.exists('coin-1')) {
       const sprite = this.add.sprite(0, 0, 'coin-1');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
@@ -168,15 +207,11 @@ export class CreateScene extends Phaser.Scene {
       container.add(sprite);
       // subtle float
       this.tweens.add({ targets: container, y: pixelY - 3, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    } else if (t.startsWith('upvote-') && t.length > 7) {
-      // Handle directional upvote variants
-      const direction = t.split('-')[1];
-      const assetKey = `upvote${direction}`;
-      if (this.textures.exists(assetKey)) {
-        const sprite = this.add.image(0, 0, assetKey);
-        sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-        container.add(sprite);
-      }
+    } else if (t === 'spring' && this.textures.exists('spring')) {
+      // Handle spring
+      const sprite = this.add.image(0, 0, 'spring');
+      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
+      container.add(sprite);
     } else if (t === 'player' && this.textures.exists('player-idle-1')) {
       // Snoo player with animation
       const sprite = this.add.sprite(0, 0, 'player-idle-1');
@@ -214,19 +249,10 @@ export class CreateScene extends Phaser.Scene {
       const entityId = container.getData('entityId') as string;
       const gridX = container.getData('gridX') as number;
       const gridY = container.getData('gridY') as number;
-      const isBaseline = container.getData('isBaseline') === true;
       const sel = (this.registry.get('selectedEntityType') as string | null) ?? null;
       const entityTypes = this.registry.get('entityTypes') as
         | Record<string, { name: string; color: string; icon: string }>
         | undefined;
-
-      if (isBaseline) {
-        // Don't allow removing baseline ground; allow changing to ground only (no-op)
-        if (!sel) return;
-        const key = sel.toLowerCase().trim();
-        if (key === 'ground' || key === 'grass' || key === 'tile') return; // ignore
-        return; // block other replacements on baseline cell
-      }
 
       if (sel && entityTypes && (entityTypes[sel] || Object.keys(entityTypes).some(k => k.toLowerCase().trim() === sel.toLowerCase().trim()))) {
         // Normalize selection key
@@ -262,7 +288,6 @@ export class CreateScene extends Phaser.Scene {
   private removeEntity(entityId: string): void {
     const container = this.placedEntities.get(entityId);
     if (!container) return;
-    if (container.getData('isBaseline') === true) return; // protect baseline
     const gridX = container.getData('gridX');
     const gridY = container.getData('gridY');
     this.occupiedCells.delete(`${gridX},${gridY}`);
@@ -280,19 +305,18 @@ export class CreateScene extends Phaser.Scene {
   public clearAllEntities(): void {
     // Destroy all tracked containers safely
     this.placedEntities.forEach((c) => {
-      if (c && c.active && c.getData('isBaseline') !== true) c.destroy();
+      if (c && c.active) c.destroy();
     });
-    // Preserve baseline ground by removing only non-baseline children that have an entityId
+    // Remove all non-persistent children that have an entityId
     this.children.list.forEach((child) => {
       const c = child as Phaser.GameObjects.Container;
-      if (c?.getData && c.getData('entityId') && c.getData('isBaseline') !== true) {
+      if (c?.getData && c.getData('entityId')) {
         if (c.active) c.destroy();
       }
     });
-    // Remove all records and cells, then re-add baseline occupancy for the current view
+    // Clear all records
     this.placedEntities.clear();
     this.occupiedCells.clear();
-    this.ensureBaselineForView();
     this.events.emit('entities-cleared');
   }
 
@@ -308,6 +332,35 @@ export class CreateScene extends Phaser.Scene {
     return entities;
   }
 
+  /** Restore a snapshot captured via getAllEntities() */
+  public restoreSnapshot(snapshot: Array<{ type: string; gridX: number; gridY: number }>): void {
+    if (!Array.isArray(snapshot)) return;
+    // Clean slate
+    this.clearAllEntities();
+
+    const entityTypes = this.registry.get('entityTypes') as
+      | Record<string, { name: string; color: string; icon: string }>
+      | undefined;
+
+    for (const e of snapshot) {
+      const keyLow = String(e.type ?? '').toLowerCase().trim();
+      let matchedKey = keyLow;
+      if (entityTypes) {
+        const match = Object.keys(entityTypes).find((k) => k.toLowerCase().trim() === keyLow);
+        if (match) matchedKey = match;
+      }
+      const info = entityTypes ? entityTypes[matchedKey] : undefined;
+      this.placeEntity({
+        type: matchedKey,
+        gridX: e.gridX,
+        gridY: e.gridY,
+        name: info?.name,
+        color: info?.color,
+        icon: info?.icon,
+      });
+    }
+  }
+
   private hasType(type: string): boolean {
     const t = type.toLowerCase().trim();
     for (const [, c] of this.placedEntities) {
@@ -320,14 +373,13 @@ export class CreateScene extends Phaser.Scene {
   public override update(_time: number, delta: number): void {
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
+      this.cameras.main.scrollY += this.cameraScrollSpeedY * (delta / 16);
       // Redraw grid when camera scroll changes to keep world-aligned grid
       const cam = this.cameras.main;
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
       const offY = ((-cam.scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
       if (offX !== this.lastGridOffsetX || offY !== this.lastGridOffsetY) {
         this.drawGrid();
-        // Extend baseline as view changes
-        this.ensureBaselineForView();
       }
     }
   }
@@ -360,28 +412,13 @@ export class CreateScene extends Phaser.Scene {
     this.placeEntity({ type: key, gridX, gridY, name: info.name, color: info.color, icon: info.icon });
   }
 
-  private ensureBaselineForView(): void {
-    if (!this.cameras?.main) return;
-    const cam = this.cameras.main;
-    const left = Math.floor(cam.scrollX / GRID_SIZE) - 2;
-    const right = Math.ceil((cam.scrollX + cam.width) / GRID_SIZE) + 2;
-    for (let x = left; x <= right; x++) {
-      const key = `${x},${BASELINE_Y}`;
-      if (!this.occupiedCells.has(key)) {
-        // Use registry entity types for color/icon if available, else defaults in placeEntity
-        const entityTypes = this.registry.get('entityTypes') as
-          | Record<string, { name: string; color: string; icon: string }>
-          | undefined;
-        const info = entityTypes?.ground ?? { name: 'Ground', color: '#78716c', icon: '🟫' } as any;
-        this.placeEntity({ type: 'ground', gridX: x, gridY: BASELINE_Y, name: info.name, color: info.color, icon: info.icon, isBaseline: true });
-      }
-    }
-  }
 
   public destroy(): void {
     this.scale.off('resize', this.handleResize, this);
     if (this.gridGraphics && this.gridGraphics.active) this.gridGraphics.destroy();
     this.gridGraphics = undefined;
+    if (this.coordinateText && this.coordinateText.active) this.coordinateText.destroy();
+    this.coordinateText = undefined;
     this.placedEntities.forEach((container) => container.destroy());
     this.placedEntities.clear();
     this.occupiedCells.clear();
