@@ -45,11 +45,9 @@ export class PlayScene extends Phaser.Scene {
       console.warn(msg);
     });
 
-    // Load Reddit upvote/downvote directional assets and grass textures
-    for (let i = 1; i <= 4; i++) {
-      this.load.image(`upvote${i}`, `${base}upvote${i}.png`);
-      this.load.image(`downvote${i}`, `${base}downvote${i}.png`);
-    }
+    // Load spring and spike assets
+    this.load.image('spring', `${base}Spring.png`);
+    this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
 
     // Load player animations from individual frames
@@ -120,9 +118,14 @@ export class PlayScene extends Phaser.Scene {
       if (this.editorLevelData && (this.matter as any)?.world) {
         // Use editor-provided JSON level
         loadLevel(this, this.editorLevelData);
-        // If bounds are present in editor data, bind camera to them for sane zooming
+        // Set camera to view the level from a suitable position
         const b = this.editorLevelData.settings?.bounds;
-        if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
+        if (b) {
+          // Position camera so we can see objects - start view from negative Y
+          this.cameras.main.setBounds(-b.height, -b.height, b.width + b.height, b.height * 2);
+          // Scroll camera down to show bottom part of level where objects are
+          this.cameras.main.scrollY = -b.height + 100;
+        }
       } else if (jsonData && (this.matter as any)?.world) {
         // JSON → Matter.js scene
         loadLevel(this, jsonData);
@@ -146,6 +149,8 @@ export class PlayScene extends Phaser.Scene {
         | undefined;
 
       if (player) {
+        console.log('[PlayScene] Player found at:', player.x, player.y);
+        console.log('[PlayScene] Camera bounds:', this.cameras.main.getBounds());
         this.cameras.main.startFollow(
           player,
           true,
@@ -155,6 +160,9 @@ export class PlayScene extends Phaser.Scene {
         // If launched from the editor, use a slightly closer zoom for readability
         this.cameras.main.setZoom(this.fromEditor ? 2 : CAMERA_CONFIG.ZOOM);
         this.cameras.main.roundPixels = true;
+        console.log('[PlayScene] Camera zoom:', this.cameras.main.zoom, 'Following player:', player.name);
+      } else {
+        console.warn('[PlayScene] Player not found!');
       }
     } catch (err) {
       console.error("[PlayScene] Error creating scene:", err);

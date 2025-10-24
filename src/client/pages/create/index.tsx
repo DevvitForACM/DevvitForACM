@@ -2,20 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
-import { SCENE_KEYS, COLORS } from '@/constants/game-constants';
+import { SCENE_KEYS, COLORS, ENTITY_CONFIG } from '@/constants/game-constants';
 import { LEVEL_SCHEMA_VERSION, LevelObjectType, PhysicsType, type LevelData, type LevelObject } from '@/game/level/level-schema';
 
 const ENTITY_TYPES_DATA = {
   player: { name: 'Player', icon: '🧍', color: '#22c55e' },
   enemy: { name: 'Enemy', icon: '👾', color: '#ef4444' },
-  'downvote-1': { name: 'Downvote ↓', icon: '⬇️', color: '#ff4500' },
-  'downvote-2': { name: 'Downvote ←', icon: '⬅️', color: '#ff4500' },
-  'downvote-3': { name: 'Downvote ↑', icon: '⬆️', color: '#ff4500' },
-  'downvote-4': { name: 'Downvote →', icon: '➡️', color: '#ff4500' },
-  'upvote-1': { name: 'Upvote ↓', icon: '⬇️', color: '#ff6600' },
-  'upvote-2': { name: 'Upvote ←', icon: '⬅️', color: '#ff6600' },
-  'upvote-3': { name: 'Upvote ↑', icon: '⬆️', color: '#ff6600' },
-  'upvote-4': { name: 'Upvote →', icon: '➡️', color: '#ff6600' },
+  spike: { name: 'Spike', icon: '🔺', color: '#ff4500' },
+  spring: { name: 'Spring', icon: '🟢', color: '#00ff00' },
   ground: { name: 'Ground', icon: '🟫', color: '#78716c' },
   lava: { name: 'Lava', icon: '🔥', color: '#f97316' },
   coin: { name: 'Coin', icon: '💰', color: '#eab308' },
@@ -25,14 +19,8 @@ const ENTITY_TYPES_DATA = {
 const ENTITY_TYPES = [
   { id: 'player', name: 'Player', icon: '🧍', color: '#22c55e' },
   { id: 'enemy', name: 'Enemy', icon: '👾', color: '#ef4444' },
-  { id: 'downvote-1', name: 'Downvote ↓', icon: '⬇️', color: '#ff4500' },
-  { id: 'downvote-2', name: 'Downvote ←', icon: '⬅️', color: '#ff4500' },
-  { id: 'downvote-3', name: 'Downvote ↑', icon: '⬆️', color: '#ff4500' },
-  { id: 'downvote-4', name: 'Downvote →', icon: '➡️', color: '#ff4500' },
-  { id: 'upvote-1', name: 'Upvote ↓', icon: '⬇️', color: '#ff6600' },
-  { id: 'upvote-2', name: 'Upvote ←', icon: '⬅️', color: '#ff6600' },
-  { id: 'upvote-3', name: 'Upvote ↑', icon: '⬆️', color: '#ff6600' },
-  { id: 'upvote-4', name: 'Upvote →', icon: '➡️', color: '#ff6600' },
+  { id: 'spike', name: 'Spike', icon: '🔺', color: '#ff4500' },
+  { id: 'spring', name: 'Spring', icon: '🟢', color: '#00ff00' },
   { id: 'ground', name: 'Ground', icon: '🟫', color: '#78716c' },
   { id: 'lava', name: 'Lava', icon: '🔥', color: '#f97316' },
   { id: 'coin', name: 'Coin', icon: '💰', color: '#eab308' },
@@ -43,6 +31,8 @@ export default function Create() {
   const [scene, setScene] = useState<CreateScene | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [entityCount, setEntityCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [savedEntities, setSavedEntities] = useState<any[]>([]);
   const [
     saveBanner,
     setSaveBanner,
@@ -137,30 +127,20 @@ export default function Create() {
     // Player from placed entity (singleton)
     const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
     const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-    const playerY = playerEnt ? playerEnt.gridY * GRID + GRID / 2 : 200;
+    // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
+    const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
     objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
-    // Handle directional upvote/downvote entities
+    // Handle spring and spike entities
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t.startsWith('upvote-') || t.startsWith('downvote-')) {
+      if (t === 'spring' || t === 'spike') {
         const x = e.gridX * GRID + GRID / 2;
-        const y = e.gridY * GRID + GRID / 2;
-        // Map entity type to LevelObjectType enum
-        let levelType: LevelObjectType;
-        switch (t) {
-          case 'upvote-1': levelType = LevelObjectType.UpvoteDown; break;
-          case 'upvote-2': levelType = LevelObjectType.UpvoteLeft; break;
-          case 'upvote-3': levelType = LevelObjectType.UpvoteUp; break;
-          case 'upvote-4': levelType = LevelObjectType.UpvoteRight; break;
-          case 'downvote-1': levelType = LevelObjectType.DownvoteDown; break;
-          case 'downvote-2': levelType = LevelObjectType.DownvoteLeft; break;
-          case 'downvote-3': levelType = LevelObjectType.DownvoteUp; break;
-          case 'downvote-4': levelType = LevelObjectType.DownvoteRight; break;
-          default: return; // skip unknown types
-        }
+        // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
+        const y = -(e.gridY + 1) * GRID + GRID / 2;
+        const levelType = t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
         objects.push({ 
-          id: `${t.replace('-', '_')}_${idx + 1}`, 
+          id: `${t}_${idx + 1}`, 
           type: levelType, 
           position: { x, y } 
         });
@@ -170,16 +150,18 @@ export default function Create() {
     // Door -> Goal (singleton optional)
     const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
     if (doorEnt) {
-      objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: doorEnt.gridY * GRID + GRID / 2 } });
+      // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
+      objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: -(doorEnt.gridY + 1) * GRID + GRID / 2 } });
     }
 
     // Platforms from ground cells
     ground.forEach((g: any, i: number) => {
+      // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
       objects.push({
         id: `platform_${i + 1}`,
         type: LevelObjectType.Platform,
-        position: { x: g.gridX * GRID + GRID / 2, y: g.gridY * GRID + GRID / 2 },
-        scale: { x: 1, y: 1 },
+        position: { x: g.gridX * GRID + GRID / 2, y: -(g.gridY + 1) * GRID + GRID / 2 },
+        scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT },
         physics: { type: PhysicsType.Static, isCollidable: true },
         visual: { tint: COLORS.PLATFORM_ALT },
       });
@@ -188,25 +170,12 @@ export default function Create() {
     const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
     const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
 
-    // Shift everything down so the lowest ground row sits near the bottom of the bounds for saved JSON too.
-    {
-      const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
-      if (platformYs.length > 0) {
-        const minGroundY = Math.min(...platformYs);
-        const desiredFloorY = height - 40; // margin from bottom
-        const deltaY = desiredFloorY - minGroundY;
-        if (Math.abs(deltaY) > 1) {
-          objects.forEach(o => { o.position.y += deltaY; });
-        }
-      }
-    }
-
     const levelData: LevelData = {
       version: LEVEL_SCHEMA_VERSION,
       name: 'Editor Level',
       settings: {
         gravity: { x: 0, y: 1 },
-        backgroundColor: '#000000',
+        backgroundColor: '#87CEEB',
         bounds: { width, height },
       },
       objects,
@@ -240,6 +209,10 @@ export default function Create() {
 
   const handlePlay = () => {
     if (!scene) return;
+    // Save current entities before switching to play mode
+    const currentEntities = scene.getAllEntities();
+    setSavedEntities(currentEntities);
+    
     // Prefer JSON from localStorage if saved; otherwise build one on the fly
     const saved = localStorage.getItem('editorLevelJSON');
     let levelData: LevelData | null = null;
@@ -259,56 +232,88 @@ export default function Create() {
       // Player from placed entity (singleton)
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      const playerY = playerEnt ? playerEnt.gridY * GRID + GRID / 2 : 200;
+      const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
       objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
       // Door -> Goal (singleton optional)
       const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
       if (doorEnt) {
-        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: doorEnt.gridY * GRID + GRID / 2 } });
+        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: -(doorEnt.gridY + 1) * GRID + GRID / 2 } });
       }
-      // Handle directional upvote/downvote entities in play mode too
+      // Handle spring and spike entities in play mode too
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t.startsWith('upvote-') || t.startsWith('downvote-')) {
+        if (t === 'spring' || t === 'spike') {
           const x = e.gridX * GRID + GRID / 2;
-          const y = e.gridY * GRID + GRID / 2;
-          let levelType: LevelObjectType;
-          switch (t) {
-            case 'upvote-1': levelType = LevelObjectType.UpvoteDown; break;
-            case 'upvote-2': levelType = LevelObjectType.UpvoteLeft; break;
-            case 'upvote-3': levelType = LevelObjectType.UpvoteUp; break;
-            case 'upvote-4': levelType = LevelObjectType.UpvoteRight; break;
-            case 'downvote-1': levelType = LevelObjectType.DownvoteDown; break;
-            case 'downvote-2': levelType = LevelObjectType.DownvoteLeft; break;
-            case 'downvote-3': levelType = LevelObjectType.DownvoteUp; break;
-            case 'downvote-4': levelType = LevelObjectType.DownvoteRight; break;
-            default: return;
-          }
-          objects.push({ id: `${t.replace('-', '_')}_${idx + 1}`, type: levelType, position: { x, y } });
+          const y = -(e.gridY + 1) * GRID + GRID / 2;
+          const levelType = t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
+          objects.push({ id: `${t}_${idx + 1}`, type: levelType, position: { x, y } });
         }
       });
       ground.forEach((g: any, i: number) => {
-        objects.push({ id: `platform_${i + 1}`, type: LevelObjectType.Platform, position: { x: g.gridX * GRID + GRID / 2, y: g.gridY * GRID + GRID / 2 }, scale: { x: 1, y: 1 }, physics: { type: PhysicsType.Static, isCollidable: true }, visual: { tint: COLORS.PLATFORM_ALT } });
+        objects.push({ id: `platform_${i + 1}`, type: LevelObjectType.Platform, position: { x: g.gridX * GRID + GRID / 2, y: -(g.gridY + 1) * GRID + GRID / 2 }, scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT }, physics: { type: PhysicsType.Static, isCollidable: true }, visual: { tint: COLORS.PLATFORM_ALT } });
       });
       const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
       const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
       
-      // Shift everything down so the lowest ground row sits near the bottom of the bounds.
-      const platformYs = objects.filter(o => o.type === LevelObjectType.Platform).map(o => o.position.y);
-      if (platformYs.length > 0) {
-        const minGroundY = Math.min(...platformYs);
-        const desiredFloorY = height - 40; // leave some margin from the bottom
-        const deltaY = desiredFloorY - minGroundY;
-        if (Math.abs(deltaY) > 1) {
-          objects.forEach(o => { o.position.y += deltaY; });
-        }
-      }
-      
-      levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#000000', bounds: { width, height } }, objects };
+      levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#87CEEB', bounds: { width, height } }, objects };
     }
 
-    // Start PlayScene with LevelData JSON (Matter loader path)
+    // Stop CreateScene and start PlayScene
+    setIsPlaying(true);
+    scene.scene.stop(SCENE_KEYS.CREATE);
     scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
+  };
+
+  const handleReturnToEditor = () => {
+    if (!scene) return;
+    
+    // Get PlayScene and destroy all its objects before stopping
+    const playScene = scene.scene.get(SCENE_KEYS.PLAY);
+    if (playScene && playScene.scene.isActive(SCENE_KEYS.PLAY)) {
+      // Remove all game objects from PlayScene
+      playScene.children.removeAll(true);
+      // Stop PlayScene completely
+      scene.scene.stop(SCENE_KEYS.PLAY);
+    }
+    
+    // Restart CreateScene to get a clean state
+    scene.scene.start(SCENE_KEYS.CREATE);
+    setIsPlaying(false);
+    
+    // Wait for scene to restart and then get the new instance
+    setTimeout(() => {
+      const game = (window as any).game;
+      if (game) {
+        const createScene = game.scene.getScene('CreateScene') as CreateScene;
+        if (createScene) {
+          // Update scene reference
+          setScene(createScene);
+
+          // Re-attach event listeners (first clear any prior ones on this scene)
+          createScene.events.removeAllListeners();
+          createScene.registry.set('entityTypes', ENTITY_TYPES_DATA);
+          createScene.events.on('entity-placed', () =>
+            setEntityCount(createScene.getAllEntities().length)
+          );
+          createScene.events.on('entity-removed', () =>
+            setEntityCount(createScene.getAllEntities().length)
+          );
+          createScene.events.on('entities-cleared', () => setEntityCount(0));
+
+          // Restore entities from snapshot using scene helper
+          if (savedEntities.length > 0) {
+            createScene.restoreSnapshot(savedEntities as any);
+            setEntityCount(savedEntities.length);
+          }
+
+          // Sync selection if any
+          if (selectedEntity) {
+            createScene.registry.set('selectedEntityType', selectedEntity);
+            createScene.setSelectedEntityType(selectedEntity);
+          }
+        }
+      }
+    }, 200);
   };
 
   const hasPlayer = useMemo(() => {
@@ -323,42 +328,61 @@ export default function Create() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-50">
-      {/* Phaser Canvas */}
-      <div className="absolute inset-0 z-0">
+      {/* Phaser Canvas - with padding for toolbars in editor, full height in play */}
+      <div className={`absolute top-[64px] left-0 right-0 z-0 ${isPlaying ? 'bottom-0' : 'bottom-[100px]'}`}>
         <PhaserContainer config={config} />
       </div>
 
-      {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-white shadow-md">
-        <div className="flex items-center justify-between p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">
-            Entities:{' '}
-            <span className="font-bold text-base sm:text-lg">
-              {entityCount}
-            </span>
+      {/* Top Bar - Editor Mode */}
+      {!isPlaying && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-white shadow-md">
+          <div className="flex items-center justify-between p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-gray-600">
+              Entities:{' '}
+              <span className="font-bold text-base sm:text-lg">
+                {entityCount}
+              </span>
+            </div>
+            <div className="flex gap-1 sm:gap-2">
+              <button
+                onClick={handleClear}
+                className="px-2 py-1 sm:px-4 sm:py-2 text-xs bg-zinc-900 sm:text-sm text-white rounded font-medium"
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
+              >
+                Save
+              </button>
+              <button
+                onClick={handlePlay}
+                className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
+              >
+                Play
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1 sm:gap-2">
+        </div>
+      )}
+
+      {/* Return to Editor Button - Play Mode */}
+      {isPlaying && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-white shadow-md">
+          <div className="flex items-center justify-between p-3 sm:p-4">
+            <div className="text-sm sm:text-lg font-semibold text-gray-800">
+              Play Mode
+            </div>
             <button
-              onClick={handleClear}
-              className="px-2 py-1 sm:px-4 sm:py-2 text-xs bg-zinc-900 sm:text-sm text-white rounded font-medium"
+              onClick={handleReturnToEditor}
+              className="px-3 py-2 sm:px-5 sm:py-2 bg-zinc-900 text-sm sm:text-base text-white rounded font-medium hover:bg-zinc-800 transition"
             >
-              Clear
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
-            >
-              Save
-            </button>
-            <button
-              onClick={handlePlay}
-              className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
-            >
-              Play
+              ← Return to Editor
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Save banner */}
       {saveBanner && (
@@ -373,11 +397,12 @@ export default function Create() {
         </div>
       )}
 
-      {/* Bottom Toolbox */}
-      <div className="absolute bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t">
-        <div className="overflow-x-auto">
-          <div className="flex gap-2 sm:gap-3 p-2 sm:p-4 min-h-[80px] sm:min-h-[100px]">
-            {ENTITY_TYPES.map((entity) => {
+      {/* Bottom Toolbox - Editor Mode Only */}
+      {!isPlaying && (
+        <div className="absolute bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t">
+          <div className="overflow-x-auto">
+            <div className="flex gap-2 sm:gap-3 p-2 sm:p-4 min-h-[80px] sm:min-h-[100px]">
+              {ENTITY_TYPES.map((entity) => {
               const disabled = (entity.id === 'player' && hasPlayer) || (entity.id === 'door' && hasDoor);
               return (
                 <button
@@ -414,13 +439,14 @@ export default function Create() {
                   </div>
                 </button>
               );
-            })}
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Helper */}
-      {entityCount === 0 && !selectedEntity && (
+      {/* Helper - Editor Mode Only */}
+      {!isPlaying && entityCount === 0 && !selectedEntity && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
           <div className="text-center bg-white/90 p-4 sm:p-8 rounded-lg max-w-xs sm:max-w-md mx-4 pointer-events-none">
             <div className="text-4xl sm:text-6xl mb-2 sm:mb-4">🎮</div>

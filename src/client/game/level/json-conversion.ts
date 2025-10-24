@@ -16,16 +16,24 @@ export function loadLevel(
 ): Phaser.GameObjects.GameObject[] {
   const level: LevelData = "version" in json ? json : convertLegacyLevel(json);
 
+  console.log('[loadLevel] Loading level:', level.name, 'with', level.objects.length, 'objects');
   validateLevel(level);
   applySettings(scene, level.settings);
 
   const createdObjects: Phaser.GameObjects.GameObject[] = [];
 
   level.objects.forEach((obj) => {
+    console.log('[loadLevel] Creating object:', obj.type, 'at', obj.position);
     const gameObject = createGameObject(scene, obj);
-    if (gameObject) createdObjects.push(gameObject);
+    if (gameObject) {
+      createdObjects.push(gameObject);
+      console.log('[loadLevel] Created:', obj.id, obj.type);
+    } else {
+      console.warn('[loadLevel] Failed to create:', obj.type);
+    }
   });
 
+  console.log('[loadLevel] Total objects created:', createdObjects.length);
   return createdObjects;
 }
 
@@ -95,16 +103,10 @@ function createGameObject(
       return createPlayer(scene, obj);
     case LevelObjectType.Platform:
       return createPlatform(scene, obj);
-    case LevelObjectType.UpvoteDown:
-    case LevelObjectType.UpvoteLeft:
-    case LevelObjectType.UpvoteUp:
-    case LevelObjectType.UpvoteRight:
-      return createUpvote(scene, obj);
-    case LevelObjectType.DownvoteDown:
-    case LevelObjectType.DownvoteLeft:
-    case LevelObjectType.DownvoteUp:
-    case LevelObjectType.DownvoteRight:
-      return createDownvote(scene, obj);
+    case LevelObjectType.Spring:
+      return createSpring(scene, obj);
+    case LevelObjectType.Spike:
+      return createSpike(scene, obj);
     default:
       return null;
   }
@@ -122,6 +124,7 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   });
 
   player.setCircle(radius);
+  player.setDisplaySize(48, 48); // Set visible size to match physics
   player.setName(obj.id);
   player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
   player.setFixedRotation();
@@ -130,39 +133,44 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
 }
 
 function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const color = obj.visual?.tint ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT;
   const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
   const y = obj.position.y;
 
+  // Create Matter physics body
   scene.matter.add.rectangle(x, y, width, height, { isStatic: true, label: obj.id });
 
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(color);
-  graphics.fillRect(x - width / 2, y - height / 2, width, height);
-  graphics.name = obj.id;
-
-  return graphics;
+  // Use grass texture if available, otherwise fallback to colored rectangle
+  if (scene.textures.exists('grass')) {
+    const grassImg = scene.add.image(x, y, 'grass');
+    grassImg.setDisplaySize(width, height);
+    grassImg.name = obj.id;
+    return grassImg;
+  } else {
+    const color = obj.visual?.tint ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT;
+    const graphics = scene.add.graphics();
+    graphics.fillStyle(color);
+    graphics.fillRect(x - width / 2, y - height / 2, width, height);
+    graphics.name = obj.id;
+    return graphics;
+  }
 }
 
-function createUpvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
-  // Map enum value to asset suffix 1..4
-  const suffix = String(obj.type).split('-')[1];
-  const key = `upvote${suffix}`;
-  const img = scene.add.image(x, y, key);
+  const img = scene.add.image(x, y, 'spring');
+  img.setDisplaySize(32, 24);
   img.name = obj.id;
   return img;
 }
 
-function createDownvote(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+function createSpike(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
-  const suffix = String(obj.type).split('-')[1];
-  const key = `downvote${suffix}`;
-  const img = scene.add.image(x, y, key);
+  const img = scene.add.image(x, y, 'spike');
+  img.setDisplaySize(32, 32);
   img.name = obj.id;
   return img;
 }

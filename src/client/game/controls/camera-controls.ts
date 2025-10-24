@@ -3,60 +3,98 @@ import { CAMERA_SCROLL } from "../../constants/game-constants";
 
 interface ControllableScene extends Phaser.Scene {
   cameraScrollSpeed: number;
+  cameraScrollSpeedY: number;
 }
 
 export function createScrollControls(scene: ControllableScene): void {
   scene.cameraScrollSpeed = 0;
+  scene.cameraScrollSpeedY = 0;
 
-  // Use constants for symbols and styling
-  const leftArrow = scene.add
-    .text(0, 0, CAMERA_SCROLL.LEFT_SYMBOL ?? "<", {
-      fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",
-      color: CAMERA_SCROLL.COLOR ?? "#ffffff",
-    })
+  // Create 4-directional controls with consistent styling
+  const buttonStyle = {
+    fontSize: "32px",
+    color: "#333",
+    backgroundColor: "#fff",
+    padding: { x: 12, y: 8 },
+  };
+
+  const upArrow = scene.add
+    .text(0, 0, "↑", buttonStyle)
     .setOrigin(0.5)
     .setScrollFactor(0)
-    .setDepth(1000);
+    .setDepth(1000)
+    .setData('isScrollControl', true);
+
+  const downArrow = scene.add
+    .text(0, 0, "↓", buttonStyle)
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(1000)
+    .setData('isScrollControl', true);
+
+  const leftArrow = scene.add
+    .text(0, 0, "←", buttonStyle)
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(1000)
+    .setData('isScrollControl', true);
 
   const rightArrow = scene.add
-    .text(0, 0, CAMERA_SCROLL.RIGHT_SYMBOL ?? ">", {
-      fontSize: CAMERA_SCROLL.FONT_SIZE ?? "48px",
-      color: CAMERA_SCROLL.COLOR ?? "#ffffff",
-    })
+    .text(0, 0, "→", buttonStyle)
     .setOrigin(0.5)
     .setScrollFactor(0)
-    .setDepth(1000);
+    .setDepth(1000)
+    .setData('isScrollControl', true);
 
   const positionControls = () => {
-    const { height } = scene.scale;
-    const yPos = height - (CAMERA_SCROLL.BUTTON_OFFSET_Y ?? 50);
-    leftArrow.setPosition(
-      CAMERA_SCROLL.LEFT_X ?? 50,
-      yPos
-    );
-    rightArrow.setPosition(
-      CAMERA_SCROLL.RIGHT_X ?? 150,
-      yPos
-    );
+    const { width } = scene.scale;
+    // Responsive margins and spacing for mobile/desktop
+    const margin = Math.min(width * 0.08, 60); // 8% of width, max 60px
+    const spacing = Math.min(width * 0.06, 45); // 6% of width, max 45px
+    const topOffset = 80; // Fixed offset from top (below top bar)
+    
+    // Position in top-right corner in a cross pattern
+    const centerX = width - margin;
+    const centerY = topOffset;
+    
+    upArrow.setPosition(centerX, centerY - spacing);
+    downArrow.setPosition(centerX, centerY + spacing);
+    leftArrow.setPosition(centerX - spacing, centerY);
+    rightArrow.setPosition(centerX + spacing, centerY);
   };
 
   positionControls();
 
+  upArrow.setInteractive();
+  downArrow.setInteractive();
   leftArrow.setInteractive();
   rightArrow.setInteractive();
 
   const scrollVelocity = CAMERA_SCROLL.VELOCITY ?? 5;
 
-  leftArrow.on(Phaser.Input.Events.POINTER_DOWN, () => {
+  upArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+    pointer.event?.stopPropagation();
+    scene.cameraScrollSpeedY = -scrollVelocity;
+  });
+
+  downArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+    pointer.event?.stopPropagation();
+    scene.cameraScrollSpeedY = scrollVelocity;
+  });
+
+  leftArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+    pointer.event?.stopPropagation();
     scene.cameraScrollSpeed = -scrollVelocity;
   });
 
-  rightArrow.on(Phaser.Input.Events.POINTER_DOWN, () => {
+  rightArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+    pointer.event?.stopPropagation();
     scene.cameraScrollSpeed = scrollVelocity;
   });
 
   const stopScrolling = () => {
     scene.cameraScrollSpeed = 0;
+    scene.cameraScrollSpeedY = 0;
   };
 
   scene.input.on(Phaser.Input.Events.POINTER_UP, stopScrolling);
