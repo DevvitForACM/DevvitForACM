@@ -35,7 +35,6 @@ export class LeaderboardController {
     }
   }
 
-
   static async updateScore(req: Request, res: Response): Promise<void> {
     try {
       const { userId, username, score } = req.body as UpdateScoreRequest;
@@ -76,7 +75,6 @@ export class LeaderboardController {
     }
   }
 
-  
   static async getUserRank(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;

@@ -16,7 +16,7 @@ export async function redditCallback(req: Request, res: Response) {
 
   try {
     const result = await createOrGetUserFromReddit(code);
-    console.log('✅ Reddit authentication successful for user:', result.firebaseUid);
+    console.log('✅ Reddit authentication successful for user:', result.redditUid);
     // Return JWT to frontend. For web flow, you might redirect with token in query or set a cookie.
     return res.json({
       success: true,
@@ -38,14 +38,15 @@ export async function redditAuthStatus(_req: Request, res: Response) {
   const hasCredentials = !!(clientId && process.env.REDDIT_CLIENT_SECRET && redirectUri);
   
   return res.json({
-    service: 'Reddit OAuth Backend',
+    service: 'Reddit OAuth Backend (Redis)',
     status: 'running',
     port: process.env.PORT || 3000,
     timestamp: new Date().toISOString(),
     config: {
       hasRedditCredentials: hasCredentials,
       clientId: clientId ? `${clientId.substring(0, 8)}...` : 'Not set',
-      redirectUri: redirectUri || 'Not set'
+      redirectUri: redirectUri || 'Not set',
+      redisEnabled: true
     },
     endpoints: {
       callback: '/auth/reddit/callback?code=AUTHORIZATION_CODE',
@@ -53,7 +54,7 @@ export async function redditAuthStatus(_req: Request, res: Response) {
       health: '/health'
     },
     message: hasCredentials 
-      ? 'Ready to handle Reddit OAuth callbacks' 
+      ? 'Ready to handle Reddit OAuth callbacks with Redis backend' 
       : 'Missing Reddit OAuth credentials in .env file'
   });
 }

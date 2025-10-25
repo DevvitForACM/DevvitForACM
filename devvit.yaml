@@ -1,0 +1,21 @@
+name: acmxkiro-game
+version: 0.0.1
+description: "Simple multiplayer logic game with leaderboard"
+
+permissions:
+  redis: true
+
+reddit:
+  scopes:
+    - read
+    - submit
+    - identity
+
+  post:
+    render: "main.tsx"
+
+reddit:
+  panels:
+    - name: game-panel
+      label: "🎮 Play ACMXKiro"
+      render: "main.tsx"
