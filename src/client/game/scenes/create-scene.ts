@@ -29,6 +29,8 @@ export class CreateScene extends Phaser.Scene {
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
     this.load.image('grass-filler', `${base}Grass-filler.png`);
+    this.load.image('lava', `${base}Lava.png`);
+    this.load.image('Lava-filler', `${base}Lava-filler.png`);
     
     // Load player (Snoo) animations from individual frames
     for (let i = 1; i <= 4; i++) {
@@ -197,6 +199,13 @@ export class CreateScene extends Phaser.Scene {
     const t = String(data.type).toLowerCase().trim();
     // Handle spike
     if (t === 'spike' && this.textures.exists('spike')) {
+      // Add filler background
+      if (this.textures.exists('grass-filler')) {
+        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass-filler');
+        filler.setOrigin(0, 0);
+        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
+        container.add(filler);
+      }
       const sprite = this.add.image(0, 0, 'spike');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
@@ -208,6 +217,13 @@ export class CreateScene extends Phaser.Scene {
       // subtle float
       this.tweens.add({ targets: container, y: pixelY - 3, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     } else if (t === 'spring' && this.textures.exists('spring')) {
+      // Add filler background
+      if (this.textures.exists('grass-filler')) {
+        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass-filler');
+        filler.setOrigin(0, 0);
+        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
+        container.add(filler);
+      }
       // Handle spring
       const sprite = this.add.image(0, 0, 'spring');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
@@ -226,6 +242,18 @@ export class CreateScene extends Phaser.Scene {
       container.add(filler);
       // Align grass art to exact grid edges (top-left anchored inside centered container)
       const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass');
+      sprite.setOrigin(0, 0);
+      sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
+      container.add(sprite);
+    } else if (t === 'lava' && this.textures.exists('lava')) {
+      // Add filler background
+      if (this.textures.exists('Lava-filler')) {
+        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'Lava-filler');
+        filler.setOrigin(0, 0);
+        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
+        container.add(filler);
+      }
+      const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'lava');
       sprite.setOrigin(0, 0);
       sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
       container.add(sprite);
@@ -388,6 +416,12 @@ export class CreateScene extends Phaser.Scene {
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
       this.cameras.main.scrollY += this.cameraScrollSpeedY * (delta / 16);
+      
+      // Prevent camera from scrolling to negative X-axis
+      if (this.cameras.main.scrollX < 0) {
+        this.cameras.main.scrollX = 0;
+      }
+      
       // Redraw grid when camera scroll changes to keep world-aligned grid
       const cam = this.cameras.main;
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
@@ -400,6 +434,9 @@ export class CreateScene extends Phaser.Scene {
 
   // Placement using registry as source of truth
   private placeAtGrid(gridX: number, gridY: number, _attempt: number): void {
+    // Prevent placement on negative X-axis
+    if (gridX < 0) return;
+
     const cellKey = `${gridX},${gridY}`;
     if (this.occupiedCells.has(cellKey)) return;
 

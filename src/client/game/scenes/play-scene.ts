@@ -39,6 +39,7 @@ export class PlayScene extends Phaser.Scene {
   private stepCooldownMs = 220;
   private lastStepAt = 0;
   private isStepping = false;
+  private lastDir: -1 | 1 = 1;
 
   constructor(level?: LevelConfig) {
     super({ key: SCENE_KEYS.PLAY });
@@ -55,10 +56,13 @@ export class PlayScene extends Phaser.Scene {
       console.warn(msg);
     });
 
-    // Load spring and spike assets
+    // Load textures
     this.load.image('spring', `${base}Spring.png`);
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
+    this.load.image('grass-filler', `${base}Grass-filler.png`);
+    this.load.image('lava', `${base}Lava.png`);
+    this.load.image('Lava-filler', `${base}Lava-filler.png`);
 
     // Load player animations from individual frames
     for (let i = 1; i <= 4; i++) {
@@ -95,10 +99,26 @@ export class PlayScene extends Phaser.Scene {
   // Matter-mode player
   private mPlayer?: Phaser.Physics.Matter.Image;
   private groundedContacts = 0;
+  private hazardCooldownUntil = 0;
+  private hazardIgnoreUntil = 0;
 
   // Collision groups & debug
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   public init(data: { useMapControls?: boolean; level?: LevelConfig; levelData?: LevelData }): void {
+    // Reset all state variables for clean restart
+    this.cameraScrollSpeed = 0;
+    this.maxXAllowed = Infinity;
+    this.worldHeight = 0;
+    this.platformRects = [];
+    this.lastSafePos = undefined;
+    this.coinSprites = [];
+    this.lastStepAt = 0;
+    this.isStepping = false;
+    this.groundedContacts = 0;
+    this.hazardCooldownUntil = 0;
+    this.hazardIgnoreUntil = 0;
+    this.mPlayer = undefined;
+    
     if (data.levelData) {
       this.editorLevelData = data.levelData;
       this.fromEditor = true;
@@ -194,10 +214,11 @@ export class PlayScene extends Phaser.Scene {
           CAMERA_CONFIG.FOLLOW_LERP,
           CAMERA_CONFIG.FOLLOW_LERP
         );
-        // Set moderate zoom for readability
-        this.cameras.main.setZoom(1.2);
+        // Ensure ground is visible: neutral zoom and downward bias to show more floor
+        this.cameras.main.setZoom(1.0);
+        this.cameras.main.setFollowOffset(0, -this.scale.height * 0.25);
         this.cameras.main.roundPixels = true;
-        // After zoom, ensure bottom is still visible
+        // After zoom, ensure bottom is still visible when not yet following update tick
         this.cameras.main.scrollY = Math.max(0, this.worldHeight - this.cameras.main.height);
         console.log('[PlayScene] Camera zoom:', this.cameras.main.zoom, 'Following player:', (player as any).name);
 
@@ -231,17 +252,28 @@ export class PlayScene extends Phaser.Scene {
             }
           });
 
-          // Ground detection via collision count with static bodies
+          // Ground detection and sensors
           this.mPlayer.setOnCollide((data: any) => {
             const other: any = data?.bodyB;
-            if (other && other.isStatic) {
+            if (!other) return;
+            const label: string = (other.label ?? '').toString();
+            if (other.isSensor) {
+              if (this.time.now < this.hazardIgnoreUntil) return;
+              if (label.startsWith('spring')) this.onHitSpring();
+              else if (label.startsWith('spike')) this.onHitHazard('spike');
+              else if (label.startsWith('lava')) this.onHitHazard('lava');
+              else if (label.startsWith('door')) this.onHitDoor();
+              return;
+            }
+            if (other.isStatic) {
               // consider ground when the other body is below or level with the player
               if (other.position.y >= this.mPlayer!.body.position.y - 0.5) this.groundedContacts++;
             }
           });
           this.mPlayer.setOnCollideEnd((data: any) => {
             const other: any = data?.bodyB;
-            if (other && other.isStatic) {
+            if (!other) return;
+            if (!other.isSensor && other.isStatic) {
               this.groundedContacts = Math.max(0, this.groundedContacts - 1);
             }
           });
@@ -437,6 +469,55 @@ export class PlayScene extends Phaser.Scene {
     return false;
   }
 
+  private onHitSpring(): void {
+    if (!this.mPlayer || this.isStepping) return;
+    
+    console.log('[Spring] Hit! Current velocity:', this.mPlayer.body.velocity.y);
+    
+    // Spring launches player 3 tiles up with fixed velocity
+    // Use a moderate upward velocity that works well with grid movement
+    const springVelocity = -10; // Reduced to prevent tunneling through platforms
+    
+    this.mPlayer.setVelocityY(springVelocity);
+    console.log('[Spring] Set velocity to:', springVelocity);
+    this.cameras.main.shake?.(100, 0.003);
+  }
+
+  private onHitHazard(kind: 'spike' | 'lava'): void {
+    if (!this.mPlayer) return;
+    if (this.time.now < this.hazardCooldownUntil) return;
+    this.hazardCooldownUntil = this.time.now + 220;
+    if (kind === 'spike') {
+      // Auto-case: respawn to last safe position instead of hopping
+      if (this.lastSafePos) {
+        this.mPlayer.setPosition(this.lastSafePos.x, this.lastSafePos.y);
+        this.mPlayer.setVelocity(0, 0);
+      } else {
+        // Fallback if no safe pos known: small knock-up so player can recover
+        const vx = Phaser.Math.Clamp((this.mPlayer.body as any).velocity.x || 0, -3, 3);
+        this.mPlayer.setVelocity(vx, -this.levelConfig.jumpVelocity * 0.8);
+      }
+      this.cameras.main.shake?.(80, 0.002);
+      return;
+    }
+    // Lava is lethal: send back to last safe platform position
+    if (this.lastSafePos) {
+      this.mPlayer.setPosition(this.lastSafePos.x, this.lastSafePos.y);
+      this.mPlayer.setVelocity(0, 0);
+    }
+  }
+
+  private onHitDoor(): void {
+    if ((this as any)._levelFinished) return;
+    (this as any)._levelFinished = true;
+    const t = this.add.text(0, 0, 'Level Complete!', { color: '#111', fontSize: '24px', backgroundColor: '#fff' });
+    t.setScrollFactor(0);
+    t.setPosition(this.scale.width / 2 - t.width / 2, 40);
+    this.time.delayedCall(900, () => {
+      this.events.emit('level:complete');
+    });
+  }
+
   public override update(_time: number, delta: number): void {
     // Scroll controls
     if (this.cameras?.main) {
@@ -489,32 +570,52 @@ export class PlayScene extends Phaser.Scene {
       const justLeft = Phaser.Input.Keyboard.JustDown(this.cursors.left) || Phaser.Input.Keyboard.JustDown(this.wasd.left);
       const justRight = Phaser.Input.Keyboard.JustDown(this.cursors.right) || Phaser.Input.Keyboard.JustDown(this.wasd.right);
       const up = this.cursors.up.isDown || this.wasd.up.isDown || this.cursors.space.isDown;
+      const leftDown = this.cursors.left.isDown || this.wasd.left.isDown;
+      const rightDown = this.cursors.right.isDown || this.wasd.right.isDown;
 
       const GRID = 32;
       let moved = false;
 
-      if ((justLeft || justRight) && now - this.lastStepAt >= this.stepCooldownMs) {
+      // Manual hop when Up + direction is pressed together - use physics
+      const dirDown = rightDown ? 1 : (leftDown ? -1 : 0);
+      const nearGround = this.groundedContacts > 0 || this.hasSupportAt(this.mPlayer.y ? this.mPlayer.x : 0, (this.mPlayer?.y ?? 0) + 24);
+      if (!moved && up && dirDown !== 0 && nearGround) {
+        this.hazardIgnoreUntil = now + 260;
+        const dir = dirDown as 1 | -1;
+        this.lastDir = dir;
+        
+        // Use velocity for physics-based diagonal hop (2 tiles horizontal, 2 tiles up)
+        this.mPlayer.setVelocity(dir * 4, -6); // Reduced to prevent tunneling
+        
+        this.isStepping = true;
+        this.time.delayedCall(250, () => {
+          this.isStepping = false;
+        });
+        
+        moved = true;
+        if (dir < 0) (this.mPlayer as any).setFlipX?.(true); else (this.mPlayer as any).setFlipX?.(false);
+      }
+
+      // Normal horizontal step (no Up) - use physics velocity instead of tweens
+      if (!moved && (justLeft || justRight)) {
         const dir = justRight ? 1 : -1;
-        const targetX = this.mPlayer.x + dir * GRID;
-        const footY = this.mPlayer.y + 24;
-        // Only step if there is support under the destination
-        if (this.hasSupportAt(targetX, footY)) {
-          this.mPlayer.setVelocity(0, 0);
-          this.isStepping = true;
-          // Smooth tween one tile
-          this.tweens.add({
-            targets: this.mPlayer,
-            x: targetX,
-            duration: 180,
-            ease: 'Sine.easeInOut',
-            onComplete: () => {
-              this.isStepping = false;
-              this.lastStepAt = this.time.now;
-            },
-          });
-          moved = true;
-          if (dir < 0) (this.mPlayer as any).setFlipX?.(true); else (this.mPlayer as any).setFlipX?.(false);
-        }
+        this.lastDir = dir as 1 | -1;
+        
+        // Use velocity-based movement to maintain collision detection
+        const moveSpeed = 3; // Reduced to prevent tunneling
+        this.mPlayer.setVelocityX(dir * moveSpeed);
+        
+        // Stop after reaching approximately one tile
+        this.isStepping = true;
+        this.time.delayedCall(150, () => {
+          if (this.mPlayer) {
+            this.mPlayer.setVelocityX(0);
+            this.isStepping = false;
+          }
+        });
+        
+        moved = true;
+        if (dir < 0) (this.mPlayer as any).setFlipX?.(true); else (this.mPlayer as any).setFlipX?.(false);
       }
 
       // Clamp to content extent
@@ -522,8 +623,8 @@ export class PlayScene extends Phaser.Scene {
         this.mPlayer.setPosition(this.maxXAllowed, this.mPlayer.y);
       }
 
-      // Jump exactly one tile up (32px) using a short tween and velocity
-      if (up && this.groundedContacts > 0 && !this.isStepping) {
+      // Vertical jump (no direction)
+      if (!moved && up && this.groundedContacts > 0 && !this.isStepping) {
         this.mPlayer.setVelocity(0, 0);
         const targetY = this.mPlayer.y - 32;
         this.isStepping = true;
@@ -540,11 +641,20 @@ export class PlayScene extends Phaser.Scene {
 
       // Track last safe position when grounded
       if (this.groundedContacts > 0) this.lastSafePos = { x: this.mPlayer.x, y: this.mPlayer.y };
-      // Respawn to last safe if we fall below screen
-      const camBounds = this.cameras.main.getBounds();
-      if (this.mPlayer.y > camBounds.bottom + 200 && this.lastSafePos) {
-        this.mPlayer.setPosition(this.lastSafePos.x, this.lastSafePos.y);
-        this.mPlayer.setVelocity(0, 0);
+      
+      // Respawn to last safe if we fall into void (below world height)
+      const fallThreshold = this.worldHeight > 0 ? this.worldHeight + 100 : this.cameras.main.height + 200;
+      if (this.mPlayer.y > fallThreshold) {
+        if (this.lastSafePos) {
+          this.mPlayer.setPosition(this.lastSafePos.x, this.lastSafePos.y);
+          this.mPlayer.setVelocity(0, 0);
+          this.cameras.main.shake?.(100, 0.003);
+        } else {
+          // No safe pos recorded - respawn at level start
+          const startY = Math.max(100, this.worldHeight - 100);
+          this.mPlayer.setPosition(200, startY);
+          this.mPlayer.setVelocity(0, 0);
+        }
       }
 
       // Coin collection by proximity

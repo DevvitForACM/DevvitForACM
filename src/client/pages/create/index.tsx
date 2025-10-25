@@ -135,15 +135,16 @@ export default function Create() {
     const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
     objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
-    // Handle spring, spike, coin entities
+    // Handle spring, spike, coin, lava entities
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t === 'spring' || t === 'spike' || t === 'coin') {
+      if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
         const x = e.gridX * GRID + GRID / 2;
         const y = toY(e.gridY);
         let levelType: LevelObjectType = LevelObjectType.Spring;
         if (t === 'spike') levelType = LevelObjectType.Spike;
         else if (t === 'coin') levelType = LevelObjectType.Coin;
+        else if (t === 'lava') levelType = LevelObjectType.Lava;
         objects.push({ 
           id: `${t}_${idx + 1}`, 
           type: levelType, 
@@ -243,15 +244,16 @@ export default function Create() {
       if (doorEnt) {
         objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) } });
       }
-      // Handle spring, spike, coin entities in play mode too
+      // Handle spring, spike, coin, lava entities in play mode too
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike' || t === 'coin') {
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
           if (t === 'spike') levelType = LevelObjectType.Spike;
           else if (t === 'coin') levelType = LevelObjectType.Coin;
+          else if (t === 'lava') levelType = LevelObjectType.Lava;
           objects.push({ id: `${t}_${idx + 1}`, type: levelType, position: { x, y } });
         }
       });
@@ -262,10 +264,23 @@ export default function Create() {
       levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#87CEEB', bounds: { width, height } }, objects };
     }
 
-    // Stop CreateScene and start PlayScene
+    // Stop CreateScene and properly restart PlayScene
     setIsPlaying(true);
+    
+    // Clean up any existing PlayScene first
+    const existingPlayScene = scene.scene.get(SCENE_KEYS.PLAY);
+    if (existingPlayScene) {
+      existingPlayScene.scene.stop(SCENE_KEYS.PLAY);
+      // Force scene restart by stopping and starting
+      existingPlayScene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
+    }
+    
     scene.scene.stop(SCENE_KEYS.CREATE);
-    scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
+    
+    // If PlayScene doesn't exist, start it fresh
+    if (!existingPlayScene) {
+      scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
+    }
   };
 
   const handleReturnToEditor = () => {

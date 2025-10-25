@@ -109,6 +109,10 @@ function createGameObject(
       return createSpike(scene, obj);
     case LevelObjectType.Coin:
       return createCoin(scene, obj);
+    case LevelObjectType.Lava:
+      return createLava(scene, obj);
+    case LevelObjectType.Goal:
+      return createDoor(scene, obj);
     default:
       return null;
   }
@@ -123,6 +127,8 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   const player = scene.matter.add.sprite(obj.position.x, obj.position.y, textureKey, undefined, {
     restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
     friction: ENTITY_CONFIG.PLAYER_FRICTION,
+    frictionAir: 0.01, // Add air resistance to prevent tunneling
+    density: 0.001, // Lighter body for better collision response
   });
 
   player.setCircle(radius);
@@ -131,6 +137,12 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
   player.setFixedRotation();
   (player as any).setDepth?.(10);
+  
+  // Enable better collision detection
+  if (player.body && (player.body as any).body) {
+    (player.body as any).body.isSleeping = false;
+    (player.body as any).body.sleepThreshold = Infinity; // Never sleep
+  }
 
   return player;
 }
@@ -175,8 +187,25 @@ function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjec
 function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
+  const w = 32, h = 32; // Make it a full tile height
+  
+  // Add a thin solid platform on top so player doesn't fall through
+  scene.matter.add.rectangle(x, y - h / 2 + 2, w, 4, { isStatic: true, label: 'spring_platform' });
+  
+  // Large sensor body for collision detection (covers whole tile)
+  scene.matter.add.rectangle(x, y, w, h, { isStatic: true, isSensor: true, label: 'spring' });
+  
+  // Add filler background
+  if (scene.textures.exists('grass-filler')) {
+    const filler = scene.add.image(x - w / 2, y - h / 2, 'grass-filler');
+    filler.setOrigin(0, 0);
+    filler.setDisplaySize(w, h);
+    filler.setDepth(4);
+    filler.name = obj.id + '_filler';
+  }
+  
   const img = scene.add.image(x, y, 'spring');
-  img.setDisplaySize(32, 24);
+  img.setDisplaySize(w, 32); // Visual size
   img.name = obj.id;
   img.setDepth(5);
   return img;
@@ -185,8 +214,22 @@ function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
 function createSpike(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
+  const w = 32, h = 32;
+  
+  // sensor body for hazard detection
+  scene.matter.add.rectangle(x, y, 28, 28, { isStatic: true, isSensor: true, label: 'spike' });
+  
+  // Add filler background
+  if (scene.textures.exists('grass-filler')) {
+    const filler = scene.add.image(x - w / 2, y - h / 2, 'grass-filler');
+    filler.setOrigin(0, 0);
+    filler.setDisplaySize(w, h);
+    filler.setDepth(4);
+    filler.name = obj.id + '_filler';
+  }
+  
   const img = scene.add.image(x, y, 'spike');
-  img.setDisplaySize(32, 32);
+  img.setDisplaySize(w, h);
   img.name = obj.id;
   img.setDepth(5);
   return img;
@@ -202,6 +245,62 @@ function createCoin(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.G
   try { sprite.play('coin-spin'); } catch {}
   sprite.name = obj.id;
   return sprite;
+}
+
+function createLava(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const width = (obj.scale?.x ?? 1) * 32;
+  const height = (obj.scale?.y ?? 1) * 32;
+  const x = obj.position.x;
+  const y = obj.position.y;
+  
+  // Large sensor area that kills the player
+  scene.matter.add.rectangle(x, y, width, height, { isStatic: true, isSensor: true, label: 'lava' });
+  
+  // Add filler background
+  if (scene.textures.exists('Lava-filler')) {
+    const filler = scene.add.image(x - width / 2, y - height / 2, 'Lava-filler');
+    filler.setOrigin(0, 0);
+    filler.setDisplaySize(width, height);
+    filler.setDepth(0);
+    filler.name = obj.id + '_filler';
+  }
+  
+  let go: Phaser.GameObjects.GameObject;
+  if (scene.textures.exists('lava')) {
+    const img = scene.add.image(x - width / 2, y - height / 2, 'lava');
+    img.setOrigin(0, 0);
+    img.setDisplaySize(width, height);
+    img.setDepth(1); // above platforms (-1)
+    img.name = obj.id;
+    go = img;
+  } else {
+    const g = scene.add.graphics();
+    g.fillStyle(0xf97316);
+    g.fillRect(x - width / 2, y - height / 2, width, height);
+    g.name = obj.id;
+    go = g;
+  }
+  return go;
+}
+
+function createDoor(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+  const w = 48, h = 64;
+  const x = obj.position.x;
+  const y = obj.position.y - h / 2; // visually rest on tile
+  // door sensor slightly inset
+  scene.matter.add.rectangle(x, y + h / 2, w * 0.8, h, { isStatic: true, isSensor: true, label: 'door' });
+  if (scene.textures.exists('door')) {
+    const img = scene.add.image(x, y, 'door');
+    img.setDisplaySize(w, h);
+    img.name = obj.id;
+    img.setDepth(4);
+    return img;
+  }
+  const g = scene.add.rectangle(x, y + h / 2, w, h, 0x8b5cf6);
+  g.setStrokeStyle(2, 0x4c1d95);
+  (g as any).name = obj.id;
+  (g as any).setDepth?.(4);
+  return g as any;
 }
 
 function validateLevel(level: LevelData): void {

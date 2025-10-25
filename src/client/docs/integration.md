@@ -130,5 +130,84 @@ Note: Some asset additions (e.g., Ground/Lava, grass textures) support improved 
 - If additional scene plugins are introduced, ensure their objects are cleaned up on stop.
 - When adding new editor entity types, extend `restoreSnapshot` mapping via registry metadata.
 
+### 7) Lava Asset Loading & Level Object Support (October 25, 2025)
+Problem: Lava blocks not appearing in play mode; door/goal entities not loading.
+
+Fixes:
+- Added `LevelObjectType.Lava` and `LevelObjectType.Goal` cases to `createGameObject()` switch in `json-conversion.ts`.
+- Created `createLava()` and `createDoor()` functions (already existed but weren't being called).
+- Now properly loads lava hazards and door/goal entities from editor to play mode.
+
+### 8) Movement Controls & Collision Detection Overhaul (October 25, 2025)
+Problem: Arrow keys had delays, player tunneling through objects, springs not working reliably.
+
+Fixes:
+- **Removed movement cooldowns**: Eliminated `stepCooldownMs` check from horizontal movement; `JustDown` handles debouncing natively.
+- **Camera restrictions**: Added X-axis clamp to prevent scrolling to negative coordinates in editor.
+- **Entity placement restrictions**: Blocks placement on negative X-axis (`if (gridX < 0) return`).
+- **Physics-based movement**: Replaced tweens with velocity-based movement to maintain collision detection:
+  - Horizontal: 3 px/frame velocity
+  - Diagonal hop: (4, -6) velocity for 2 tiles horizontal + 2 tiles vertical
+  - Spring: -10 vertical velocity for ~3 tile bounce
+- **Player physics improvements**:
+  - Added air resistance: `frictionAir: 0.01`
+  - Reduced density: `density: 0.001`
+  - Disabled sleeping: `sleepThreshold: Infinity`
+- **Spring collision fix**: Added thin solid platform (4px) on top + large sensor (32x32) to prevent tunneling.
+- **Removed support checks**: Springs/spikes no longer added to `platformRects`; only platforms block movement.
+
+### 9) Visual Improvements - Filler Backgrounds (October 25, 2025)
+Problem: Gaps and seams between adjacent tiles.
+
+Fixes:
+- Added filler texture loading: `Grass-filler.png` and `Lava-filler.png`.
+- Implemented filler backgrounds in both play and editor:
+  - Platforms: grass-filler behind grass
+  - Springs: grass-filler behind spring
+  - Spikes: grass-filler behind spike
+  - Lava: Lava-filler behind lava
+- Ensures seamless tile rendering with no visible gaps.
+
+### 10) Void Detection & Respawn System (October 25, 2025)
+Problem: Player falling forever into void.
+
+Fixes:
+- Uses world height for detection: `fallThreshold = worldHeight + 100`
+- Tracks `lastSafePos` when grounded (groundedContacts > 0)
+- Respawns to last safe position or default (200, worldHeight - 100)
+- Added camera shake feedback on respawn
+
+### 11) PlayScene Restart Logic (October 25, 2025)
+Problem: Returning to editor after making changes, then going back to play mode didn't work.
+
+Fixes:
+- Properly cleans up existing PlayScene before restart
+- Stops and restarts PlayScene with fresh state
+- Resets all state variables in `init()` method
+
+## Current Physics Configuration
+```javascript
+// Player Body
+{
+  restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
+  friction: ENTITY_CONFIG.PLAYER_FRICTION,
+  frictionAir: 0.01,
+  density: 0.001,
+  sleepThreshold: Infinity
+}
+
+// Movement Speeds (velocity-based)
+Horizontal: 3 px/frame
+Diagonal: (4, -6) velocity  
+Spring: -10 vertical velocity
+Vertical jump: 1 tile tween (150ms)
+```
+
+## Asset List
+- Spring.png, Spikes.png, Lava.png
+- Grass.png, Grass-filler.png, Lava-filler.png
+- Player animations: Idle (4 frames), Jump (5 frames), Run (6 frames)
+- Coin animations: coin_2_1..4.png
+
 ---
-Last updated: automated from chat integration.
+Last updated: October 25, 2025 - Major collision detection and movement overhaul.
