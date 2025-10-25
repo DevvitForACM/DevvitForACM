@@ -32,6 +32,7 @@ export enum LevelObjectType {
   Decoration = "decoration",
   Spring = "spring",
   Spike = "spike",
+  Coin = "coin",
 }
 
 /**

@@ -29,6 +29,8 @@ export class CreateScene extends Phaser.Scene {
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
     this.load.image('grass-filler', `${base}Grass-filler.png`);
+    this.load.image('lava', `${base}Lava.png`);
+    this.load.image('Lava-filler', `${base}Lava-filler.png`);
     
     // Load player (Snoo) animations from individual frames
     for (let i = 1; i <= 4; i++) {
@@ -197,6 +199,13 @@ export class CreateScene extends Phaser.Scene {
     const t = String(data.type).toLowerCase().trim();
     // Handle spike
     if (t === 'spike' && this.textures.exists('spike')) {
+      // Add filler background
+      if (this.textures.exists('grass-filler')) {
+        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass-filler');
+        filler.setOrigin(0, 0);
+        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
+        container.add(filler);
+      }
       const sprite = this.add.image(0, 0, 'spike');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
@@ -208,6 +217,13 @@ export class CreateScene extends Phaser.Scene {
       // subtle float
       this.tweens.add({ targets: container, y: pixelY - 3, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     } else if (t === 'spring' && this.textures.exists('spring')) {
+      // Add filler background
+      if (this.textures.exists('grass-filler')) {
+        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass-filler');
+        filler.setOrigin(0, 0);
+        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
+        container.add(filler);
+      }
       // Handle spring
       const sprite = this.add.image(0, 0, 'spring');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
@@ -229,6 +245,18 @@ export class CreateScene extends Phaser.Scene {
       sprite.setOrigin(0, 0);
       sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
       container.add(sprite);
+    } else if (t === 'lava' && this.textures.exists('lava')) {
+      // Add filler background
+      if (this.textures.exists('Lava-filler')) {
+        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'Lava-filler');
+        filler.setOrigin(0, 0);
+        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
+        container.add(filler);
+      }
+      const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'lava');
+      sprite.setOrigin(0, 0);
+      sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
+      container.add(sprite);
     } else {
       const colorValue = parseInt(String(data.color).replace('#', ''), 16) || 0x64748b;
       const rect = this.add.rectangle(0, 0, GRID_SIZE - 4, GRID_SIZE - 4, colorValue);
@@ -242,10 +270,13 @@ export class CreateScene extends Phaser.Scene {
     container.setData('isBaseline', !!data.isBaseline);
 
     container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Ensure we catch right-click reliably and prevent browser menu
+      // Support mouse and touch. On mobile, there is no right-click; tapping with no selection removes the entity.
+      const evt: any = pointer.event as any;
+      const pointerType = evt?.pointerType as string | undefined; // 'mouse' | 'touch' | 'pen'
       const isRight = pointer.rightButtonDown() || (pointer.button === 2);
-      if (!isRight) return;
-      (pointer.event as MouseEvent)?.preventDefault?.();
+      const isTouch = Boolean((pointer as any).wasTouch || pointerType === 'touch');
+      const isPrimaryLike = isRight || (typeof pointer.leftButtonDown === 'function' && pointer.leftButtonDown()) || isTouch;
+
       const entityId = container.getData('entityId') as string;
       const gridX = container.getData('gridX') as number;
       const gridY = container.getData('gridY') as number;
@@ -254,24 +285,35 @@ export class CreateScene extends Phaser.Scene {
         | Record<string, { name: string; color: string; icon: string }>
         | undefined;
 
-      if (sel && entityTypes && (entityTypes[sel] || Object.keys(entityTypes).some(k => k.toLowerCase().trim() === sel.toLowerCase().trim()))) {
-        // Normalize selection key
-        let key = sel;
-        if (!entityTypes[key]) {
-          const match = Object.keys(entityTypes).find(
-            (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
-          );
-          if (match) key = match;
+      // If no selection, any tap/click removes the entity (mobile-friendly)
+      if (!sel) {
+        if (isPrimaryLike) {
+          (evt as MouseEvent | PointerEvent | undefined)?.preventDefault?.();
+          this.removeEntity(entityId);
         }
-        // Replace existing entity with selected type at same grid
-        const info2 = entityTypes[key];
-        if (!info2) return;
-        this.removeEntity(entityId);
-        this.placeEntity({ type: key, gridX, gridY, name: info2.name, color: info2.color, icon: info2.icon });
-      } else {
-        // No selection -> simple remove
-        this.removeEntity(entityId);
+        return;
       }
+
+      // With a selection, only right-click (or long-press equivalents) should replace
+      if (!(entityTypes && (entityTypes[sel] || Object.keys(entityTypes).some(k => k.toLowerCase().trim() === sel.toLowerCase().trim())))) {
+        return;
+      }
+
+      if (!isRight && !isTouch) return; // keep replacement as an explicit action
+
+      // Normalize selection key
+      let key = sel;
+      if (!entityTypes[key]) {
+        const match = Object.keys(entityTypes).find(
+          (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
+        );
+        if (match) key = match;
+      }
+      const info2 = entityTypes[key];
+      if (!info2) return;
+      (evt as MouseEvent | PointerEvent | undefined)?.preventDefault?.();
+      this.removeEntity(entityId);
+      this.placeEntity({ type: key, gridX, gridY, name: info2.name, color: info2.color, icon: info2.icon });
     });
 
     const entityId = `${data.type}-${Date.now()}-${Math.floor(Math.random()*1e6)}`;
@@ -374,6 +416,12 @@ export class CreateScene extends Phaser.Scene {
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
       this.cameras.main.scrollY += this.cameraScrollSpeedY * (delta / 16);
+      
+      // Prevent camera from scrolling to negative X-axis
+      if (this.cameras.main.scrollX < 0) {
+        this.cameras.main.scrollX = 0;
+      }
+      
       // Redraw grid when camera scroll changes to keep world-aligned grid
       const cam = this.cameras.main;
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
@@ -386,6 +434,9 @@ export class CreateScene extends Phaser.Scene {
 
   // Placement using registry as source of truth
   private placeAtGrid(gridX: number, gridY: number, _attempt: number): void {
+    // Prevent placement on negative X-axis
+    if (gridX < 0) return;
+
     const cellKey = `${gridX},${gridY}`;
     if (this.occupiedCells.has(cellKey)) return;
 
