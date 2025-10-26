@@ -136,25 +136,27 @@ function createPlayer(
   scene: Phaser.Scene,
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
-  const textureKey = 'player-idle-1';
+  const textureKey = obj.visual?.texture || 'player-idle-0';
 
   if ((scene as any).physics?.world) {
     const playerSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
-    playerSprite.setDisplaySize(48, 48);
+    playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
     playerSprite.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
     playerSprite.setCollideWorldBounds(true);
     
     const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+    player.sprite.destroy();
     player.sprite = playerSprite;
     
     return playerSprite;
   } else {
     const playerSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
-    playerSprite.setDisplaySize(48, 48);
+    playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
     
     const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+    player.sprite.destroy();
     player.sprite = playerSprite;
     
     return playerSprite;
@@ -210,9 +212,9 @@ function createCoin(
   scene: Phaser.Scene,
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
-  const textureKey = 'coin-1';
+  const textureKey = obj.visual?.texture || 'coin-0';
   const coinSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
-  coinSprite.setDisplaySize(24, 24);
+  coinSprite.setDisplaySize(60, 60);
   coinSprite.setName(obj.id);
   
   const coin = new Coin(scene, obj.id, obj.position.x, obj.position.y, textureKey);

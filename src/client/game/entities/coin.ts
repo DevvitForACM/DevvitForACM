@@ -15,8 +15,8 @@ export class Coin extends BaseEntity {
   ) {
     super(scene, id, x, y, texture);
 
-    this.width = 24;
-    this.height = 24;
+    this.width = 60;
+    this.height = 60;
     this.value = 1;
     this.isCollected = false;
 
@@ -28,7 +28,7 @@ export class Coin extends BaseEntity {
     if (!this.scene.anims.exists('coin-spin')) {
       this.scene.anims.create({
         key: 'coin-spin',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
         frameRate: 4,
         repeat: -1,
       });

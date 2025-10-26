@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "name": "Test Level 1",
   "settings": {
-    "gravity": { "x": 0, "y": 1 },
+    "gravity": { "x": 0, "y": 800 },
     "backgroundColor": "#87CEEB",
     "bounds": { "width": 1000, "height": 600 }
   },

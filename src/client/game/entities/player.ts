@@ -20,8 +20,8 @@ export class Player extends BaseEntity {
   ) {
     super(scene, id, x, y, texture);
 
-    this.width = PLAYER.SIZE.WIDTH;
-    this.height = PLAYER.SIZE.HEIGHT;
+    this.width = 60;
+    this.height = 100;
     this.health = PLAYER.HEALTH.DEFAULT;
     this.maxHealth = PLAYER.HEALTH.MAX;
     this.isDead = false;
@@ -33,18 +33,18 @@ export class Player extends BaseEntity {
     if (!this.scene.anims.exists('player-idle')) {
       this.scene.anims.create({
         key: 'player-idle',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
         frameRate: 8,
         repeat: -1,
       });
     }
 
-    if (!this.scene.anims.exists('player-jump')) {
+    if (!this.scene.anims.exists('player-jump-sequence')) {
       this.scene.anims.create({
-        key: 'player-jump',
-        frames: [1, 2, 3, 4, 5].map((i) => ({ key: `player-jump-${i}` })),
-        frameRate: 10,
-        repeat: -1,
+        key: 'player-jump-sequence',
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-jump-${i}` })),
+        frameRate: 12,
+        repeat: 0,
       });
     }
   }
@@ -55,9 +55,9 @@ export class Player extends BaseEntity {
     }
   }
 
-  public playJumpAnimation(): void {
+  public playJumpSequence(): void {
     if (this.sprite && this.sprite.anims) {
-      this.sprite.play('player-jump', true);
+      this.sprite.play('player-jump-sequence', true);
     }
   }
 

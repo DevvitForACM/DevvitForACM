@@ -60,15 +60,16 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
 
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 0; i <= 4; i++) {
       this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
     }
-    for (let i = 1; i <= 5; i++) {
+
+    for (let i = 0; i <= 4; i++) {
       this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
     }
 
-    for (let i = 1; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `${base}Animations/Coin/coin_2_${i}.png`);
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`coin-${i}`, `${base}Animations/Coin/${i}.png`);
     }
   }
 
@@ -113,11 +114,11 @@ export class PlayScene extends Phaser.Scene {
       }
 
       const keys = [
+        'player-idle-0',
         'player-idle-1',
         'player-idle-2',
         'player-idle-3',
-        'player-idle-4',
-        'player-jump-1',
+        'player-jump-0',
       ];
       const missing = keys.filter((k) => !this.textures.exists(k));
       const dbg = this.add.text(
@@ -253,9 +254,11 @@ export class PlayScene extends Phaser.Scene {
     else if (vx > 0) this.player.setFlipX(false);
 
     if (!onFloor) {
-      this.player.play('player-jump', true);
+      if (this.player.anims.currentAnim?.key !== 'player-jump-sequence') {
+        this.player.play('player-jump-sequence', true);
+      }
     } else {
-      if (vx === 0) {
+      if (this.player.anims.currentAnim?.key !== 'player-idle') {
         this.player.play('player-idle', true);
       }
     }
