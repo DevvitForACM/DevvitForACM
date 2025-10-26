@@ -10,6 +10,7 @@ export interface LeaderboardResponse {
   entries: LeaderboardEntry[];
   userRank?: number | undefined;
   totalPlayers: number;
+  currentUser?: string;
 }
 
 export interface UpdateScoreRequest {
