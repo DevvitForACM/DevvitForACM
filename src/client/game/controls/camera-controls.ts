@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CAMERA_SCROLL } from '../../constants/game-constants';
+import { CAMERA_SCROLL } from '@/constants/game-constants';
 
 interface ControllableScene extends Phaser.Scene {
   cameraScrollSpeed: number;

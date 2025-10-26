@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
-import { loadLevel } from '../game/level/json-conversion';
-import { LevelData } from '../game/level/level-schema';
-import { getPhaserConfig } from '../config/game-config';
+import { loadLevel } from '@/game/level/json-conversion';
+import { LevelData } from '@/game/level/level-schema';
+import { getPhaserConfig } from '@/config/game-config';
 
 export function useGameLoader(levelId: string) {
   const containerRef = useRef<HTMLDivElement | null>(null);

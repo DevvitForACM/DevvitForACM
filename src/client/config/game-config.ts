@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { PlayScene } from '../game/scenes/play-scene';
-import { CreateScene } from '../game/scenes/create-scene';
-import type { LevelConfig } from '../game/level/level-types';
+import { PlayScene } from '@/game/scenes/play-scene';
+import { CreateScene } from '@/game/scenes/create-scene';
+import type { LevelConfig } from '@/game/level/level-types';
 
 export function getPhaserConfig(
   level?: LevelConfig

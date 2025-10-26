@@ -8,7 +8,7 @@ import {
   LEVEL_SCHEMA_VERSION,
   LegacyLevelFormat,
 } from './level-schema';
-import { ENTITY_CONFIG } from '../../constants/game-constants';
+import { ENTITY_CONFIG } from '@/constants/game-constants';
 
 export function loadLevel(
   scene: Phaser.Scene,

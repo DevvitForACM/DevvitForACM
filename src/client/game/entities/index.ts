@@ -17,4 +17,4 @@ export {
   type CollisionEvent,
 } from './collision-response';
 
-export * from '../../constants/game-constants';
+export * from '@/constants/game-constants';

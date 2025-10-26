@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { createScrollControls } from '../controls/camera-controls';
+import { createScrollControls } from '@/game/controls/camera-controls';
 
 const GRID_SIZE = 32;
 const BASELINE_Y = 0;

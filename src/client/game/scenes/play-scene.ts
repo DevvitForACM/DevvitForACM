@@ -1,15 +1,15 @@
 import Phaser from 'phaser';
-import { loadLevel } from '../level/json-conversion';
-import type { LevelData } from '../level/level-schema';
-import type { LevelConfig } from '../level/level-types';
+import { loadLevel } from '@/game/level/json-conversion';
+import type { LevelData } from '@/game/level/level-schema';
+import type { LevelConfig } from '@/game/level/level-types';
 import {
   CAMERA_CONFIG,
   GAME_CONFIG,
   SCENE_KEYS,
   PHYSICS,
   COLORS,
-} from '../../constants/game-constants';
-import { DEFAULT_LEVEL } from '../level/level-types';
+} from '@/constants/game-constants';
+import { DEFAULT_LEVEL } from '@/game/level/level-types';
 
 /**
  * Fetches and validates a JSON level file.

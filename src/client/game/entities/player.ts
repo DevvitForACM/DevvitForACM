@@ -4,7 +4,7 @@ import { Spike } from './spike';
 import { Coin } from './coin';
 import { Enemy } from './enemy';
 import { Spring } from './spring';
-import { PLAYER, COLLISION } from '../../constants/game-constants';
+import { PLAYER, COLLISION } from '@/constants/game-constants';
 
 export class Player extends BaseEntity {
   public health: number;
