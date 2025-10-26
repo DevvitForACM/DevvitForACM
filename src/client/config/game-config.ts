@@ -15,6 +15,31 @@ export function getPhaserConfig(
   }
 }
 
+export function getPhaserConfigWithLevelName(
+  levelName?: string
+): Phaser.Types.Core.GameConfig {
+  return {
+    type: Phaser.AUTO,
+    parent: 'phaser-game-container',
+    backgroundColor: '#f6f7f8',
+    render: { pixelArt: true, antialias: false },
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      width: '100%',
+      height: '100%',
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { x: 0, y: 800 },
+        debug: false,
+      },
+    },
+    scene: [new PlayScene(undefined, levelName)],
+  };
+}
+
 export function createGameConfig(
   level: LevelConfig
 ): Phaser.Types.Core.GameConfig {
@@ -55,17 +80,12 @@ export function createBlankCanvasConfig(
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
-      default: 'matter',
-      matter: {
-        gravity: { x: 0, y: 0.8 },
-        debug: false,
-      },
+      default: 'arcade',
       arcade: {
         gravity: { x: 0, y: 800 },
         debug: false,
       },
     },
-
     scene: [new CreateScene(), new PlayScene()],
   };
 }

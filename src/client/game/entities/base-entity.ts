@@ -12,6 +12,7 @@ export class BaseEntity {
   public canCollide: boolean;
   public collisionOffsetX: number;
   public collisionOffsetY: number;
+  protected scene: Phaser.Scene;
 
   constructor(
     scene: Phaser.Scene,
@@ -20,6 +21,7 @@ export class BaseEntity {
     y: number,
     texture: string
   ) {
+    this.scene = scene;
     this.id = id;
     this.x = x;
     this.y = y;

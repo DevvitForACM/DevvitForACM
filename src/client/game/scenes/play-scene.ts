@@ -6,21 +6,19 @@ import {
   CAMERA_CONFIG,
   GAME_CONFIG,
   SCENE_KEYS,
-  PHYSICS,
-  COLORS,
 } from '@/constants/game-constants';
 import { DEFAULT_LEVEL } from '@/game/level/level-types';
 
-/**
- * Fetches and validates a JSON level file.
- * Falls back gracefully if missing or invalid.
- */
 async function fetchLevelData(levelName: string): Promise<LevelData | null> {
   try {
-    const response = await fetch(`/assets/levels/${levelName}.json`);
+    const url = `/levels/${levelName}.json`;
+    console.log('[fetchLevelData] Fetching:', url);
+    const response = await fetch(url);
+    console.log('[fetchLevelData] Response status:', response.status);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = (await response.json()) as LevelData;
     if (!data || typeof data !== 'object') throw new Error('Invalid structure');
+    console.log('[fetchLevelData] Level loaded successfully:', data.name);
     return data;
   } catch (err) {
     console.warn(`[PlayScene] Failed to fetch level '${levelName}':`, err);
@@ -32,12 +30,16 @@ export class PlayScene extends Phaser.Scene {
   public cameraScrollSpeed = 0;
   private fromEditor = false;
   private editorLevelData?: LevelData;
+  private levelName?: string;
 
   private levelConfig: LevelConfig;
 
-  constructor(level?: LevelConfig) {
+  constructor(level?: LevelConfig, levelName?: string) {
     super({ key: SCENE_KEYS.PLAY });
     this.levelConfig = level ?? DEFAULT_LEVEL;
+    if (levelName !== undefined) {
+      this.levelName = levelName;
+    }
   }
 
   preload() {
@@ -79,8 +81,6 @@ export class PlayScene extends Phaser.Scene {
   };
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private playerBody!: Phaser.Physics.Arcade.Body;
-
-  private platforms!: Phaser.Physics.Arcade.StaticGroup;
   public init(data: {
     useMapControls?: boolean;
     level?: LevelConfig;
@@ -103,8 +103,13 @@ export class PlayScene extends Phaser.Scene {
 
       let jsonData: LevelData | null = null;
       if (!this.fromEditor) {
-        const levelName = GAME_CONFIG.DEFAULT_LEVEL;
-        jsonData = await fetchLevelData(levelName);
+        const levelToLoad = this.levelName || GAME_CONFIG.DEFAULT_LEVEL;
+        console.log('[PlayScene] Loading level:', levelToLoad);
+        jsonData = await fetchLevelData(levelToLoad);
+        console.log(
+          '[PlayScene] Level data loaded:',
+          jsonData ? 'SUCCESS' : 'FAILED'
+        );
       }
 
       const keys = [
@@ -125,41 +130,27 @@ export class PlayScene extends Phaser.Scene {
 
       if ((this.physics as any)?.world) {
         this.physics.world.gravity.y = this.levelConfig.gravityY;
-      } else if ((this.matter as any)?.world) {
-        const gy = Math.max(0, this.levelConfig.gravityY) / 1000;
-        this.matter.world.setGravity(0, gy || 1);
       }
 
-      if (this.editorLevelData && (this.matter as any)?.world) {
+      if (this.editorLevelData) {
         loadLevel(this, this.editorLevelData);
-
         const b = this.editorLevelData.settings?.bounds;
-        if (b) {
-          this.cameras.main.setBounds(
-            -b.height,
-            -b.height,
-            b.width + b.height,
-            b.height * 2
-          );
-
-          this.cameras.main.scrollY = -b.height + 100;
-        }
-      } else if (jsonData && (this.matter as any)?.world) {
+        if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
+      } else if (jsonData) {
         loadLevel(this, jsonData);
         const b = jsonData.settings?.bounds;
         if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
-      } else if ((this.physics as any)?.world) {
-        this.setupArcadeFallback();
-      } else if ((this.matter as any)?.world) {
-        this.setupMatterFallback();
       } else {
         this.add
-          .text(20, 20, 'No physics plugins available', { color: '#f33' })
+          .text(50, 50, 'No level data found', {
+            color: '#ff3333',
+            fontSize: '18px',
+          })
           .setScrollFactor(0);
+        return;
       }
 
       const player = this.children.getByName('player_1') as
-        | Phaser.Physics.Matter.Image
         | Phaser.GameObjects.Sprite
         | undefined;
 
@@ -184,6 +175,14 @@ export class PlayScene extends Phaser.Scene {
           'Following player:',
           player.name
         );
+
+        if ((this.physics as any)?.world && player.body) {
+          this.player =
+            player as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+          this.playerBody = player.body as Phaser.Physics.Arcade.Body;
+          this.setupPlayerControls();
+          this.setupCollisions();
+        }
       } else {
         console.warn('[PlayScene] Player not found!');
       }
@@ -198,156 +197,7 @@ export class PlayScene extends Phaser.Scene {
     }
   }
 
-  /** Fallback: builds a simple Matter-physics level using LevelConfig */
-  private setupMatterFallback(): void {
-    const level = this.levelConfig;
-    const W = level.worldWidth;
-    const H = level.worldHeight;
-
-    this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.setBackgroundColor(level.bgColor);
-    this.matter.world.setBounds(0, 0, W, H);
-
-    if (level.platforms && level.platforms.length > 0) {
-      level.platforms.forEach((r) => {
-        this.matter.add.rectangle(r.x, r.y, r.width, r.height, {
-          isStatic: true,
-          label: 'platform',
-        });
-
-        this.add
-          .rectangle(
-            r.x,
-            r.y,
-            r.width,
-            r.height,
-            r.color ?? COLORS.PLATFORM_ALT
-          )
-          .setDepth(-1);
-      });
-    } else {
-      this.matter.add.rectangle(W / 2, H - 20, W, 40, { isStatic: true });
-      this.add
-        .rectangle(W / 2, H - 20, W, 40, COLORS.PLATFORM_ALT)
-        .setDepth(-1);
-    }
-
-    const startX = level.playerStartX ?? 200;
-    const startY = level.playerStartY ?? Math.max(0, H - 100);
-    const player = this.matter.add.image(startX, startY, 'player-idle-1');
-    player.setCircle(20);
-    player.setBounce(0.1);
-    player.setFriction(0.05);
-    player.setFixedRotation();
-    player.setName('player_1');
-
-    this.cameras.main.startFollow(player, true, 0.08, 0.08);
-  }
-
-  /** Fallback: builds a simple Arcade-physics level using LevelConfig */
-  private setupArcadeFallback(): void {
-    const level = this.levelConfig;
-    const W = level.worldWidth;
-    const H = level.worldHeight;
-
-    this.physics.world.setBounds(0, 0, W, H);
-    this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.setBackgroundColor(level.bgColor);
-
-    this.platforms = this.physics.add.staticGroup();
-
-    const addPlatform = (r: {
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      color?: number;
-    }) => {
-      const rect = this.add.rectangle(
-        r.x,
-        r.y,
-        r.width,
-        r.height,
-        r.color ?? COLORS.PLATFORM_ALT
-      );
-      this.physics.add.existing(rect, true);
-      this.platforms.add(rect as Phaser.GameObjects.GameObject);
-    };
-
-    if (level.platforms && level.platforms.length > 0) {
-      level.platforms.forEach(addPlatform);
-    } else {
-      addPlatform({
-        x: W / 2,
-        y: H - 20,
-        width: W,
-        height: 40,
-        color: COLORS.PLATFORM_ALT,
-      });
-      addPlatform({
-        x: 400,
-        y: H - 150,
-        width: 250,
-        height: 30,
-        color: COLORS.PLATFORM,
-      });
-      addPlatform({
-        x: 950,
-        y: H - 250,
-        width: 400,
-        height: 30,
-        color: COLORS.PLATFORM,
-      });
-      addPlatform({
-        x: 1600,
-        y: H - 150,
-        width: 250,
-        height: 30,
-        color: COLORS.PLATFORM,
-      });
-    }
-
-    this.anims.create({
-      key: 'player-idle',
-      frames: [1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
-      frameRate: 8,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: 'player-jump',
-      frames: [1, 2, 3, 4, 5].map((i) => ({ key: `player-jump-${i}` })),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    if (!this.anims.exists('coin-spin')) {
-      this.anims.create({
-        key: 'coin-spin',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
-        frameRate: 4,
-        repeat: -1,
-      });
-    }
-
-    const startX = level.playerStartX ?? 200;
-    const startY = level.playerStartY ?? Math.max(0, H - 100);
-    this.player = this.physics.add.sprite(startX, startY, 'player-idle-1');
-    this.player.clearTint();
-    this.player.setDisplaySize(48, 48);
-    this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
-    this.playerBody.setCollideWorldBounds(true);
-    this.playerBody.setBounce(PHYSICS.PLAYER_BOUNCE_X, PHYSICS.PLAYER_BOUNCE_Y);
-    this.playerBody.setDragX(PHYSICS.PLAYER_DRAG_X);
-    this.player.play('player-idle');
-
-    this.physics.add.collider(this.player, this.platforms);
-
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setDeadzone(
-      this.scale.width * level.deadzoneXFrac,
-      this.scale.height * 0.8
-    );
-
+  private setupPlayerControls(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = {
       up: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -359,9 +209,19 @@ export class PlayScene extends Phaser.Scene {
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
       if (this.playerBody?.blocked.down) {
-        this.playerBody.setVelocityY(-level.jumpVelocity);
+        this.playerBody.setVelocityY(-this.levelConfig.jumpVelocity);
       }
     });
+  }
+
+  private setupCollisions(): void {
+    const platforms = this.children.list.filter(
+      (child) => child.name && child.name.startsWith('platform_')
+    ) as Phaser.GameObjects.GameObject[];
+
+    if (platforms.length > 0) {
+      this.physics.add.collider(this.player, platforms);
+    }
   }
 
   public override update(_time: number, delta: number): void {
@@ -393,11 +253,9 @@ export class PlayScene extends Phaser.Scene {
     else if (vx > 0) this.player.setFlipX(false);
 
     if (!onFloor) {
-      if (this.player.anims.currentAnim?.key !== 'player-jump') {
-        this.player.play('player-jump', true);
-      }
+      this.player.play('player-jump', true);
     } else {
-      if (vx === 0 && this.player.anims.currentAnim?.key !== 'player-idle') {
+      if (vx === 0) {
         this.player.play('player-idle', true);
       }
     }

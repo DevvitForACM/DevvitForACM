@@ -20,6 +20,22 @@ export class Coin extends BaseEntity {
     this.value = 1;
     this.isCollected = false;
 
+    this.createAnimations();
+    this.startSpinning();
+  }
+
+  private createAnimations(): void {
+    if (!this.scene.anims.exists('coin-spin')) {
+      this.scene.anims.create({
+        key: 'coin-spin',
+        frames: [1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frameRate: 4,
+        repeat: -1,
+      });
+    }
+  }
+
+  private startSpinning(): void {
     if (this.sprite && this.sprite.anims) {
       try {
         this.sprite.play('coin-spin');

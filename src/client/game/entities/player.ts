@@ -25,6 +25,40 @@ export class Player extends BaseEntity {
     this.health = PLAYER.HEALTH.DEFAULT;
     this.maxHealth = PLAYER.HEALTH.MAX;
     this.isDead = false;
+
+    this.createAnimations();
+  }
+
+  private createAnimations(): void {
+    if (!this.scene.anims.exists('player-idle')) {
+      this.scene.anims.create({
+        key: 'player-idle',
+        frames: [1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+
+    if (!this.scene.anims.exists('player-jump')) {
+      this.scene.anims.create({
+        key: 'player-jump',
+        frames: [1, 2, 3, 4, 5].map((i) => ({ key: `player-jump-${i}` })),
+        frameRate: 10,
+        repeat: -1,
+      });
+    }
+  }
+
+  public playIdleAnimation(): void {
+    if (this.sprite && this.sprite.anims) {
+      this.sprite.play('player-idle', true);
+    }
+  }
+
+  public playJumpAnimation(): void {
+    if (this.sprite && this.sprite.anims) {
+      this.sprite.play('player-jump', true);
+    }
   }
 
   public override update(delta: number): void {

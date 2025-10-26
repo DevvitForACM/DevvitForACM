@@ -9,6 +9,8 @@ import {
   LegacyLevelFormat,
 } from './level-schema';
 import { ENTITY_CONFIG } from '@/constants/game-constants';
+import { Player } from '../entities/player';
+import { Coin } from '../entities/coin';
 
 export function loadLevel(
   scene: Phaser.Scene,
@@ -96,18 +98,18 @@ function parseColor(hex?: string): number | undefined {
 }
 
 function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
-  const world = (scene as any).matter?.world;
-
   if (settings.backgroundColor !== undefined && scene.cameras?.main) {
     scene.cameras.main.setBackgroundColor(settings.backgroundColor);
   }
 
-  if (!world) return;
-
-  if (settings.gravity)
-    world.setGravity(settings.gravity.x ?? 0, settings.gravity.y ?? 1);
-  if (settings.bounds)
-    world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+  if ((scene as any).physics?.world) {
+    if (settings.gravity) {
+      scene.physics.world.gravity.y = settings.gravity.y ?? 800;
+    }
+    if (settings.bounds) {
+      scene.physics.world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+    }
+  }
 }
 
 function createGameObject(
@@ -123,6 +125,8 @@ function createGameObject(
       return createSpring(scene, obj);
     case LevelObjectType.Spike:
       return createSpike(scene, obj);
+    case LevelObjectType.Collectible:
+      return createCoin(scene, obj);
     default:
       return null;
   }
@@ -132,28 +136,29 @@ function createPlayer(
   scene: Phaser.Scene,
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
-  const radius = ENTITY_CONFIG.PLAYER_RADIUS;
-
   const textureKey = 'player-idle-1';
 
-  const player = scene.matter.add.image(
-    obj.position.x,
-    obj.position.y,
-    textureKey,
-    undefined,
-    {
-      restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
-      friction: ENTITY_CONFIG.PLAYER_FRICTION,
-    }
-  );
-
-  player.setCircle(radius);
-  player.setDisplaySize(48, 48);
-  player.setName(obj.id);
-  player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
-  player.setFixedRotation();
-
-  return player;
+  if ((scene as any).physics?.world) {
+    const playerSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
+    playerSprite.setDisplaySize(48, 48);
+    playerSprite.setName(obj.id);
+    playerSprite.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
+    playerSprite.setCollideWorldBounds(true);
+    
+    const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+    player.sprite = playerSprite;
+    
+    return playerSprite;
+  } else {
+    const playerSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
+    playerSprite.setDisplaySize(48, 48);
+    playerSprite.setName(obj.id);
+    
+    const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+    player.sprite = playerSprite;
+    
+    return playerSprite;
+  }
 }
 
 function createPlatform(
@@ -165,23 +170,15 @@ function createPlatform(
   const x = obj.position.x;
   const y = obj.position.y;
 
-  scene.matter.add.rectangle(x, y, width, height, {
-    isStatic: true,
-    label: obj.id,
-  });
-
-  if (scene.textures.exists('grass')) {
-    const grassImg = scene.add.image(x, y, 'grass');
-    grassImg.setDisplaySize(width, height);
-    grassImg.name = obj.id;
-    return grassImg;
+  if ((scene as any).physics?.world) {
+    const platform = scene.add.rectangle(x, y, width, height, 0x888888);
+    scene.physics.add.existing(platform, true);
+    platform.name = obj.id;
+    return platform;
   } else {
-    const color = obj.visual?.tint ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT;
-    const graphics = scene.add.graphics();
-    graphics.fillStyle(color);
-    graphics.fillRect(x - width / 2, y - height / 2, width, height);
-    graphics.name = obj.id;
-    return graphics;
+    const platform = scene.add.rectangle(x, y, width, height, 0x888888);
+    platform.name = obj.id;
+    return platform;
   }
 }
 
@@ -207,6 +204,21 @@ function createSpike(
   img.setDisplaySize(32, 32);
   img.name = obj.id;
   return img;
+}
+
+function createCoin(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
+  const textureKey = 'coin-1';
+  const coinSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
+  coinSprite.setDisplaySize(24, 24);
+  coinSprite.setName(obj.id);
+  
+  const coin = new Coin(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+  coin.sprite = coinSprite;
+  
+  return coinSprite;
 }
 
 function validateLevel(level: LevelData): void {
