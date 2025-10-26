@@ -8,14 +8,14 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     ssr: 'index.ts',
-    outDir: '../../dist/server',
+    outDir: '../../dist/local-server',
     target: 'node22',
     sourcemap: true,
     rollupOptions: {
       external: [...builtinModules],
       output: {
         format: 'cjs',
-        entryFileNames: 'index.cjs',
+        entryFileNames: 'local-dev.cjs',
         inlineDynamicImports: true,
       },
     },

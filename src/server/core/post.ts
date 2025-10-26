@@ -9,11 +9,11 @@ export const createPost = async () => {
   return await reddit.submitCustomPost({
     splash: {
       // Splash Screen Configuration
-      appDisplayName: 'acmdevvit',
+      appDisplayName: 'acmdevvit-redis',
       backgroundUri: 'default-splash.png',
       buttonLabel: 'Tap to Start',
-      description: 'An exciting interactive experience',
-      heading: 'Welcome to the Game!',
+      description: 'An exciting interactive experience with Redis backend',
+      heading: 'Welcome to the Redis Game!',
       appIconUri: 'default-icon.png',
     },
     postData: {
@@ -21,6 +21,6 @@ export const createPost = async () => {
       score: 0,
     },
     subredditName: subredditName,
-    title: 'acmdevvit',
+    title: 'acmdevvit-redis',
   });
 };
