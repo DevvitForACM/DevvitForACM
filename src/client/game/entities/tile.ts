@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BaseEntity } from './base-entity';
 
 export class Tile extends BaseEntity {
-  public isGround: boolean; // false=lava
+  public isGround: boolean;
 
   constructor(
     scene: Phaser.Scene,
@@ -19,9 +19,13 @@ export class Tile extends BaseEntity {
     this.isGround = isGround;
   }
 
-  public override update(delta: number): void { void delta; }
+  public override update(delta: number): void {
+    void delta;
+  }
 
-  public override onCollision(other: BaseEntity): void { void other; }
+  public override onCollision(other: BaseEntity): void {
+    void other;
+  }
 
   public isLava(): boolean {
     return !this.isGround;

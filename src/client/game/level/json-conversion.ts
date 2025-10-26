@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
 import {
   LevelData,
   LevelObject,
@@ -7,16 +7,22 @@ import {
   LevelSettings,
   LEVEL_SCHEMA_VERSION,
   LegacyLevelFormat,
-} from "./level-schema";
-import { ENTITY_CONFIG } from "../../constants/game-constants"; // ✅ added import
+} from './level-schema';
+import { ENTITY_CONFIG } from '../../constants/game-constants';
 
 export function loadLevel(
   scene: Phaser.Scene,
   json: LevelData | LegacyLevelFormat
 ): Phaser.GameObjects.GameObject[] {
-  const level: LevelData = "version" in json ? json : convertLegacyLevel(json);
+  const level: LevelData = 'version' in json ? json : convertLegacyLevel(json);
 
-  console.log('[loadLevel] Loading level:', level.name, 'with', level.objects.length, 'objects');
+  console.log(
+    '[loadLevel] Loading level:',
+    level.name,
+    'with',
+    level.objects.length,
+    'objects'
+  );
   validateLevel(level);
   applySettings(scene, level.settings);
 
@@ -41,11 +47,14 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
   const objects: LevelObject[] = [];
 
   objects.push({
-    id: "player_1",
+    id: 'player_1',
     type: LevelObjectType.Player,
     position: { x: legacy.player.x, y: legacy.player.y },
     physics: { type: PhysicsType.Dynamic },
-    visual: { tint: parseColor(legacy.player.color) ?? ENTITY_CONFIG.PLAYER_COLOR_DEFAULT },
+    visual: {
+      tint:
+        parseColor(legacy.player.color) ?? ENTITY_CONFIG.PLAYER_COLOR_DEFAULT,
+    },
   });
 
   legacy.platforms.forEach((p, i) => {
@@ -53,14 +62,19 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
       id: `platform_${i + 1}`,
       type: LevelObjectType.Platform,
       position: { x: p.x, y: p.y },
-      scale: { x: p.width / ENTITY_CONFIG.PLATFORM_WIDTH, y: p.height / ENTITY_CONFIG.PLATFORM_HEIGHT },
+      scale: {
+        x: p.width / ENTITY_CONFIG.PLATFORM_WIDTH,
+        y: p.height / ENTITY_CONFIG.PLATFORM_HEIGHT,
+      },
       physics: { type: PhysicsType.Static, isCollidable: true },
-      visual: { tint: parseColor(p.color) ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT },
+      visual: {
+        tint: parseColor(p.color) ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT,
+      },
     });
   });
 
   const settings: LevelSettings = {
-    backgroundColor: legacy.world.backgroundColor ?? "#87CEEB",
+    backgroundColor: legacy.world.backgroundColor ?? '#87CEEB',
     bounds: {
       width: legacy.world.width,
       height: legacy.world.height,
@@ -70,7 +84,7 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
 
   return {
     version: LEVEL_SCHEMA_VERSION,
-    name: "Legacy Level",
+    name: 'Legacy Level',
     settings,
     objects,
   };
@@ -78,7 +92,7 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
 
 function parseColor(hex?: string): number | undefined {
   if (!hex) return undefined;
-  return parseInt(hex.replace("#", "0x"));
+  return parseInt(hex.replace('#', '0x'));
 }
 
 function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
@@ -90,8 +104,10 @@ function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
 
   if (!world) return;
 
-  if (settings.gravity) world.setGravity(settings.gravity.x ?? 0, settings.gravity.y ?? 1);
-  if (settings.bounds) world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+  if (settings.gravity)
+    world.setGravity(settings.gravity.x ?? 0, settings.gravity.y ?? 1);
+  if (settings.bounds)
+    world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
 }
 
 function createGameObject(
@@ -112,19 +128,27 @@ function createGameObject(
   }
 }
 
-function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+function createPlayer(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
   const radius = ENTITY_CONFIG.PLAYER_RADIUS;
 
-  // Use the loaded player sprite; no fallback circle
   const textureKey = 'player-idle-1';
 
-  const player = scene.matter.add.image(obj.position.x, obj.position.y, textureKey, undefined, {
-    restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
-    friction: ENTITY_CONFIG.PLAYER_FRICTION,
-  });
+  const player = scene.matter.add.image(
+    obj.position.x,
+    obj.position.y,
+    textureKey,
+    undefined,
+    {
+      restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
+      friction: ENTITY_CONFIG.PLAYER_FRICTION,
+    }
+  );
 
   player.setCircle(radius);
-  player.setDisplaySize(48, 48); // Set visible size to match physics
+  player.setDisplaySize(48, 48);
   player.setName(obj.id);
   player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
   player.setFixedRotation();
@@ -132,16 +156,20 @@ function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   return player;
 }
 
-function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+function createPlatform(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
   const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
   const y = obj.position.y;
 
-  // Create Matter physics body
-  scene.matter.add.rectangle(x, y, width, height, { isStatic: true, label: obj.id });
+  scene.matter.add.rectangle(x, y, width, height, {
+    isStatic: true,
+    label: obj.id,
+  });
 
-  // Use grass texture if available, otherwise fallback to colored rectangle
   if (scene.textures.exists('grass')) {
     const grassImg = scene.add.image(x, y, 'grass');
     grassImg.setDisplaySize(width, height);
@@ -157,7 +185,10 @@ function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjec
   }
 }
 
-function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+function createSpring(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
   const img = scene.add.image(x, y, 'spring');
@@ -166,7 +197,10 @@ function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects
   return img;
 }
 
-function createSpike(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
+function createSpike(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
   const img = scene.add.image(x, y, 'spike');
@@ -177,9 +211,9 @@ function createSpike(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.
 
 function validateLevel(level: LevelData): void {
   if (!level.objects || !Array.isArray(level.objects)) {
-    throw new Error("Invalid level: objects array missing.");
+    throw new Error('Invalid level: objects array missing.');
   }
   if (!level.version) {
-    throw new Error("Invalid level: missing version field.");
+    throw new Error('Invalid level: missing version field.');
   }
 }

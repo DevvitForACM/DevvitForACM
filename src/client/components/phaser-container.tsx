@@ -18,12 +18,11 @@ export default function PhaserContainer({
       const container = document.getElementById(containerId);
       if (!gameRef.current && container) {
         gameRef.current = new Phaser.Game(config);
-        // Store game on window for React component access
+
         (window as any).game = gameRef.current;
       }
     };
 
-    // Small delay to ensure DOM is ready
     const timer = setTimeout(initGame, 50);
 
     return () => {

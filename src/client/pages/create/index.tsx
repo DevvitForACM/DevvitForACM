@@ -3,7 +3,13 @@ import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
 import { SCENE_KEYS, COLORS, ENTITY_CONFIG } from '@/constants/game-constants';
-import { LEVEL_SCHEMA_VERSION, LevelObjectType, PhysicsType, type LevelData, type LevelObject } from '@/game/level/level-schema';
+import {
+  LEVEL_SCHEMA_VERSION,
+  LevelObjectType,
+  PhysicsType,
+  type LevelData,
+  type LevelObject,
+} from '@/game/level/level-schema';
 
 const ENTITY_TYPES_DATA = {
   player: { name: 'Player', icon: '🧍', color: '#22c55e' },
@@ -33,15 +39,11 @@ export default function Create() {
   const [entityCount, setEntityCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [savedEntities, setSavedEntities] = useState<any[]>([]);
-  const [
-    saveBanner,
-    setSaveBanner,
-  ] = useState<{
+  const [saveBanner, setSaveBanner] = useState<{
     status: 'success' | 'error';
     message: string;
   } | null>(null);
 
-  // IMPORTANT: Keep Phaser game config stable to avoid destroying/recreating the scene on React re-renders
   const config = useMemo(() => createBlankCanvasConfig('#f6f7f8'), []);
 
   useEffect(() => {
@@ -51,11 +53,10 @@ export default function Create() {
         const s = game.scene.getScene('CreateScene') as CreateScene;
         if (s) {
           setScene(s);
-          // Provide entity types for the scene
+
           s.registry.set('entityTypes', ENTITY_TYPES_DATA);
-          // If a selection already exists in UI, mirror it into scene now
+
           if (selectedEntity) {
-            // eslint-disable-next-line no-console
             console.debug(
               '[Create] scene attached: applying existing selection ->',
               selectedEntity
@@ -78,30 +79,29 @@ export default function Create() {
   }, []);
 
   const handleSelect = (id: string) => {
-    // Toggle selection: clicking the active item deselects it
     const next = selectedEntity === id ? null : id;
     setSelectedEntity(next);
     if (scene) {
-      // eslint-disable-next-line no-console
       console.debug('[Create] handleSelect ->', next);
       scene.setSelectedEntityType(next);
       scene.registry.set('selectedEntityType', next);
     }
   };
 
-  // Ensure selection is synced once scene becomes available or when selection changes
   useEffect(() => {
     if (!scene) return;
-    // eslint-disable-next-line no-console
-    console.debug('[Create] syncing selection to scene (effect) ->', selectedEntity);
+
+    console.debug(
+      '[Create] syncing selection to scene (effect) ->',
+      selectedEntity
+    );
     scene.registry.set('selectedEntityType', selectedEntity ?? null);
     scene.setSelectedEntityType(selectedEntity ?? null);
   }, [scene, selectedEntity]);
 
   const handleClear = () => {
-    // Unconditional clear for reliability
     scene?.clearAllEntities();
-    // Also clear current selection in both UI and scene registry
+
     setSelectedEntity(null);
     if (scene) {
       scene.setSelectedEntityType(null);
@@ -113,7 +113,7 @@ export default function Create() {
     if (!scene) return;
     const GRID = 32;
     const entities = scene.getAllEntities();
-    // eslint-disable-next-line no-console
+
     console.info('[Create] Saving level… entities:', entities.length);
 
     const ground = entities.filter((e: any) => {
@@ -121,54 +121,76 @@ export default function Create() {
       return t === 'ground' || t === 'grass' || t === 'tile';
     });
 
-    // Build LevelData JSON
     const objects: LevelObject[] = [];
 
-    // Player from placed entity (singleton)
-    const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
+    const playerEnt = entities.find(
+      (e: any) => String(e.type).toLowerCase().trim() === 'player'
+    );
     const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-    // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
-    const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
-    objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
-    // Handle spring and spike entities
+    const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
+    objects.push({
+      id: 'player_1',
+      type: LevelObjectType.Player,
+      position: { x: playerX, y: playerY },
+      physics: { type: PhysicsType.Dynamic },
+    });
+
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
       if (t === 'spring' || t === 'spike') {
         const x = e.gridX * GRID + GRID / 2;
-        // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
+
         const y = -(e.gridY + 1) * GRID + GRID / 2;
-        const levelType = t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
-        objects.push({ 
-          id: `${t}_${idx + 1}`, 
-          type: levelType, 
-          position: { x, y } 
+        const levelType =
+          t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
+        objects.push({
+          id: `${t}_${idx + 1}`,
+          type: levelType,
+          position: { x, y },
         });
       }
     });
 
-    // Door -> Goal (singleton optional)
-    const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
+    const doorEnt = entities.find(
+      (e: any) => String(e.type).toLowerCase().trim() === 'door'
+    );
     if (doorEnt) {
-      // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
-      objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: -(doorEnt.gridY + 1) * GRID + GRID / 2 } });
+      objects.push({
+        id: 'goal_1',
+        type: LevelObjectType.Goal,
+        position: {
+          x: doorEnt.gridX * GRID + GRID / 2,
+          y: -(doorEnt.gridY + 1) * GRID + GRID / 2,
+        },
+      });
     }
 
-    // Platforms from ground cells
     ground.forEach((g: any, i: number) => {
-      // Convert inverted Y (up is positive) back to Phaser Y (down is positive)
       objects.push({
         id: `platform_${i + 1}`,
         type: LevelObjectType.Platform,
-        position: { x: g.gridX * GRID + GRID / 2, y: -(g.gridY + 1) * GRID + GRID / 2 },
-        scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT },
+        position: {
+          x: g.gridX * GRID + GRID / 2,
+          y: -(g.gridY + 1) * GRID + GRID / 2,
+        },
+        scale: {
+          x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH,
+          y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
+        },
         physics: { type: PhysicsType.Static, isCollidable: true },
         visual: { tint: COLORS.PLATFORM_ALT },
       });
     });
 
-    const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
-    const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
+    const width = Math.max(
+      1000,
+      ...ground.map((g: any) => (g.gridX + 2) * GRID)
+    );
+    const height = Math.max(
+      600,
+      ...ground.map((g: any) => (g.gridY + 2) * GRID)
+    );
 
     const levelData: LevelData = {
       version: LEVEL_SCHEMA_VERSION,
@@ -181,18 +203,23 @@ export default function Create() {
       objects,
     };
 
-    // Save to localStorage and download file (with debug)
     try {
       const outStr = JSON.stringify(levelData);
       localStorage.setItem('editorLevelJSON', outStr);
       const bytes = outStr.length;
       const msg = `Saved level.json (${objects.length} objects, ${bytes} bytes)`;
-      // eslint-disable-next-line no-console
-      console.info('[Create] Save OK ->', { bytes, objects: objects.length, bounds: levelData.settings.bounds });
+
+      console.info('[Create] Save OK ->', {
+        bytes,
+        objects: objects.length,
+        bounds: levelData.settings.bounds,
+      });
       setSaveBanner({ status: 'success', message: msg });
       setTimeout(() => setSaveBanner(null), 2500);
 
-      const blob = new Blob([JSON.stringify(levelData, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(levelData, null, 2)], {
+        type: 'application/json',
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -200,26 +227,32 @@ export default function Create() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn('[Create] Save failed:', e);
-      setSaveBanner({ status: 'error', message: 'Save failed — check console' });
+      setSaveBanner({
+        status: 'error',
+        message: 'Save failed — check console',
+      });
       setTimeout(() => setSaveBanner(null), 3000);
     }
   };
 
   const handlePlay = () => {
     if (!scene) return;
-    // Save current entities before switching to play mode
+
     const currentEntities = scene.getAllEntities();
     setSavedEntities(currentEntities);
-    
-    // Prefer JSON from localStorage if saved; otherwise build one on the fly
+
     const saved = localStorage.getItem('editorLevelJSON');
     let levelData: LevelData | null = null;
     if (!levelData && saved) {
-      try { levelData = JSON.parse(saved) as LevelData; } catch {}
-      // eslint-disable-next-line no-console
-      console.debug('[Create] Play: using saved JSON from localStorage ->', !!levelData);
+      try {
+        levelData = JSON.parse(saved) as LevelData;
+      } catch {}
+
+      console.debug(
+        '[Create] Play: using saved JSON from localStorage ->',
+        !!levelData
+      );
     }
     if (!levelData) {
       const GRID = 32;
@@ -229,36 +262,86 @@ export default function Create() {
         return t === 'ground' || t === 'grass' || t === 'tile';
       });
       const objects: LevelObject[] = [];
-      // Player from placed entity (singleton)
-      const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
+
+      const playerEnt = entities.find(
+        (e: any) => String(e.type).toLowerCase().trim() === 'player'
+      );
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
-      objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
-      // Door -> Goal (singleton optional)
-      const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
+      const playerY = playerEnt
+        ? -(playerEnt.gridY + 1) * GRID + GRID / 2
+        : 200;
+      objects.push({
+        id: 'player_1',
+        type: LevelObjectType.Player,
+        position: { x: playerX, y: playerY },
+        physics: { type: PhysicsType.Dynamic },
+      });
+
+      const doorEnt = entities.find(
+        (e: any) => String(e.type).toLowerCase().trim() === 'door'
+      );
       if (doorEnt) {
-        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: -(doorEnt.gridY + 1) * GRID + GRID / 2 } });
+        objects.push({
+          id: 'goal_1',
+          type: LevelObjectType.Goal,
+          position: {
+            x: doorEnt.gridX * GRID + GRID / 2,
+            y: -(doorEnt.gridY + 1) * GRID + GRID / 2,
+          },
+        });
       }
-      // Handle spring and spike entities in play mode too
+
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
         if (t === 'spring' || t === 'spike') {
           const x = e.gridX * GRID + GRID / 2;
           const y = -(e.gridY + 1) * GRID + GRID / 2;
-          const levelType = t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
-          objects.push({ id: `${t}_${idx + 1}`, type: levelType, position: { x, y } });
+          const levelType =
+            t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
+          objects.push({
+            id: `${t}_${idx + 1}`,
+            type: levelType,
+            position: { x, y },
+          });
         }
       });
       ground.forEach((g: any, i: number) => {
-        objects.push({ id: `platform_${i + 1}`, type: LevelObjectType.Platform, position: { x: g.gridX * GRID + GRID / 2, y: -(g.gridY + 1) * GRID + GRID / 2 }, scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT }, physics: { type: PhysicsType.Static, isCollidable: true }, visual: { tint: COLORS.PLATFORM_ALT } });
+        objects.push({
+          id: `platform_${i + 1}`,
+          type: LevelObjectType.Platform,
+          position: {
+            x: g.gridX * GRID + GRID / 2,
+            y: -(g.gridY + 1) * GRID + GRID / 2,
+          },
+          scale: {
+            x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH,
+            y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
+          },
+          physics: { type: PhysicsType.Static, isCollidable: true },
+          visual: { tint: COLORS.PLATFORM_ALT },
+        });
       });
-      const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
-      const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
-      
-      levelData = { version: LEVEL_SCHEMA_VERSION, name: 'Editor Level', settings: { gravity: { x: 0, y: 1 }, backgroundColor: '#87CEEB', bounds: { width, height } }, objects };
+      const width = Math.max(
+        1000,
+        ...ground.map((g: any) => (g.gridX + 2) * GRID)
+      );
+      const height = Math.max(
+        600,
+        ...ground.map((g: any) => (g.gridY + 2) * GRID)
+      );
+
+      levelData = {
+        version: LEVEL_SCHEMA_VERSION,
+        name: 'Editor Level',
+        settings: {
+          gravity: { x: 0, y: 1 },
+          backgroundColor: '#87CEEB',
+          bounds: { width, height },
+        },
+        objects,
+      };
     }
 
-    // Stop CreateScene and start PlayScene
     setIsPlaying(true);
     scene.scene.stop(SCENE_KEYS.CREATE);
     scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
@@ -266,30 +349,24 @@ export default function Create() {
 
   const handleReturnToEditor = () => {
     if (!scene) return;
-    
-    // Get PlayScene and destroy all its objects before stopping
+
     const playScene = scene.scene.get(SCENE_KEYS.PLAY);
     if (playScene && playScene.scene.isActive(SCENE_KEYS.PLAY)) {
-      // Remove all game objects from PlayScene
       playScene.children.removeAll(true);
-      // Stop PlayScene completely
+
       scene.scene.stop(SCENE_KEYS.PLAY);
     }
-    
-    // Restart CreateScene to get a clean state
+
     scene.scene.start(SCENE_KEYS.CREATE);
     setIsPlaying(false);
-    
-    // Wait for scene to restart and then get the new instance
+
     setTimeout(() => {
       const game = (window as any).game;
       if (game) {
         const createScene = game.scene.getScene('CreateScene') as CreateScene;
         if (createScene) {
-          // Update scene reference
           setScene(createScene);
 
-          // Re-attach event listeners (first clear any prior ones on this scene)
           createScene.events.removeAllListeners();
           createScene.registry.set('entityTypes', ENTITY_TYPES_DATA);
           createScene.events.on('entity-placed', () =>
@@ -300,13 +377,11 @@ export default function Create() {
           );
           createScene.events.on('entities-cleared', () => setEntityCount(0));
 
-          // Restore entities from snapshot using scene helper
           if (savedEntities.length > 0) {
             createScene.restoreSnapshot(savedEntities as any);
             setEntityCount(savedEntities.length);
           }
 
-          // Sync selection if any
           if (selectedEntity) {
             createScene.registry.set('selectedEntityType', selectedEntity);
             createScene.setSelectedEntityType(selectedEntity);
@@ -318,18 +393,24 @@ export default function Create() {
 
   const hasPlayer = useMemo(() => {
     if (!scene) return false;
-    return scene.getAllEntities().some((e: any) => String(e.type).toLowerCase().trim() === 'player');
+    return scene
+      .getAllEntities()
+      .some((e: any) => String(e.type).toLowerCase().trim() === 'player');
   }, [scene, entityCount]);
 
   const hasDoor = useMemo(() => {
     if (!scene) return false;
-    return scene.getAllEntities().some((e: any) => String(e.type).toLowerCase().trim() === 'door');
+    return scene
+      .getAllEntities()
+      .some((e: any) => String(e.type).toLowerCase().trim() === 'door');
   }, [scene, entityCount]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-50">
       {/* Phaser Canvas - with padding for toolbars in editor, full height in play */}
-      <div className={`absolute top-[64px] left-0 right-0 z-0 ${isPlaying ? 'bottom-0' : 'bottom-[100px]'}`}>
+      <div
+        className={`absolute top-[64px] left-0 right-0 z-0 ${isPlaying ? 'bottom-0' : 'bottom-[100px]'}`}
+      >
         <PhaserContainer config={config} />
       </div>
 
@@ -403,13 +484,15 @@ export default function Create() {
           <div className="overflow-x-auto">
             <div className="flex gap-2 sm:gap-3 p-2 sm:p-4 min-h-[80px] sm:min-h-[100px]">
               {ENTITY_TYPES.map((entity) => {
-              const disabled = (entity.id === 'player' && hasPlayer) || (entity.id === 'door' && hasDoor);
-              return (
-                <button
-                  key={entity.id}
-                  onClick={() => !disabled && handleSelect(entity.id)}
-                  disabled={disabled}
-                  className={`
+                const disabled =
+                  (entity.id === 'player' && hasPlayer) ||
+                  (entity.id === 'door' && hasDoor);
+                return (
+                  <button
+                    key={entity.id}
+                    onClick={() => !disabled && handleSelect(entity.id)}
+                    disabled={disabled}
+                    className={`
                     flex flex-col items-center justify-center
                     min-w-[60px] sm:min-w-[80px] h-[64px] sm:h-[80px]
                     p-2 sm:p-3 rounded-lg border-2
@@ -419,26 +502,26 @@ export default function Create() {
                       selectedEntity === entity.id
                         ? 'border-blue-500 bg-blue-50 shadow-md'
                         : disabled
-                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm cursor-pointer'
+                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm cursor-pointer'
                     }
                   `}
-                  style={{
-                    backgroundColor:
-                      selectedEntity === entity.id
-                        ? `${entity.color}15`
-                        : 'white',
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  <div className="text-xl sm:text-2xl mb-1 pointer-events-none">
-                    {entity.icon}
-                  </div>
-                  <div className="text-[9px] sm:text-[10px] font-medium text-center text-gray-700 leading-tight pointer-events-none">
-                    {entity.name}
-                  </div>
-                </button>
-              );
+                    style={{
+                      backgroundColor:
+                        selectedEntity === entity.id
+                          ? `${entity.color}15`
+                          : 'white',
+                      pointerEvents: 'auto',
+                    }}
+                  >
+                    <div className="text-xl sm:text-2xl mb-1 pointer-events-none">
+                      {entity.icon}
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-medium text-center text-gray-700 leading-tight pointer-events-none">
+                      {entity.name}
+                    </div>
+                  </button>
+                );
               })}
             </div>
           </div>

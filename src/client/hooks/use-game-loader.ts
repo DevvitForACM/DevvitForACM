@@ -1,17 +1,8 @@
-/**
- * use-game-loader.ts
- * ------------------------------------------------
- * React hook to initialize and manage a Phaser Game.
- * Loads levels dynamically from backend API and converts
- * them using json-conversion.ts.
- * ------------------------------------------------
- */
-
-import { useEffect, useRef, useState } from "react";
-import Phaser from "phaser";
-import { loadLevel } from "../game/level/json-conversion";
-import { LevelData } from "../game/level/level-schema";
-import { getPhaserConfig } from "../config/game-config";
+import { useEffect, useRef, useState } from 'react';
+import Phaser from 'phaser';
+import { loadLevel } from '../game/level/json-conversion';
+import { LevelData } from '../game/level/level-schema';
+import { getPhaserConfig } from '../config/game-config';
 
 export function useGameLoader(levelId: string) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -20,7 +11,6 @@ export function useGameLoader(levelId: string) {
   const [error, setError] = useState<string | null>(null);
   const [levelData, setLevelData] = useState<LevelData | null>(null);
 
-  // 🔹 Fetch level data from backend (with simple caching)
   useEffect(() => {
     let isMounted = true;
 
@@ -44,13 +34,13 @@ export function useGameLoader(levelId: string) {
 
         const data: LevelData = await res.json();
         if (!data.objects || !Array.isArray(data.objects)) {
-          throw new Error("Invalid level data format");
+          throw new Error('Invalid level data format');
         }
 
         sessionStorage.setItem(cacheKey, JSON.stringify(data));
         if (isMounted) setLevelData(data);
       } catch (err: any) {
-        if (isMounted) setError(err.message || "Failed to load level");
+        if (isMounted) setError(err.message || 'Failed to load level');
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -62,11 +52,9 @@ export function useGameLoader(levelId: string) {
     };
   }, [levelId]);
 
-  // 🔹 Initialize Phaser once data is ready
   useEffect(() => {
     if (!containerRef.current || !levelData || error) return;
 
-    // Destroy any previous game instance
     if (gameRef.current) {
       gameRef.current.destroy(true);
       gameRef.current = null;
@@ -85,10 +73,10 @@ export function useGameLoader(levelId: string) {
     gameRef.current = game;
 
     function preloadScene(this: Phaser.Scene) {
-      this.load.image("player", "/assets/player.png");
-      this.load.image("platform", "/assets/platform.png");
-      this.load.image("goal", "/assets/goal.png");
-      this.load.image("enemy", "/assets/enemy.png");
+      this.load.image('player', '/assets/player.png');
+      this.load.image('platform', '/assets/platform.png');
+      this.load.image('goal', '/assets/goal.png');
+      this.load.image('enemy', '/assets/enemy.png');
     }
 
     function createScene(this: Phaser.Scene) {

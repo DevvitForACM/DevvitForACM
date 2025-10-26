@@ -1,5 +1,12 @@
 import React, { createContext, useContext } from 'react';
-import { MemoryRouter, Routes, Route, useNavigate, useLocation, Location } from 'react-router-dom';
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+  Location,
+} from 'react-router-dom';
 
 export interface AppRoute {
   path: string;
@@ -24,7 +31,9 @@ function RoutingProvider({ children }: { children: React.ReactNode }) {
 
   const value = { navigate, goBack, location };
 
-  return <RoutingContext.Provider value={value}>{children}</RoutingContext.Provider>;
+  return (
+    <RoutingContext.Provider value={value}>{children}</RoutingContext.Provider>
+  );
 }
 
 export function RoutingController({
@@ -40,7 +49,11 @@ export function RoutingController({
         <div className="min-h-screen bg-gray-50">
           <Routes>
             {routes.map((route) => (
-              <Route key={route.path} path={route.path} element={route.element} />
+              <Route
+                key={route.path}
+                path={route.path}
+                element={route.element}
+              />
             ))}
           </Routes>
         </div>

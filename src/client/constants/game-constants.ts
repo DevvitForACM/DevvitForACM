@@ -1,16 +1,15 @@
-// src/client/constants/game-constants.ts
-import Phaser from "phaser";
+import Phaser from 'phaser';
 
 /* ----------------------------------------------
    GAME CONFIGURATION
    ---------------------------------------------- */
 export const GAME_CONFIG = {
-  BACKGROUND_COLOR: "#000000",
+  BACKGROUND_COLOR: '#000000',
   GRAVITY_Y: 1,
-  DEBUG: false, // should remain false in production
+  DEBUG: false,
   SCALE_MODE: Phaser.Scale.RESIZE,
   AUTO_CENTER: Phaser.Scale.CENTER_BOTH,
-  DEFAULT_LEVEL: "level",
+  DEFAULT_LEVEL: 'level',
 };
 
 /* ----------------------------------------------
@@ -33,13 +32,13 @@ export const ENTITY_CONFIG = {
    ---------------------------------------------- */
 export const CAMERA_SCROLL = {
   VELOCITY: 5,
-  FONT_SIZE: "48px",
-  COLOR: "#111111", // dark for light canvas visibility
-  LEFT_SYMBOL: "<",
-  RIGHT_SYMBOL: ">",
+  FONT_SIZE: '48px',
+  COLOR: '#111111',
+  LEFT_SYMBOL: '<',
+  RIGHT_SYMBOL: '>',
   LEFT_X: 50,
   RIGHT_X: 150,
-  BUTTON_OFFSET_Y: 120, // move above bottom toolbar
+  BUTTON_OFFSET_Y: 120,
 };
 
 export const PLAYER_CONFIG = {
@@ -54,13 +53,13 @@ export const CAMERA_CONFIG = {
 };
 
 export const SCENE_KEYS = {
-  PLAY: "PlayScene",
-  HOME: "HomeScene",
-  CREATE: "CreateScene",
+  PLAY: 'PlayScene',
+  HOME: 'HomeScene',
+  CREATE: 'CreateScene',
 };
 
 /* ----------------------------------------------
-   ADVANCED PHYSICS CONSTANTS (From main)
+  ADVANCED PHYSICS CONSTANTS
    ---------------------------------------------- */
 export const PHYSICS = {
   GRAVITY_Y: 800,
@@ -184,7 +183,7 @@ export const WORLD = {
    COLORS
    ---------------------------------------------- */
 export const COLORS = {
-  BACKGROUND: "#0f172a",
+  BACKGROUND: '#0f172a',
   GROUND: 0x334155,
   PLATFORM: 0x956338,
   PLATFORM_ALT: 0x4a8f38,
