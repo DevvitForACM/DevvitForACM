@@ -5,7 +5,7 @@ import {
   DAMAGE,
   ENTITY_SIZES,
   ANIMATIONS,
-} from '../../constants/game-constants';
+} from '@/constants/game-constants';
 
 export class Spike extends BaseEntity {
   public damage: number;
