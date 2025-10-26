@@ -5,16 +5,16 @@ import { redis } from '../services/redis.service';
 const router = Router();
 
 // Middleware to log all auth route access
-router.use((req, res, next) => {
+router.use((req, _res, next) => {
   console.log(`🔐 AUTH ROUTES: ${req.method} ${req.path} accessed`);
   console.log(`🔐 AUTH ROUTES: Full URL: ${req.originalUrl}`);
-  next();
+  next(); 
 });
 
 /**
  * GET /api/auth/me - Check current authentication status
  */
-router.get('/me', async (req, res) => {
+router.get('/me', async (_req, res) => {
   try {
     console.log('🔐 AUTH: Checking current user authentication...');
     
@@ -98,7 +98,7 @@ router.get('/me', async (req, res) => {
 /**
  * POST /api/auth/login - Authenticate user (in Devvit, user is already authenticated)
  */
-router.post('/login', async (req, res) => {
+router.post('/login', async (_req, res) => {
   try {
     console.log('🔐 AUTH: Login request received...');
     
