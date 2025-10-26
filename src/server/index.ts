@@ -2,7 +2,6 @@ import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
-import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
 
 const app = express();
@@ -15,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.text());
 
 // Debug middleware to log all requests and current user
-app.use(async (req, res, next) => {
+app.use(async (req, _res, next) => {
   console.log(`🔍 SERVER: ${req.method} ${req.path} - ${new Date().toISOString()}`);
   
   // Get current Reddit user from Devvit context
@@ -150,9 +149,6 @@ app.use(router);
 
 // Auth routes
 app.use('/api/auth', authRoutes);
-
-// Leaderboard routes
-app.use('/api/leaderboard', leaderboardRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

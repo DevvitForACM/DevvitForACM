@@ -52,7 +52,7 @@ router.get('/me', async (req, res) => {
         };
         
         // Update last login time
-        await redis.hSet(`user:${uid}`, 'lastLogin', userProfile.lastLogin);
+        await redis.hSet(`user:${uid}`, { lastLogin: userProfile.lastLogin });
       } else {
         // Create new profile
         console.log('📋 AUTH: Creating new user profile...');
@@ -148,7 +148,7 @@ router.post('/login', async (req, res) => {
 /**
  * POST /api/auth/logout - Logout user
  */
-router.post('/logout', async (req, res) => {
+router.post('/logout', async (_req, res) => {
   try {
     console.log('🔐 AUTH: Logout request received...');
     
@@ -156,7 +156,7 @@ router.post('/logout', async (req, res) => {
     if (currentUsername) {
       const uid = `reddit:${currentUsername}`;
       // Update last logout time
-      await redis.hSet(`user:${uid}`, 'lastLogout', new Date().toISOString());
+      await redis.hSet(`user:${uid}`, { lastLogout: new Date().toISOString() });
       console.log('✅ AUTH: User logged out:', currentUsername);
     }
 

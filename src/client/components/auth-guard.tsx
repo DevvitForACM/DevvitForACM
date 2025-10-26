@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { authService, type UserProfile } from '../services/auth.service';
+import { authService, type UserProfile } from '@/services/auth.service';
 
 interface AuthGuardProps {
   children: React.ReactNode;
