@@ -21,7 +21,7 @@ if (fs.existsSync(serviceAccountPath)) {
   // Load local service account if present (convenience for local dev)
   // Keep this file out of source control.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as any;
+  serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as any;
   console.log('Loaded service account from:', serviceAccountPath);
 } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
   try {
@@ -89,7 +89,7 @@ export const adminDb = (() => {
         return (admin as any).database();
       }
     }
-    
+
     console.warn('Using mock database - data will not persist');
     return {
       ref: (path: string) => ({
@@ -133,4 +133,4 @@ export const safeAdminAuth = () => {
   }
 };
 
-export {admin};
+export { admin };
