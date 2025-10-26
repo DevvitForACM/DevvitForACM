@@ -1,28 +1,33 @@
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { redis } from './redis.service';
+import { settings } from '@devvit/web/server';
 
-// Read JWT secret from environment
-let JWT_SECRET: string | undefined = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET environment variable must be set in production.');
-  } else {
-    JWT_SECRET = 'dev-secret-at-least-32-characters-long';
-    console.warn('⚠️  Using hardcoded JWT secret for development. Set JWT_SECRET in your environment for production.');
+// Load configuration from Devvit settings with fallbacks
+async function loadConfig() {
+  try {
+    const [jwtSecret, clientId, clientSecret, redirectUri] = await Promise.all([
+      settings.get<string>('JWT_SECRET').catch(() => null),
+      settings.get<string>('REDDIT_CLIENT_ID').catch(() => null),
+      settings.get<string>('REDDIT_CLIENT_SECRET').catch(() => null),
+      settings.get<string>('REDDIT_REDIRECT_URI').catch(() => null),
+    ]);
+
+    return {
+      JWT_SECRET: jwtSecret || process.env.JWT_SECRET || 'dev-secret-at-least-32-characters-long-for-testing',
+      REDDIT_CLIENT_ID: clientId || process.env.REDDIT_CLIENT_ID,
+      REDDIT_CLIENT_SECRET: clientSecret || process.env.REDDIT_CLIENT_SECRET,
+      REDDIT_REDIRECT_URI: redirectUri || process.env.REDDIT_REDIRECT_URI,
+    };
+  } catch (error) {
+    console.warn('⚠️  Could not load Devvit settings, using environment variables');
+    return {
+      JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-at-least-32-characters-long-for-testing',
+      REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
+      REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
+      REDDIT_REDIRECT_URI: process.env.REDDIT_REDIRECT_URI,
+    };
   }
-}
-
-const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
-const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET;
-const REDDIT_REDIRECT_URI = process.env.REDDIT_REDIRECT_URI;
-
-if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
-  console.error('⚠️  Missing Reddit OAuth credentials:');
-  console.error('   REDDIT_CLIENT_ID:', REDDIT_CLIENT_ID ? '✓ Set' : '❌ Missing');
-  console.error('   REDDIT_CLIENT_SECRET:', REDDIT_CLIENT_SECRET ? '✓ Set' : '❌ Missing');
-  console.error('   REDDIT_REDIRECT_URI:', REDDIT_REDIRECT_URI ? '✓ Set' : '❌ Missing');
-  console.error('   Please check your .env file');
 }
 
 export interface AuthResult {
@@ -46,30 +51,37 @@ interface RedditUser {
 }
 
 async function exchangeRedditCode(code: string): Promise<RedditTokenResponse> {
-  if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
-    throw new Error('Reddit OAuth credentials not configured. Please check your .env file.');
+  console.log('🔐 AUTH: Exchanging Reddit code for access token...');
+  const config = await loadConfig();
+
+  if (!config.REDDIT_CLIENT_ID || !config.REDDIT_CLIENT_SECRET || !config.REDDIT_REDIRECT_URI) {
+    console.error('❌ AUTH: Reddit OAuth credentials not configured');
+    throw new Error('Reddit OAuth credentials not configured. Please set them in Devvit settings or environment variables.');
   }
 
+  console.log('🔐 AUTH: Using client ID:', config.REDDIT_CLIENT_ID?.substring(0, 8) + '...');
+
   const tokenUrl = 'https://www.reddit.com/api/v1/access_token';
-  
   const data = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
-    redirect_uri: REDDIT_REDIRECT_URI,
+    redirect_uri: config.REDDIT_REDIRECT_URI,
   });
 
   const response = await axios.post(tokenUrl, data, {
     headers: {
-      'Authorization': `Basic ${Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64')}`,
+      'Authorization': `Basic ${Buffer.from(`${config.REDDIT_CLIENT_ID}:${config.REDDIT_CLIENT_SECRET}`).toString('base64')}`,
       'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'devvit-reddit-oauth/0.1 by dev',
     },
   });
 
   if (response.status !== 200) {
+    console.error('❌ AUTH: Reddit token exchange failed:', response.status, response.statusText);
     throw new Error(`Reddit token exchange failed: ${response.status} ${response.statusText}`);
   }
 
+  console.log('✅ AUTH: Successfully received access token from Reddit');
   return response.data as RedditTokenResponse;
 }
 
@@ -89,12 +101,14 @@ async function fetchRedditUser(accessToken: string): Promise<RedditUser> {
 }
 
 export async function createOrGetUserFromReddit(code: string): Promise<AuthResult> {
-  // Step 1: Exchange code for access_token
+  console.log('🔐 AUTH: Starting Reddit OAuth flow with code:', code.substring(0, 10) + '...');
+
   const tokenData = await exchangeRedditCode(code);
+  console.log('🔐 AUTH: Successfully exchanged code for access token');
+
   const accessToken = tokenData.access_token;
-  
-  // Step 2: Get Reddit user info using access_token
   const redditUser = await fetchRedditUser(accessToken);
+  console.log('🔐 AUTH: Fetched Reddit user:', redditUser.name);
 
   // Extract Reddit user details
   const username = String(redditUser.name ?? '');
@@ -129,37 +143,48 @@ export async function createOrGetUserFromReddit(code: string): Promise<AuthResul
   try {
     // Store user profile in Redis hash
     await redis.hSet(`user:${uid}`, profile);
-    console.log('✅ Stored user profile in Redis');
+    console.log('✅ AUTH: Stored user profile in Redis for uid:', uid);
   } catch (dbErr) {
-    console.warn('⚠️  Could not store user profile:', (dbErr as Error).message);
+    console.warn('⚠️  AUTH: Could not store user profile:', (dbErr as Error).message);
   }
 
-  // Step 3: Create JWT token
-  const token = createServerJwt(uid, username);
+  const token = await createServerJwt(uid, username);
+  console.log('🔐 AUTH: Created JWT token for user:', username);
 
   return { jwt: token, redditUid: uid };
 }
 
-export function createServerJwt(uid: string, username: string): string {
-  if (!JWT_SECRET) {
+export async function createServerJwt(uid: string, username: string): Promise<string> {
+  const config = await loadConfig();
+
+  if (!config.JWT_SECRET) {
     throw new Error('JWT secret not configured. Cannot sign token.');
   }
-
-  return jwt.sign({ uid, username }, JWT_SECRET, { expiresIn: '7d' });
+  console.log("hacked details")
+  return jwt.sign({ uid, username }, config.JWT_SECRET, { expiresIn: '7d' });
 }
 
 export async function verifyServerJwt(token: string): Promise<{ uid: string; username: string } | null> {
   try {
-    if (!JWT_SECRET) return null;
-    
-    const payload = jwt.verify(token, JWT_SECRET) as { uid?: string; username?: string };
-    
-    if (!payload || typeof payload.uid !== 'string' || typeof payload.username !== 'string') {
+    console.log('🔐 AUTH: Verifying JWT token...');
+    const config = await loadConfig();
+
+    if (!config.JWT_SECRET) {
+      console.warn('⚠️  AUTH: No JWT secret configured');
       return null;
     }
-    
+
+    const payload = jwt.verify(token, config.JWT_SECRET) as { uid?: string; username?: string };
+
+    if (!payload || typeof payload.uid !== 'string' || typeof payload.username !== 'string') {
+      console.warn('⚠️  AUTH: Invalid JWT payload');
+      return null;
+    }
+
+    console.log('✅ AUTH: JWT verified for user:', payload.username);
     return { uid: payload.uid, username: payload.username };
-  } catch {
+  } catch (error) {
+    console.warn('⚠️  AUTH: JWT verification failed:', (error as Error).message);
     return null;
   }
 }
@@ -168,7 +193,6 @@ export async function getUserProfile(uid: string): Promise<any | null> {
   try {
     const keys = await redis.hKeys(`user:${uid}`);
     if (keys.length === 0) return null;
-    
     const profile: any = {};
     for (const key of keys) {
       profile[key] = await redis.hGet(`user:${uid}`, key);

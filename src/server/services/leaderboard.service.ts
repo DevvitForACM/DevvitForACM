@@ -6,8 +6,14 @@ const LEADERBOARD_KEY = 'leaderboard:scores';
 const USER_HASH_KEY = 'leaderboard:users';
 
 export class LeaderboardService {
-  static async updateScore(request: UpdateScoreRequest): Promise<LeaderboardEntry> {
-    const { userId, username, score } = request;
+  static async updateScore(request: UpdateScoreRequest & { 
+    level?: string; 
+    completionTime?: number; 
+    coinsCollected?: number; 
+  }): Promise<LeaderboardEntry> {
+    const { userId, username, score, level, completionTime, coinsCollected } = request;
+    
+    console.log('📊 LEADERBOARD SERVICE: Updating score for user:', username, 'score:', score);
 
     const entry = LeaderboardModel.createEntry(userId, username, score);
 
@@ -15,24 +21,47 @@ export class LeaderboardService {
       throw new Error('Invalid leaderboard entry data');
     }
 
-    // Use Redis Sorted Set to store scores (higher scores = higher rank)
+    // Use level-specific leaderboard if provided
+    const leaderboardKey = level ? `${LEADERBOARD_KEY}:${level}` : LEADERBOARD_KEY;
+    const userHashKey = level ? `${USER_HASH_KEY}:${level}` : USER_HASH_KEY;
+
     // Check current score first since Devvit Redis doesn't support GT flag
-    const currentScore = await redis.zScore(userId, LEADERBOARD_KEY);
+    const currentScore = await redis.zScore(userId, leaderboardKey);
+    console.log('📊 LEADERBOARD SERVICE: Current score:', currentScore, 'New score:', score);
 
     if (currentScore === null || score > (currentScore || 0)) {
       // Add/update score in sorted set
-      await redis.zAdd(LEADERBOARD_KEY, userId, score);
+      await redis.zAdd(leaderboardKey, userId, score);
+      console.log('✅ LEADERBOARD SERVICE: Score updated in Redis');
+      
+      // Store additional user data in hash
+      const userData = {
+        username,
+        level: level || 'default',
+        completionTime: completionTime?.toString() || '0',
+        coinsCollected: coinsCollected?.toString() || '0',
+        lastUpdated: new Date().toISOString()
+      };
+      
+      await redis.hSet(userHashKey, userId, JSON.stringify(userData));
+      console.log('✅ LEADERBOARD SERVICE: User data stored in Redis');
+    } else {
+      console.log('ℹ️  LEADERBOARD SERVICE: Score not updated (not higher than current)');
     }
-
-    // Store username in a separate hash for quick lookup
-    await redis.hSet(USER_HASH_KEY, userId, username);
 
     return entry;
   }
 
-  static async getTopUsers(limit: number = 10): Promise<LeaderboardEntry[]> {
+  static async getTopUsers(limit: number = 10, level?: string): Promise<LeaderboardEntry[]> {
+    console.log('📊 LEADERBOARD SERVICE: Getting top users, limit:', limit, 'level:', level);
+    
+    // Use level-specific leaderboard if provided
+    const leaderboardKey = level ? `${LEADERBOARD_KEY}:${level}` : LEADERBOARD_KEY;
+    const userHashKey = level ? `${USER_HASH_KEY}:${level}` : USER_HASH_KEY;
+    
     // Get top scores in descending order
-    const results = await redis.zRange(LEADERBOARD_KEY, -limit, -1);
+    const results = await redis.zRange(leaderboardKey, -limit, -1);
+    console.log('📊 LEADERBOARD SERVICE: Found', results.length, 'users in Redis');
 
     if (results.length === 0) {
       return [];
@@ -44,13 +73,25 @@ export class LeaderboardService {
     for (let i = results.length - 1; i >= 0; i--) {
       const userId = results[i];
       if (userId) {
-        const score = await redis.zScore(userId, LEADERBOARD_KEY) || 0;
-        const username = await redis.hGet(USER_HASH_KEY, userId) || 'Unknown';
+        const score = await redis.zScore(userId, leaderboardKey) || 0;
+        
+        // Try to get user data from hash
+        let username = 'Unknown';
+        try {
+          const userData = await redis.hGet(userHashKey, userId);
+          if (userData) {
+            const parsed = JSON.parse(userData);
+            username = parsed.username || 'Unknown';
+          }
+        } catch (error) {
+          console.warn('⚠️  Could not parse user data for:', userId);
+        }
 
         entries.push(LeaderboardModel.createEntry(userId, username, score));
       }
     }
 
+    console.log('✅ LEADERBOARD SERVICE: Returning', entries.length, 'entries');
     return entries;
   }
 
@@ -67,9 +108,10 @@ export class LeaderboardService {
     return allUsers.length - userIndex;
   }
 
-  static async getTotalPlayers(): Promise<number> {
+  static async getTotalPlayers(level?: string): Promise<number> {
     // Get total count of players in leaderboard
-    return await redis.zCard(LEADERBOARD_KEY);
+    const leaderboardKey = level ? `${LEADERBOARD_KEY}:${level}` : LEADERBOARD_KEY;
+    return await redis.zCard(leaderboardKey);
   }
 
   static async getUserScore(userId: string): Promise<number | null> {

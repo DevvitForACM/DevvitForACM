@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "acmdevvit-redis",
+  "name": "acmxkiro123",
   "version": "0.0.0",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -29,7 +29,7 @@
     "@devvit/web": "0.12.1",
     "@types/react-router-dom": "^5.3.3",
     "clsx": "2.1.1",
-    "devvit": "^1.0.0",
+    "devvit": "0.12.1",
     "dotenv": "^17.2.3",
     "express": "5.1.0",
     "jsonwebtoken": "^9.0.2",
