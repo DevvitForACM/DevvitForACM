@@ -4,6 +4,7 @@ import { redis, reddit, createServer, context, getServerPort } from '@devvit/web
 import { createPost } from './core/post';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
+import partyRoutes from './routes/party.routes';
 
 const app = express();
 
@@ -131,6 +132,9 @@ app.use(router);
 
 // Leaderboard routes
 app.use('/api/leaderboard', leaderboardRoutes);
+
+// Party routes
+app.use('/api/party', partyRoutes);
 
 // Auth routes
 app.use('/auth', authRoutes);
