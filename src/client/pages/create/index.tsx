@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
-import { SCENE_KEYS, COLORS, ENTITY_CONFIG } from '@/constants/game-constants';
+import { SCENE_KEYS } from '@/constants/game-constants';
 import {
   LEVEL_SCHEMA_VERSION,
-  LevelObjectType,
-  PhysicsType,
+  TileType,
+  EntityType,
   type LevelData,
-  type LevelObject,
+  type GridTile,
+  type LevelEntity,
 } from '@/game/level/level-schema';
 
 const ENTITY_TYPES_DATA = {
@@ -111,86 +112,70 @@ export default function Create() {
 
   const handleSave = () => {
     if (!scene) return;
-    const GRID = 32;
+    const GRID_SIZE = 60;
     const entities = scene.getAllEntities();
 
     console.info('[Create] Saving level… entities:', entities.length);
 
-    const ground = entities.filter((e: any) => {
-      const t = String(e.type).toLowerCase().trim();
-      return t === 'ground' || t === 'grass' || t === 'tile';
-    });
-
-    const objects: LevelObject[] = [];
+    const tiles: GridTile[] = [];
+    const levelEntities: LevelEntity[] = [];
 
     const playerEnt = entities.find(
       (e: any) => String(e.type).toLowerCase().trim() === 'player'
     );
-    const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+    if (playerEnt) {
+      levelEntities.push({
+        id: 'player_1',
+        type: EntityType.Player,
+        position: {
+          x: playerEnt.gridX * GRID_SIZE + GRID_SIZE / 2,
+          y: playerEnt.gridY * GRID_SIZE + GRID_SIZE / 2,
+        },
+        physics: { type: 'dynamic' },
+        visual: { texture: 'player-idle-0' },
+      });
+    }
 
-    const playerY = playerEnt ? -(playerEnt.gridY + 1) * GRID + GRID / 2 : 200;
-    objects.push({
-      id: 'player_1',
-      type: LevelObjectType.Player,
-      position: { x: playerX, y: playerY },
-      physics: { type: PhysicsType.Dynamic },
-    });
-
-    entities.forEach((e: any, idx: number) => {
+    entities.forEach((e: any) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t === 'spring' || t === 'spike') {
-        const x = e.gridX * GRID + GRID / 2;
 
-        const y = -(e.gridY + 1) * GRID + GRID / 2;
-        const levelType =
-          t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
-        objects.push({
-          id: `${t}_${idx + 1}`,
-          type: levelType,
-          position: { x, y },
+      if (t === 'ground' || t === 'grass' || t === 'tile') {
+        tiles.push({
+          type: TileType.Grass,
+          gridX: e.gridX,
+          gridY: e.gridY,
+        });
+      } else if (t === 'spring') {
+        tiles.push({
+          type: TileType.Spring,
+          gridX: e.gridX,
+          gridY: e.gridY,
+        });
+      } else if (t === 'spike') {
+        tiles.push({
+          type: TileType.Spike,
+          gridX: e.gridX,
+          gridY: e.gridY,
+        });
+      } else if (t === 'coin') {
+        tiles.push({
+          type: TileType.Coin,
+          gridX: e.gridX,
+          gridY: e.gridY,
+        });
+      } else if (t === 'door') {
+        tiles.push({
+          type: TileType.Door,
+          gridX: e.gridX,
+          gridY: e.gridY,
         });
       }
     });
 
-    const doorEnt = entities.find(
-      (e: any) => String(e.type).toLowerCase().trim() === 'door'
-    );
-    if (doorEnt) {
-      objects.push({
-        id: 'goal_1',
-        type: LevelObjectType.Goal,
-        position: {
-          x: doorEnt.gridX * GRID + GRID / 2,
-          y: -(doorEnt.gridY + 1) * GRID + GRID / 2,
-        },
-      });
-    }
-
-    ground.forEach((g: any, i: number) => {
-      objects.push({
-        id: `platform_${i + 1}`,
-        type: LevelObjectType.Platform,
-        position: {
-          x: g.gridX * GRID + GRID / 2,
-          y: -(g.gridY + 1) * GRID + GRID / 2,
-        },
-        scale: {
-          x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH,
-          y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
-        },
-        physics: { type: PhysicsType.Static, isCollidable: true },
-        visual: { tint: COLORS.PLATFORM_ALT },
-      });
-    });
-
-    const width = Math.max(
-      1000,
-      ...ground.map((g: any) => (g.gridX + 2) * GRID)
-    );
-    const height = Math.max(
-      600,
-      ...ground.map((g: any) => (g.gridY + 2) * GRID)
-    );
+    const maxGridX = Math.max(0, ...entities.map((e: any) => e.gridX || 0));
+    const maxGridY = Math.max(0, ...entities.map((e: any) => e.gridY || 0));
+    const gridWidth = Math.max(10, maxGridX + 2);
+    const gridHeight = Math.max(6, maxGridY + 2);
 
     const levelData: LevelData = {
       version: LEVEL_SCHEMA_VERSION,
@@ -198,20 +183,29 @@ export default function Create() {
       settings: {
         gravity: { x: 0, y: 1 },
         backgroundColor: '#87CEEB',
-        bounds: { width, height },
+        bounds: {
+          width: gridWidth * GRID_SIZE,
+          height: gridHeight * GRID_SIZE,
+        },
       },
-      objects,
+      grid: {
+        width: gridWidth,
+        height: gridHeight,
+      },
+      tiles,
+      entities: levelEntities,
     };
 
     try {
       const outStr = JSON.stringify(levelData);
       localStorage.setItem('editorLevelJSON', outStr);
       const bytes = outStr.length;
-      const msg = `Saved level.json (${objects.length} objects, ${bytes} bytes)`;
+      const msg = `Saved level.json (${tiles.length} tiles, ${levelEntities.length} entities, ${bytes} bytes)`;
 
       console.info('[Create] Save OK ->', {
         bytes,
-        objects: objects.length,
+        tiles: tiles.length,
+        entities: levelEntities.length,
         bounds: levelData.settings.bounds,
       });
       setSaveBanner({ status: 'success', message: msg });
@@ -255,80 +249,67 @@ export default function Create() {
       );
     }
     if (!levelData) {
-      const GRID = 32;
+      const GRID_SIZE = 60;
       const entities = scene.getAllEntities();
-      const ground = entities.filter((e: any) => {
-        const t = String(e.type).toLowerCase().trim();
-        return t === 'ground' || t === 'grass' || t === 'tile';
-      });
-      const objects: LevelObject[] = [];
+      const tiles: GridTile[] = [];
+      const levelEntities: LevelEntity[] = [];
 
       const playerEnt = entities.find(
         (e: any) => String(e.type).toLowerCase().trim() === 'player'
       );
-      const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      const playerY = playerEnt
-        ? -(playerEnt.gridY + 1) * GRID + GRID / 2
-        : 200;
-      objects.push({
-        id: 'player_1',
-        type: LevelObjectType.Player,
-        position: { x: playerX, y: playerY },
-        physics: { type: PhysicsType.Dynamic },
-      });
-
-      const doorEnt = entities.find(
-        (e: any) => String(e.type).toLowerCase().trim() === 'door'
-      );
-      if (doorEnt) {
-        objects.push({
-          id: 'goal_1',
-          type: LevelObjectType.Goal,
+      if (playerEnt) {
+        levelEntities.push({
+          id: 'player_1',
+          type: EntityType.Player,
           position: {
-            x: doorEnt.gridX * GRID + GRID / 2,
-            y: -(doorEnt.gridY + 1) * GRID + GRID / 2,
+            x: playerEnt.gridX * GRID_SIZE + GRID_SIZE / 2,
+            y: playerEnt.gridY * GRID_SIZE + GRID_SIZE / 2,
           },
+          physics: { type: 'dynamic' },
+          visual: { texture: 'player-idle-0' },
         });
       }
 
-      entities.forEach((e: any, idx: number) => {
+      entities.forEach((e: any) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike') {
-          const x = e.gridX * GRID + GRID / 2;
-          const y = -(e.gridY + 1) * GRID + GRID / 2;
-          const levelType =
-            t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
-          objects.push({
-            id: `${t}_${idx + 1}`,
-            type: levelType,
-            position: { x, y },
+
+        if (t === 'ground' || t === 'grass' || t === 'tile') {
+          tiles.push({
+            type: TileType.Grass,
+            gridX: e.gridX,
+            gridY: e.gridY,
+          });
+        } else if (t === 'spring') {
+          tiles.push({
+            type: TileType.Spring,
+            gridX: e.gridX,
+            gridY: e.gridY,
+          });
+        } else if (t === 'spike') {
+          tiles.push({
+            type: TileType.Spike,
+            gridX: e.gridX,
+            gridY: e.gridY,
+          });
+        } else if (t === 'coin') {
+          tiles.push({
+            type: TileType.Coin,
+            gridX: e.gridX,
+            gridY: e.gridY,
+          });
+        } else if (t === 'door') {
+          tiles.push({
+            type: TileType.Door,
+            gridX: e.gridX,
+            gridY: e.gridY,
           });
         }
       });
-      ground.forEach((g: any, i: number) => {
-        objects.push({
-          id: `platform_${i + 1}`,
-          type: LevelObjectType.Platform,
-          position: {
-            x: g.gridX * GRID + GRID / 2,
-            y: -(g.gridY + 1) * GRID + GRID / 2,
-          },
-          scale: {
-            x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH,
-            y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
-          },
-          physics: { type: PhysicsType.Static, isCollidable: true },
-          visual: { tint: COLORS.PLATFORM_ALT },
-        });
-      });
-      const width = Math.max(
-        1000,
-        ...ground.map((g: any) => (g.gridX + 2) * GRID)
-      );
-      const height = Math.max(
-        600,
-        ...ground.map((g: any) => (g.gridY + 2) * GRID)
-      );
+
+      const maxGridX = Math.max(0, ...entities.map((e: any) => e.gridX || 0));
+      const maxGridY = Math.max(0, ...entities.map((e: any) => e.gridY || 0));
+      const gridWidth = Math.max(10, maxGridX + 2);
+      const gridHeight = Math.max(6, maxGridY + 2);
 
       levelData = {
         version: LEVEL_SCHEMA_VERSION,
@@ -336,9 +317,17 @@ export default function Create() {
         settings: {
           gravity: { x: 0, y: 1 },
           backgroundColor: '#87CEEB',
-          bounds: { width, height },
+          bounds: {
+            width: gridWidth * GRID_SIZE,
+            height: gridHeight * GRID_SIZE,
+          },
         },
-        objects,
+        grid: {
+          width: gridWidth,
+          height: gridHeight,
+        },
+        tiles,
+        entities: levelEntities,
       };
     }
 
