@@ -281,12 +281,13 @@ export class PlayScene extends Phaser.Scene {
     // Check if player is on the ground
     const onFloor = this.playerBody.blocked.down || this.playerBody.touching.down;
 
+    // Play animations only if they exist
     if (!onFloor) {
-      if (this.player.anims.currentAnim?.key !== 'player-jump-sequence') {
+      if (this.anims.exists('player-jump-sequence') && this.player.anims.currentAnim?.key !== 'player-jump-sequence') {
         this.player.play('player-jump-sequence', true);
       }
     } else {
-      if (this.player.anims.currentAnim?.key !== 'player-idle') {
+      if (this.anims.exists('player-idle') && this.player.anims.currentAnim?.key !== 'player-idle') {
         this.player.play('player-idle', true);
       }
     }

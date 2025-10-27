@@ -415,6 +415,11 @@ function createPlayer(
     player.sprite.destroy();
     player.sprite = playerSprite;
 
+    // Start idle animation if it exists
+    if (scene.anims.exists('player-idle')) {
+      playerSprite.play('player-idle');
+    }
+
     return playerSprite;
   } else {
     const playerSprite = scene.add.sprite(
@@ -434,6 +439,11 @@ function createPlayer(
     );
     player.sprite.destroy();
     player.sprite = playerSprite;
+
+    // Start idle animation if it exists
+    if (scene.anims.exists('player-idle')) {
+      playerSprite.play('player-idle');
+    }
 
     return playerSprite;
   }
