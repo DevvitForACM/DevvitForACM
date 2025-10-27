@@ -61,15 +61,15 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('grass', `${base}Grass.png`);
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `${base}animations/idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `${base}animations/jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `${base}Animations/Coin/${i}.png`);
+      this.load.image(`coin-${i}`, `${base}animations/coin/${i}.png`);
     }
   }
 
