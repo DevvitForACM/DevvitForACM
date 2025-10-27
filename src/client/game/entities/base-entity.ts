@@ -12,6 +12,7 @@ export class BaseEntity {
   public canCollide: boolean;
   public collisionOffsetX: number;
   public collisionOffsetY: number;
+  protected scene: Phaser.Scene;
 
   constructor(
     scene: Phaser.Scene,
@@ -20,6 +21,7 @@ export class BaseEntity {
     y: number,
     texture: string
   ) {
+    this.scene = scene;
     this.id = id;
     this.x = x;
     this.y = y;
@@ -35,9 +37,13 @@ export class BaseEntity {
     this.sprite.setOrigin(0.5, 0.5);
   }
 
-  public update(delta: number): void { void delta; }
+  public update(delta: number): void {
+    void delta;
+  }
 
-  public onCollision(other: BaseEntity): void { void other; }
+  public onCollision(other: BaseEntity): void {
+    void other;
+  }
 
   /**
    * Get collision bounds for this entity
@@ -47,7 +53,7 @@ export class BaseEntity {
       x: this.x - this.width / 2 + this.collisionOffsetX,
       y: this.y - this.height / 2 + this.collisionOffsetY,
       width: this.width,
-      height: this.height
+      height: this.height,
     };
   }
 

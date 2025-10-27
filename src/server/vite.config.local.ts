@@ -13,7 +13,6 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       external: [...builtinModules],
-
       output: {
         format: 'cjs',
         entryFileNames: 'local-dev.cjs',

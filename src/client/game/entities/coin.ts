@@ -15,15 +15,33 @@ export class Coin extends BaseEntity {
   ) {
     super(scene, id, x, y, texture);
 
-    this.width = 24;
-    this.height = 24;
+    this.width = 60;
+    this.height = 60;
     this.value = 1;
     this.isCollected = false;
 
-    // Start coin spin animation if available
-    if (this.sprite && this.sprite.anims) {
-      // If the animation has been created in the scene, play it
-      try { this.sprite.play('coin-spin'); } catch { /* ignore if not ready */ }
+    this.createAnimations();
+    this.startSpinning();
+  }
+
+  private createAnimations(): void {
+    if (!this.scene.anims.exists('coin-spin')) {
+      this.scene.anims.create({
+        key: 'coin-spin',
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frameRate: 4,
+        repeat: -1,
+      });
+    }
+  }
+
+  private startSpinning(): void {
+    if (
+      this.sprite &&
+      this.sprite.anims &&
+      this.scene.anims.exists('coin-spin')
+    ) {
+      this.sprite.play('coin-spin');
     }
   }
 
@@ -31,7 +49,6 @@ export class Coin extends BaseEntity {
     void delta;
     if (this.isCollected) return;
 
-    // Floating animation (smooth up-down)
     const floatOffset = Math.sin(Date.now() / 1000) * 5;
     this.sprite.setY(this.y + floatOffset);
   }
@@ -48,7 +65,6 @@ export class Coin extends BaseEntity {
     this.isCollected = true;
     this.active = false;
 
-    // Play collect animation via tween (scale up + fade out)
     this.sprite.scene.tweens.add({
       targets: this.sprite,
       scale: 1.5,

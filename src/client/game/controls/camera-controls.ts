@@ -1,5 +1,5 @@
-import Phaser from "phaser";
-import { CAMERA_SCROLL } from "../../constants/game-constants";
+import Phaser from 'phaser';
+import { CAMERA_SCROLL } from '@/constants/game-constants';
 
 interface ControllableScene extends Phaser.Scene {
   cameraScrollSpeed: number;
@@ -10,37 +10,36 @@ export function createScrollControls(scene: ControllableScene): void {
   scene.cameraScrollSpeed = 0;
   scene.cameraScrollSpeedY = 0;
 
-  // Create 4-directional controls with consistent styling
   const buttonStyle = {
-    fontSize: "32px",
-    color: "#333",
-    backgroundColor: "#fff",
+    fontSize: '32px',
+    color: '#333',
+    backgroundColor: '#fff',
     padding: { x: 12, y: 8 },
   };
 
   const upArrow = scene.add
-    .text(0, 0, "↑", buttonStyle)
+    .text(0, 0, '↑', buttonStyle)
     .setOrigin(0.5)
     .setScrollFactor(0)
     .setDepth(1000)
     .setData('isScrollControl', true);
 
   const downArrow = scene.add
-    .text(0, 0, "↓", buttonStyle)
+    .text(0, 0, '↓', buttonStyle)
     .setOrigin(0.5)
     .setScrollFactor(0)
     .setDepth(1000)
     .setData('isScrollControl', true);
 
   const leftArrow = scene.add
-    .text(0, 0, "←", buttonStyle)
+    .text(0, 0, '←', buttonStyle)
     .setOrigin(0.5)
     .setScrollFactor(0)
     .setDepth(1000)
     .setData('isScrollControl', true);
 
   const rightArrow = scene.add
-    .text(0, 0, "→", buttonStyle)
+    .text(0, 0, '→', buttonStyle)
     .setOrigin(0.5)
     .setScrollFactor(0)
     .setDepth(1000)
@@ -48,15 +47,14 @@ export function createScrollControls(scene: ControllableScene): void {
 
   const positionControls = () => {
     const { width } = scene.scale;
-    // Responsive margins and spacing for mobile/desktop
-    const margin = Math.min(width * 0.08, 60); // 8% of width, max 60px
-    const spacing = Math.min(width * 0.06, 45); // 6% of width, max 45px
-    const topOffset = 80; // Fixed offset from top (below top bar)
-    
-    // Position in top-right corner in a cross pattern
+
+    const margin = Math.min(width * 0.08, 60);
+    const spacing = Math.min(width * 0.06, 45);
+    const topOffset = 80;
+
     const centerX = width - margin;
     const centerY = topOffset;
-    
+
     upArrow.setPosition(centerX, centerY - spacing);
     downArrow.setPosition(centerX, centerY + spacing);
     leftArrow.setPosition(centerX - spacing, centerY);
@@ -72,25 +70,37 @@ export function createScrollControls(scene: ControllableScene): void {
 
   const scrollVelocity = CAMERA_SCROLL.VELOCITY ?? 5;
 
-  upArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-    pointer.event?.stopPropagation();
-    scene.cameraScrollSpeedY = -scrollVelocity;
-  });
+  upArrow.on(
+    Phaser.Input.Events.POINTER_DOWN,
+    (pointer: Phaser.Input.Pointer) => {
+      pointer.event?.stopPropagation();
+      scene.cameraScrollSpeedY = -scrollVelocity;
+    }
+  );
 
-  downArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-    pointer.event?.stopPropagation();
-    scene.cameraScrollSpeedY = scrollVelocity;
-  });
+  downArrow.on(
+    Phaser.Input.Events.POINTER_DOWN,
+    (pointer: Phaser.Input.Pointer) => {
+      pointer.event?.stopPropagation();
+      scene.cameraScrollSpeedY = scrollVelocity;
+    }
+  );
 
-  leftArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-    pointer.event?.stopPropagation();
-    scene.cameraScrollSpeed = -scrollVelocity;
-  });
+  leftArrow.on(
+    Phaser.Input.Events.POINTER_DOWN,
+    (pointer: Phaser.Input.Pointer) => {
+      pointer.event?.stopPropagation();
+      scene.cameraScrollSpeed = -scrollVelocity;
+    }
+  );
 
-  rightArrow.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-    pointer.event?.stopPropagation();
-    scene.cameraScrollSpeed = scrollVelocity;
-  });
+  rightArrow.on(
+    Phaser.Input.Events.POINTER_DOWN,
+    (pointer: Phaser.Input.Pointer) => {
+      pointer.event?.stopPropagation();
+      scene.cameraScrollSpeed = scrollVelocity;
+    }
+  );
 
   const stopScrolling = () => {
     scene.cameraScrollSpeed = 0;

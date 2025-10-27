@@ -1,7 +1,3 @@
-// Lightweight chunk-based level streaming + render culling.
-// Chunks are addressed by integer grid (cx, cy). Each chunk has fixed pixel size (e.g., 1024x1024).
-// Only chunks inside an expanded camera view are loaded. Entities can exist at any coordinates.
-
 export type EntityDef = {
   id: string;
   type: string;
@@ -42,7 +38,13 @@ export class ChunkManager {
     }
   }
 
-  async ensureChunksForView(x: number, y: number, w: number, h: number, padding = 0) {
+  async ensureChunksForView(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    padding = 0
+  ) {
     const minCX = Math.floor((x - padding) / this.chunkSize);
     const maxCX = Math.floor((x + w + padding) / this.chunkSize);
     const minCY = Math.floor((y - padding) / this.chunkSize);
@@ -69,7 +71,6 @@ export class ChunkManager {
     await Promise.all(needed);
   }
 
-  // Iterate visible entities quickly without touching far-away chunks
   *entitiesInRect(x: number, y: number, w: number, h: number) {
     const minCX = Math.floor(x / this.chunkSize);
     const maxCX = Math.floor((x + w) / this.chunkSize);

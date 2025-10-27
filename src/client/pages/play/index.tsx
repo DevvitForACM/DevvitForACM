@@ -1,25 +1,13 @@
 import PhaserContainer from '@/components/phaser-container';
-import { getPhaserConfig } from '@/config/game-config';
-import { DEFAULT_LEVEL, type LevelConfig } from '@/game/level/level-types';
+import { getPhaserConfigWithLevelName } from '@/config/game-config';
+
+const CURRENT_LEVEL = 'dummy-level-1';
 
 export default function Play() {
-  // Example: configure props per level; can be sourced from props, query, or state
-  const level: LevelConfig = {
-    ...DEFAULT_LEVEL,
-    worldWidth: 8000,
-    gravityY: 1100,
-    moveSpeed: 260,
-    jumpVelocity: 520,
-    hazards: [
-      { x: 1200, y: 540, width: 20, height: 40, color: 0x2dd4bf },
-      { x: 2500, y: 540, width: 20, height: 40, color: 0x2dd4bf },
-    ],
-  };
-
-  const config = getPhaserConfig(level);
+  const config = getPhaserConfigWithLevelName(CURRENT_LEVEL);
 
   return (
-    <main className="w-screen h-screen overflow-hidden" style={{ background: level.bgColor }}>
+    <main className="w-screen h-screen overflow-hidden">
       <PhaserContainer config={config} />
     </main>
   );

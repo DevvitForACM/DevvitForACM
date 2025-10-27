@@ -4,7 +4,7 @@ import { BaseEntity } from './base-entity';
 export class Door extends BaseEntity {
   public isOpen: boolean;
   public isLocked: boolean;
-  public targetLevel?: string; // Level to load when entering
+  public targetLevel?: string;
 
   constructor(
     scene: Phaser.Scene,
@@ -34,7 +34,9 @@ export class Door extends BaseEntity {
     }
   }
 
-  public override onCollision(other: BaseEntity): void { void other; }
+  public override onCollision(other: BaseEntity): void {
+    void other;
+  }
 
   public unlock(): void {
     this.isLocked = false;
@@ -59,7 +61,5 @@ export class Door extends BaseEntity {
     if (!this.isOpen) {
       return;
     }
-
-    // collision and next level handled here
   }
 }

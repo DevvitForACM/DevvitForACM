@@ -1,35 +1,78 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
 import {
   LevelData,
-  LevelObject,
-  LevelObjectType,
-  PhysicsType,
+  LevelEntity,
+  EntityType,
+  GridTile,
+  TileType,
   LevelSettings,
   LEVEL_SCHEMA_VERSION,
+  GRID_CELL_SIZE,
   LegacyLevelFormat,
-} from "./level-schema";
-import { ENTITY_CONFIG } from "../../constants/game-constants"; // ✅ added import
+} from './level-schema';
+import { ENTITY_CONFIG } from '@/constants/game-constants';
+import { Player } from '@/game/entities/player';
 
 export function loadLevel(
   scene: Phaser.Scene,
   json: LevelData | LegacyLevelFormat
 ): Phaser.GameObjects.GameObject[] {
-  const level: LevelData = "version" in json ? json : convertLegacyLevel(json);
+  let level: LevelData;
 
-  console.log('[loadLevel] Loading level:', level.name, 'with', level.objects.length, 'objects');
+  if ('version' in json) {
+    if (json.version === '2.0.0' && 'tiles' in json && 'entities' in json) {
+      level = json as LevelData;
+    } else {
+      level = convertOldLevelData(json as any);
+    }
+  } else {
+    level = convertLegacyLevel(json);
+  }
+
+  console.log(
+    '[loadLevel] Loading level:',
+    level.name,
+    'with',
+    level.tiles.length,
+    'tiles and',
+    level.entities.length,
+    'entities'
+  );
   validateLevel(level);
   applySettings(scene, level.settings);
 
   const createdObjects: Phaser.GameObjects.GameObject[] = [];
 
-  level.objects.forEach((obj) => {
-    console.log('[loadLevel] Creating object:', obj.type, 'at', obj.position);
-    const gameObject = createGameObject(scene, obj);
+  level.tiles.forEach((tile) => {
+    console.log(
+      '[loadLevel] Creating tile:',
+      tile.type,
+      'at grid',
+      tile.gridX,
+      tile.gridY
+    );
+    const gameObject = createTile(scene, tile);
     if (gameObject) {
       createdObjects.push(gameObject);
-      console.log('[loadLevel] Created:', obj.id, obj.type);
+      console.log('[loadLevel] Created tile:', tile.type);
     } else {
-      console.warn('[loadLevel] Failed to create:', obj.type);
+      console.warn('[loadLevel] Failed to create tile:', tile.type);
+    }
+  });
+
+  level.entities.forEach((entity) => {
+    console.log(
+      '[loadLevel] Creating entity:',
+      entity.type,
+      'at pixel',
+      entity.position
+    );
+    const gameObject = createEntity(scene, entity);
+    if (gameObject) {
+      createdObjects.push(gameObject);
+      console.log('[loadLevel] Created entity:', entity.id, entity.type);
+    } else {
+      console.warn('[loadLevel] Failed to create entity:', entity.type);
     }
   });
 
@@ -37,30 +80,132 @@ export function loadLevel(
   return createdObjects;
 }
 
-function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
-  const objects: LevelObject[] = [];
+function convertOldLevelData(oldData: any): LevelData {
+  const tiles: GridTile[] = [];
+  const entities: LevelEntity[] = [];
 
-  objects.push({
-    id: "player_1",
-    type: LevelObjectType.Player,
+  oldData.objects.forEach((obj: any) => {
+    const t = String(obj.type).toLowerCase().trim();
+
+    if (t === 'player') {
+      entities.push({
+        id: obj.id,
+        type: EntityType.Player,
+        position: obj.position,
+        physics: obj.physics,
+        visual: obj.visual,
+      });
+    } else if (t === 'platform') {
+      const gridX = Math.floor(obj.position.x / GRID_CELL_SIZE);
+      const gridY = Math.floor(obj.position.y / GRID_CELL_SIZE);
+      const gridWidth = Math.ceil(
+        ((obj.scale?.x || 1) * GRID_CELL_SIZE) / GRID_CELL_SIZE
+      );
+      const gridHeight = Math.ceil(
+        ((obj.scale?.y || 1) * GRID_CELL_SIZE) / GRID_CELL_SIZE
+      );
+
+      for (let x = 0; x < gridWidth; x++) {
+        for (let y = 0; y < gridHeight; y++) {
+          tiles.push({
+            type: TileType.Grass,
+            gridX: gridX + x,
+            gridY: gridY + y,
+          });
+        }
+      }
+    } else if (t === 'spring') {
+      const gridX = Math.floor(obj.position.x / GRID_CELL_SIZE);
+      const gridY = Math.floor(obj.position.y / GRID_CELL_SIZE);
+      tiles.push({
+        type: TileType.Spring,
+        gridX,
+        gridY,
+      });
+    } else if (t === 'spike') {
+      const gridX = Math.floor(obj.position.x / GRID_CELL_SIZE);
+      const gridY = Math.floor(obj.position.y / GRID_CELL_SIZE);
+      tiles.push({
+        type: TileType.Spike,
+        gridX,
+        gridY,
+      });
+    } else if (t === 'goal') {
+      const gridX = Math.floor(obj.position.x / GRID_CELL_SIZE);
+      const gridY = Math.floor(obj.position.y / GRID_CELL_SIZE);
+      tiles.push({
+        type: TileType.Door,
+        gridX,
+        gridY,
+      });
+    }
+  });
+
+  const maxGridX = Math.max(0, ...tiles.map((t) => t.gridX));
+  const maxGridY = Math.max(0, ...tiles.map((t) => t.gridY));
+  const gridWidth = Math.max(10, maxGridX + 2);
+  const gridHeight = Math.max(6, maxGridY + 2);
+
+  return {
+    version: LEVEL_SCHEMA_VERSION,
+    name: oldData.name || 'Converted Level',
+    settings: oldData.settings || {
+      gravity: { x: 0, y: 1 },
+      backgroundColor: '#87CEEB',
+      bounds: {
+        width: gridWidth * GRID_CELL_SIZE,
+        height: gridHeight * GRID_CELL_SIZE,
+      },
+    },
+    grid: {
+      width: gridWidth,
+      height: gridHeight,
+    },
+    tiles,
+    entities,
+  };
+}
+
+function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
+  const tiles: GridTile[] = [];
+  const entities: LevelEntity[] = [];
+
+  entities.push({
+    id: 'player_1',
+    type: EntityType.Player,
     position: { x: legacy.player.x, y: legacy.player.y },
-    physics: { type: PhysicsType.Dynamic },
-    visual: { tint: parseColor(legacy.player.color) ?? ENTITY_CONFIG.PLAYER_COLOR_DEFAULT },
+    physics: { type: 'dynamic' },
+    visual: {
+      tint:
+        parseColor(legacy.player.color) ?? ENTITY_CONFIG.PLAYER_COLOR_DEFAULT,
+    },
   });
 
   legacy.platforms.forEach((p, i) => {
-    objects.push({
-      id: `platform_${i + 1}`,
-      type: LevelObjectType.Platform,
-      position: { x: p.x, y: p.y },
-      scale: { x: p.width / ENTITY_CONFIG.PLATFORM_WIDTH, y: p.height / ENTITY_CONFIG.PLATFORM_HEIGHT },
-      physics: { type: PhysicsType.Static, isCollidable: true },
-      visual: { tint: parseColor(p.color) ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT },
-    });
+    const gridX = Math.floor(p.x / GRID_CELL_SIZE);
+    const gridY = Math.floor(
+      (legacy.world.height - p.y - p.height) / GRID_CELL_SIZE
+    );
+    const gridWidth = Math.ceil(p.width / GRID_CELL_SIZE);
+    const gridHeight = Math.ceil(p.height / GRID_CELL_SIZE);
+
+    for (let x = 0; x < gridWidth; x++) {
+      for (let y = 0; y < gridHeight; y++) {
+        tiles.push({
+          type: TileType.Grass,
+          gridX: gridX + x,
+          gridY: gridY + y,
+          properties: {
+            originalPlatformId: `platform_${i + 1}`,
+            color: parseColor(p.color) ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT,
+          },
+        });
+      }
+    }
   });
 
   const settings: LevelSettings = {
-    backgroundColor: legacy.world.backgroundColor ?? "#87CEEB",
+    backgroundColor: legacy.world.backgroundColor ?? '#87CEEB',
     bounds: {
       width: legacy.world.width,
       height: legacy.world.height,
@@ -70,244 +215,276 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
 
   return {
     version: LEVEL_SCHEMA_VERSION,
-    name: "Legacy Level",
+    name: 'Legacy Level',
     settings,
-    objects,
+    grid: {
+      width: Math.ceil(legacy.world.width / GRID_CELL_SIZE),
+      height: Math.ceil(legacy.world.height / GRID_CELL_SIZE),
+    },
+    tiles,
+    entities,
   };
 }
 
 function parseColor(hex?: string): number | undefined {
   if (!hex) return undefined;
-  return parseInt(hex.replace("#", "0x"));
+  return parseInt(hex.replace('#', '0x'));
 }
 
 function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
-  const world = (scene as any).matter?.world;
-
   if (settings.backgroundColor !== undefined && scene.cameras?.main) {
     scene.cameras.main.setBackgroundColor(settings.backgroundColor);
   }
 
-  if (!world) return;
-
-  if (settings.gravity) world.setGravity(settings.gravity.x ?? 0, settings.gravity.y ?? 1);
-  if (settings.bounds) world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+  if ((scene as any).physics?.world) {
+    if (settings.gravity) {
+      scene.physics.world.gravity.y = settings.gravity.y ?? 800;
+    }
+    if (settings.bounds) {
+      scene.physics.world.setBounds(
+        0,
+        0,
+        settings.bounds.width,
+        settings.bounds.height
+      );
+    }
+  }
 }
 
-function createGameObject(
+/**
+ * Convert grid coordinates to pixel coordinates
+ * Grid origin (0,0) is bottom-left, pixel origin (0,0) is top-left
+ */
+function gridToPixel(
+  gridX: number,
+  gridY: number,
+  gridHeight: number
+): { x: number; y: number } {
+  const pixelX = gridX * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+  const pixelY = (gridHeight - 1 - gridY) * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+  return { x: pixelX, y: pixelY };
+}
+
+function createTile(
   scene: Phaser.Scene,
-  obj: LevelObject
+  tile: GridTile
 ): Phaser.GameObjects.GameObject | null {
-  switch (obj.type) {
-    case LevelObjectType.Player:
-      return createPlayer(scene, obj);
-    case LevelObjectType.Platform:
-      return createPlatform(scene, obj);
-    case LevelObjectType.Spring:
-      return createSpring(scene, obj);
-    case LevelObjectType.Spike:
-      return createSpike(scene, obj);
-    case LevelObjectType.Coin:
-      return createCoin(scene, obj);
-    case LevelObjectType.Lava:
-      return createLava(scene, obj);
-    case LevelObjectType.Goal:
-      return createDoor(scene, obj);
+  const gridHeight = (scene as any).levelData?.grid?.height || 10;
+  const pixelPos = gridToPixel(tile.gridX, tile.gridY, gridHeight);
+
+  switch (tile.type) {
+    case TileType.Grass:
+      return createGrassTile(scene, pixelPos.x, pixelPos.y, tile);
+    case TileType.Spring:
+      return createSpringTile(scene, pixelPos.x, pixelPos.y, tile);
+    case TileType.Spike:
+      return createSpikeTile(scene, pixelPos.x, pixelPos.y, tile);
+    case TileType.Coin:
+      return createCoinTile(scene, pixelPos.x, pixelPos.y, tile);
+    case TileType.Door:
+      return createDoorTile(scene, pixelPos.x, pixelPos.y, tile);
     default:
       return null;
   }
 }
 
-function createPlayer(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const radius = ENTITY_CONFIG.PLAYER_RADIUS;
-
-  // Use the loaded player sprite; no fallback circle
-  const textureKey = 'player-idle-1';
-
-  const player = scene.matter.add.sprite(obj.position.x, obj.position.y, textureKey, undefined, {
-    restitution: ENTITY_CONFIG.PLAYER_RESTITUTION,
-    friction: ENTITY_CONFIG.PLAYER_FRICTION,
-    frictionAir: 0.01, // Add air resistance to prevent tunneling
-    density: 0.001, // Lighter body for better collision response
-  });
-
-  player.setCircle(radius);
-  player.setDisplaySize(48, 48); // Set visible size to match physics
-  player.setName(obj.id);
-  player.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
-  player.setFixedRotation();
-  (player as any).setDepth?.(10);
-  
-  // Enable better collision detection
-  if (player.body && (player.body as any).body) {
-    (player.body as any).body.isSleeping = false;
-    (player.body as any).body.sleepThreshold = Infinity; // Never sleep
+function createEntity(
+  scene: Phaser.Scene,
+  entity: LevelEntity
+): Phaser.GameObjects.GameObject | null {
+  switch (entity.type) {
+    case EntityType.Player:
+      return createPlayer(scene, entity);
+    case EntityType.Enemy:
+      return createEnemy(scene, entity);
+    case EntityType.Collectible:
+      return createCollectible(scene, entity);
+    default:
+      return null;
   }
-
-  return player;
 }
 
-function createPlatform(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
-  const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
-  const x = obj.position.x;
-  const y = obj.position.y;
-
-  // Create Matter physics body
-  scene.matter.add.rectangle(x, y, width, height, { isStatic: true, label: obj.id });
-
-  // Use grass texture if available, otherwise fallback to colored rectangle
-  if (scene.textures.exists('grass')) {
-    // Optional filler first to eliminate any transparent borders in the art
-    if (scene.textures.exists('grass-filler')) {
-      const filler = scene.add.image(x - width / 2, y - height / 2, 'grass-filler');
-      filler.setOrigin(0, 0);
-      filler.setDisplaySize(width, height);
-      filler.setDepth(-2);
-      filler.name = obj.id + '_filler';
-    }
-
-    // Top-left anchor to avoid subpixel seams between adjacent tiles
-    const grassImg = scene.add.image(x - width / 2, y - height / 2, 'grass');
-    grassImg.setOrigin(0, 0);
-    grassImg.setDisplaySize(width, height);
-    grassImg.setDepth(-1);
-    grassImg.name = obj.id;
-    return grassImg;
+function createGrassTile(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tile: GridTile
+): Phaser.GameObjects.GameObject {
+  if ((scene as any).physics?.world) {
+    const platform = scene.add.rectangle(
+      x,
+      y,
+      GRID_CELL_SIZE,
+      GRID_CELL_SIZE,
+      0x4a7c59
+    );
+    scene.physics.add.existing(platform, true);
+    platform.name = `grass_${tile.gridX}_${tile.gridY}`;
+    return platform;
   } else {
-    const color = obj.visual?.tint ?? ENTITY_CONFIG.PLATFORM_COLOR_DEFAULT;
-    const graphics = scene.add.graphics();
-    graphics.fillStyle(color);
-    graphics.fillRect(x - width / 2, y - height / 2, width, height);
-    graphics.name = obj.id;
-    return graphics;
+    const platform = scene.add.rectangle(
+      x,
+      y,
+      GRID_CELL_SIZE,
+      GRID_CELL_SIZE,
+      0x4a7c59
+    );
+    platform.name = `grass_${tile.gridX}_${tile.gridY}`;
+    return platform;
   }
 }
 
-function createSpring(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const x = obj.position.x;
-  const y = obj.position.y;
-  const w = 32, h = 32; // Make it a full tile height
-  
-  // Add a thin solid platform on top so player doesn't fall through
-  scene.matter.add.rectangle(x, y - h / 2 + 2, w, 4, { isStatic: true, label: 'spring_platform' });
-  
-  // Large sensor body for collision detection (covers whole tile)
-  scene.matter.add.rectangle(x, y, w, h, { isStatic: true, isSensor: true, label: 'spring' });
-  
-  // Add filler background
-  if (scene.textures.exists('grass-filler')) {
-    const filler = scene.add.image(x - w / 2, y - h / 2, 'grass-filler');
-    filler.setOrigin(0, 0);
-    filler.setDisplaySize(w, h);
-    filler.setDepth(4);
-    filler.name = obj.id + '_filler';
-  }
-  
+function createSpringTile(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tile: GridTile
+): Phaser.GameObjects.GameObject {
   const img = scene.add.image(x, y, 'spring');
-  img.setDisplaySize(w, 32); // Visual size
-  img.name = obj.id;
-  img.setDepth(5);
+  img.setDisplaySize(GRID_CELL_SIZE - 4, GRID_CELL_SIZE - 4);
+  img.name = `spring_${tile.gridX}_${tile.gridY}`;
   return img;
 }
 
-function createSpike(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const x = obj.position.x;
-  const y = obj.position.y;
-  const w = 32, h = 32;
-  
-  // sensor body for hazard detection
-  scene.matter.add.rectangle(x, y, 28, 28, { isStatic: true, isSensor: true, label: 'spike' });
-  
-  // Add filler background
-  if (scene.textures.exists('grass-filler')) {
-    const filler = scene.add.image(x - w / 2, y - h / 2, 'grass-filler');
-    filler.setOrigin(0, 0);
-    filler.setDisplaySize(w, h);
-    filler.setDepth(4);
-    filler.name = obj.id + '_filler';
-  }
-  
+function createSpikeTile(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tile: GridTile
+): Phaser.GameObjects.GameObject {
   const img = scene.add.image(x, y, 'spike');
-  img.setDisplaySize(w, h);
-  img.name = obj.id;
-  img.setDepth(5);
+  img.setDisplaySize(GRID_CELL_SIZE, GRID_CELL_SIZE);
+  img.name = `spike_${tile.gridX}_${tile.gridY}`;
   return img;
 }
 
-function createCoin(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const x = obj.position.x;
-  const y = obj.position.y;
-  const sprite = scene.add.sprite(x, y, 'coin-1');
-  sprite.setDisplaySize(24, 24);
-  sprite.setDepth(6);
-  sprite.setData('isCoin', true);
-  try { sprite.play('coin-spin'); } catch {}
-  sprite.name = obj.id;
-  return sprite;
+function createCoinTile(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tile: GridTile
+): Phaser.GameObjects.GameObject {
+  const textureKey = 'coin-0';
+  const coinSprite = scene.add.sprite(x, y, textureKey);
+  coinSprite.setDisplaySize(GRID_CELL_SIZE - 8, GRID_CELL_SIZE - 8);
+  coinSprite.setName(`coin_${tile.gridX}_${tile.gridY}`);
+
+  if (scene.anims.exists('coin-spin')) {
+    coinSprite.play('coin-spin');
+  }
+
+  return coinSprite;
 }
 
-function createLava(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const width = (obj.scale?.x ?? 1) * 32;
-  const height = (obj.scale?.y ?? 1) * 32;
-  const x = obj.position.x;
-  const y = obj.position.y;
-  
-  // Large sensor area that kills the player
-  scene.matter.add.rectangle(x, y, width, height, { isStatic: true, isSensor: true, label: 'lava' });
-  
-  // Add filler background
-  if (scene.textures.exists('Lava-filler')) {
-    const filler = scene.add.image(x - width / 2, y - height / 2, 'Lava-filler');
-    filler.setOrigin(0, 0);
-    filler.setDisplaySize(width, height);
-    filler.setDepth(0);
-    filler.name = obj.id + '_filler';
-  }
-  
-  let go: Phaser.GameObjects.GameObject;
-  if (scene.textures.exists('lava')) {
-    const img = scene.add.image(x - width / 2, y - height / 2, 'lava');
-    img.setOrigin(0, 0);
-    img.setDisplaySize(width, height);
-    img.setDepth(1); // above platforms (-1)
-    img.name = obj.id;
-    go = img;
+function createDoorTile(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tile: GridTile
+): Phaser.GameObjects.GameObject {
+  const img = scene.add.image(x, y, 'default-icon');
+  img.setDisplaySize(GRID_CELL_SIZE, GRID_CELL_SIZE);
+  img.name = `door_${tile.gridX}_${tile.gridY}`;
+  return img;
+}
+
+function createPlayer(
+  scene: Phaser.Scene,
+  entity: LevelEntity
+): Phaser.GameObjects.GameObject {
+  const textureKey = entity.visual?.texture || 'player-idle-0';
+
+  if ((scene as any).physics?.world) {
+    const playerSprite = scene.physics.add.sprite(
+      entity.position.x,
+      entity.position.y,
+      textureKey
+    );
+    playerSprite.setDisplaySize(60, 100);
+    playerSprite.setName(entity.id);
+    playerSprite.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
+    playerSprite.setCollideWorldBounds(true);
+
+    const player = new Player(
+      scene,
+      entity.id,
+      entity.position.x,
+      entity.position.y,
+      textureKey
+    );
+    player.sprite.destroy();
+    player.sprite = playerSprite;
+
+    return playerSprite;
   } else {
-    const g = scene.add.graphics();
-    g.fillStyle(0xf97316);
-    g.fillRect(x - width / 2, y - height / 2, width, height);
-    g.name = obj.id;
-    go = g;
+    const playerSprite = scene.add.sprite(
+      entity.position.x,
+      entity.position.y,
+      textureKey
+    );
+    playerSprite.setDisplaySize(60, 100);
+    playerSprite.setName(entity.id);
+
+    const player = new Player(
+      scene,
+      entity.id,
+      entity.position.x,
+      entity.position.y,
+      textureKey
+    );
+    player.sprite.destroy();
+    player.sprite = playerSprite;
+
+    return playerSprite;
   }
-  return go;
 }
 
-function createDoor(scene: Phaser.Scene, obj: LevelObject): Phaser.GameObjects.GameObject {
-  const w = 48, h = 64;
-  const x = obj.position.x;
-  const y = obj.position.y - h / 2; // visually rest on tile
-  // door sensor slightly inset
-  scene.matter.add.rectangle(x, y + h / 2, w * 0.8, h, { isStatic: true, isSensor: true, label: 'door' });
-  if (scene.textures.exists('door')) {
-    const img = scene.add.image(x, y, 'door');
-    img.setDisplaySize(w, h);
-    img.name = obj.id;
-    img.setDepth(4);
-    return img;
+function createEnemy(
+  scene: Phaser.Scene,
+  entity: LevelEntity
+): Phaser.GameObjects.GameObject {
+  const textureKey = entity.visual?.texture || 'enemy-default';
+  const enemySprite = scene.add.sprite(
+    entity.position.x,
+    entity.position.y,
+    textureKey
+  );
+  enemySprite.setDisplaySize(40, 40);
+  enemySprite.setName(entity.id);
+  return enemySprite;
+}
+
+function createCollectible(
+  scene: Phaser.Scene,
+  entity: LevelEntity
+): Phaser.GameObjects.GameObject {
+  const textureKey = entity.visual?.texture || 'coin-0';
+  const collectibleSprite = scene.add.sprite(
+    entity.position.x,
+    entity.position.y,
+    textureKey
+  );
+  collectibleSprite.setDisplaySize(30, 30);
+  collectibleSprite.setName(entity.id);
+
+  if (scene.anims.exists('coin-spin')) {
+    collectibleSprite.play('coin-spin');
   }
-  const g = scene.add.rectangle(x, y + h / 2, w, h, 0x8b5cf6);
-  g.setStrokeStyle(2, 0x4c1d95);
-  (g as any).name = obj.id;
-  (g as any).setDepth?.(4);
-  return g as any;
+
+  return collectibleSprite;
 }
 
 function validateLevel(level: LevelData): void {
-  if (!level.objects || !Array.isArray(level.objects)) {
-    throw new Error("Invalid level: objects array missing.");
+  if (!level.tiles || !Array.isArray(level.tiles)) {
+    throw new Error('Invalid level: tiles array missing.');
+  }
+  if (!level.entities || !Array.isArray(level.entities)) {
+    throw new Error('Invalid level: entities array missing.');
+  }
+  if (!level.grid) {
+    throw new Error('Invalid level: grid settings missing.');
   }
   if (!level.version) {
-    throw new Error("Invalid level: missing version field.");
+    throw new Error('Invalid level: missing version field.');
   }
 }

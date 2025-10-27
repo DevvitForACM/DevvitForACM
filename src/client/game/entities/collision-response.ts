@@ -7,7 +7,7 @@ export enum CollisionType {
   COLLECT = 'collect',
   BOUNCE = 'bounce',
   BLOCK = 'block',
-  TRIGGER = 'trigger'
+  TRIGGER = 'trigger',
 }
 
 export interface CollisionEvent {
@@ -25,40 +25,48 @@ export class CollisionResponse {
   /**
    * Handle collision response between two entities
    */
-  public static handleCollision(entityA: BaseEntity, entityB: BaseEntity): void {
+  public static handleCollision(
+    entityA: BaseEntity,
+    entityB: BaseEntity
+  ): void {
     const collisionSide = CollisionManager.getCollisionSide(entityA, entityB);
-    
-    // Create collision event
+
     const event: CollisionEvent = {
       entityA,
       entityB,
       type: this.determineCollisionType(entityA, entityB),
       side: collisionSide,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
-    // Add to history
     this.addToHistory(event);
 
-    // Apply collision response
     this.applyCollisionResponse(event);
   }
 
   /**
    * Determine the type of collision based on entity types
    */
-  private static determineCollisionType(entityA: BaseEntity, entityB: BaseEntity): CollisionType {
-    // Player vs others
+  private static determineCollisionType(
+    entityA: BaseEntity,
+    entityB: BaseEntity
+  ): CollisionType {
     if (entityA instanceof Player || entityB instanceof Player) {
       const other = entityA instanceof Player ? entityB : entityA;
-      
-      if (other.constructor.name === 'Spike' || other.constructor.name === 'Enemy') {
+
+      if (
+        other.constructor.name === 'Spike' ||
+        other.constructor.name === 'Enemy'
+      ) {
         return CollisionType.DAMAGE;
       } else if (other.constructor.name === 'Coin') {
         return CollisionType.COLLECT;
       } else if (other.constructor.name === 'Spring') {
         return CollisionType.BOUNCE;
-      } else if (other.constructor.name === 'Tile' || other.constructor.name === 'Door') {
+      } else if (
+        other.constructor.name === 'Tile' ||
+        other.constructor.name === 'Door'
+      ) {
         return CollisionType.BLOCK;
       }
     }
@@ -93,10 +101,8 @@ export class CollisionResponse {
    * Handle damage-dealing collisions
    */
   private static handleDamageCollision(event: CollisionEvent): void {
-    // Visual effects
     this.createImpactEffect(event.entityA, event.entityB);
-    
-    // Screen shake effect could be added here
+
     this.createScreenShake();
   }
 
@@ -104,17 +110,13 @@ export class CollisionResponse {
    * Handle collection collisions
    */
   private static handleCollectCollision(event: CollisionEvent): void {
-    // Particle effects
     this.createCollectEffect(event.entityA, event.entityB);
-    
-    // Sound effect trigger could be added here
   }
 
   /**
    * Handle bounce collisions
    */
   private static handleBounceCollision(event: CollisionEvent): void {
-    // Bounce visual effects
     this.createBounceEffect(event.entityA, event.entityB);
   }
 
@@ -122,7 +124,6 @@ export class CollisionResponse {
    * Handle blocking collisions (solid objects)
    */
   private static handleBlockCollision(event: CollisionEvent): void {
-    // Prevent overlap by pushing entities apart
     this.separateEntities(event.entityA, event.entityB, event.side);
   }
 
@@ -130,18 +131,19 @@ export class CollisionResponse {
    * Handle trigger collisions (switches, doors, etc.)
    */
   private static handleTriggerCollision(event: CollisionEvent): void {
-    void event; // placeholder to satisfy noUnusedParameters
-    // Custom trigger logic would go here
+    void event;
   }
 
   /**
    * Create impact visual effect
    */
-  private static createImpactEffect(entityA: BaseEntity, entityB: BaseEntity): void {
-    // Flash both entities briefly
+  private static createImpactEffect(
+    entityA: BaseEntity,
+    entityB: BaseEntity
+  ): void {
     entityA.sprite.setTint(0xff0000);
     entityB.sprite.setTint(0xff0000);
-    
+
     setTimeout(() => {
       entityA.sprite.clearTint();
       entityB.sprite.clearTint();
@@ -151,12 +153,14 @@ export class CollisionResponse {
   /**
    * Create collection visual effect
    */
-  private static createCollectEffect(entityA: BaseEntity, entityB: BaseEntity): void {
+  private static createCollectEffect(
+    entityA: BaseEntity,
+    entityB: BaseEntity
+  ): void {
     const collector = entityA instanceof Player ? entityA : entityB;
     const collected = entityA instanceof Player ? entityB : entityA;
-    void collector; // currently unused, reserved for future features
-    
-    // Scale effect
+    void collector;
+
     collected.sprite.setScale(1.2);
     setTimeout(() => {
       collected.sprite.setScale(1.0);
@@ -166,10 +170,12 @@ export class CollisionResponse {
   /**
    * Create bounce visual effect
    */
-  private static createBounceEffect(entityA: BaseEntity, entityB: BaseEntity): void {
+  private static createBounceEffect(
+    entityA: BaseEntity,
+    entityB: BaseEntity
+  ): void {
     const bouncer = entityA instanceof Player ? entityB : entityA;
-    
-    // Compress effect
+
     bouncer.sprite.setScale(1.0, 0.8);
     setTimeout(() => {
       bouncer.sprite.setScale(1.0, 1.0);
@@ -179,16 +185,21 @@ export class CollisionResponse {
   /**
    * Separate overlapping entities
    */
-  private static separateEntities(entityA: BaseEntity, entityB: BaseEntity, side: string): void {
+  private static separateEntities(
+    entityA: BaseEntity,
+    entityB: BaseEntity,
+    side: string
+  ): void {
     const boundsA = entityA.getBounds();
     const boundsB = entityB.getBounds();
-    
-    const overlapX = Math.min(boundsA.x + boundsA.width, boundsB.x + boundsB.width) - 
-                     Math.max(boundsA.x, boundsB.x);
-    const overlapY = Math.min(boundsA.y + boundsA.height, boundsB.y + boundsB.height) - 
-                     Math.max(boundsA.y, boundsB.y);
-    
-    // Push entities apart based on collision side
+
+    const overlapX =
+      Math.min(boundsA.x + boundsA.width, boundsB.x + boundsB.width) -
+      Math.max(boundsA.x, boundsB.x);
+    const overlapY =
+      Math.min(boundsA.y + boundsA.height, boundsB.y + boundsB.height) -
+      Math.max(boundsA.y, boundsB.y);
+
     if (side === 'left' || side === 'right') {
       const pushX = overlapX / 2;
       if (side === 'left') {
@@ -213,18 +224,14 @@ export class CollisionResponse {
   /**
    * Create screen shake effect
    */
-  private static createScreenShake(): void {
-    // Screen shake would be implemented with camera shake in the scene
-    // This is a placeholder for the effect trigger
-  }
+  private static createScreenShake(): void {}
 
   /**
    * Add collision event to history
    */
   private static addToHistory(event: CollisionEvent): void {
     this.collisionHistory.push(event);
-    
-    // Keep history size manageable
+
     if (this.collisionHistory.length > this.HISTORY_LIMIT) {
       this.collisionHistory.shift();
     }

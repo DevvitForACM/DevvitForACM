@@ -12,7 +12,7 @@ export interface LevelConfig {
   gravityY: number;
   moveSpeed: number;
   jumpVelocity: number;
-  deadzoneXFrac: number; // 0..1 of viewport width
+  deadzoneXFrac: number;
   bgColor: string;
   useMapControls: boolean;
   autoRun?: boolean;

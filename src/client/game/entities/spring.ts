@@ -41,11 +41,8 @@ export class Spring extends BaseEntity {
   }
 
   private bounce(player: Player): void {
-    // Apply upward velocity to player (would need physics integration)
-    // For now, just move player up
-    player.y -= this.bounceForce / 10; // Simplified bounce
-    
-    // Visual effect
+    player.y -= this.bounceForce / 10;
+
     this.sprite.setTint(0x00ff00);
     setTimeout(() => {
       this.sprite.clearTint();

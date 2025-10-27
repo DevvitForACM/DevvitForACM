@@ -1,10 +1,10 @@
 import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
-import { redis, createServer, context } from '@devvit/web/server';
-import { createPost } from './core/post';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import authRoutes from './routes/auth.routes';
 import levelRoutes from './routes/level.routes';
+import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
+import { createPost } from './core/post';
 
 const app = express();
 
@@ -14,6 +14,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Middleware for plain text body parsing
 app.use(express.text());
+
+// Debug middleware to log all requests and current user
+app.use(async (req, _res, next) => {
+  console.log(`🔍 SERVER: ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  
+  // Get current Reddit user from Devvit context
+  try {
+    const currentUser = await reddit.getCurrentUsername();
+    console.log(`👤 SERVER: Current Reddit user: ${currentUser || 'anonymous'}`);
+  } catch (error) {
+    console.log(`👤 SERVER: Could not get current user: ${error}`);
+  }
+  
+  console.log(`🔍 SERVER: Query params:`, req.query);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 SERVER: Body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
 
 const router = express.Router();
 
@@ -125,8 +144,8 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
 // Use router middleware
 app.use(router);
 
-// Leaderboard routes
-app.use('/api/leaderboard', leaderboardRoutes);
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Auth routes (Reddit OAuth)
 app.use('/auth', authRoutes);
@@ -150,8 +169,42 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Get port from environment variable with fallback
-const port = process.env.WEBBIT_PORT || 3000;
+const port = getServerPort();
 
 const server = createServer(app);
 server.on('error', (err) => console.error(`server error; ${err.stack}`));
 server.listen(port, () => console.log(`http://localhost:${port}`));
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  console.log('🏥 SERVER: Health check endpoint accessed');
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    server: 'Redis-powered Devvit Game Server',
+    version: '0.0.4.11'
+  });
+});
+
+// Catch-all route for debugging
+app.use((req, res) => {
+  console.log(`❓ SERVER: Unhandled route accessed: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: 'Route not found',
+    method: req.method,
+    path: req.originalUrl,
+    availableRoutes: [
+      'GET /health',
+      'GET /api/auth/me',
+      'POST /api/auth/login',
+      'POST /api/auth/logout',
+      'GET /api/auth/profile/:username',
+      'GET /api/init',
+      'POST /api/increment',
+      'POST /api/decrement',
+      'GET /api/leaderboard',
+      'POST /api/leaderboard/score'
+    ]
+  });
+});
+
+// Get port from environment variable with fallback

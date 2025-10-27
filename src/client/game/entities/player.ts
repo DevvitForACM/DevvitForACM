@@ -4,7 +4,7 @@ import { Spike } from './spike';
 import { Coin } from './coin';
 import { Enemy } from './enemy';
 import { Spring } from './spring';
-import { PLAYER, COLLISION } from '../../constants/game-constants';
+import { PLAYER, COLLISION } from '@/constants/game-constants';
 
 export class Player extends BaseEntity {
   public health: number;
@@ -20,11 +20,59 @@ export class Player extends BaseEntity {
   ) {
     super(scene, id, x, y, texture);
 
-    this.width = PLAYER.SIZE.WIDTH;
-    this.height = PLAYER.SIZE.HEIGHT;
+    this.width = 60;
+    this.height = 100;
     this.health = PLAYER.HEALTH.DEFAULT;
     this.maxHealth = PLAYER.HEALTH.MAX;
     this.isDead = false;
+
+    this.createAnimations();
+  }
+
+  private createAnimations(): void {
+    // Check if idle textures exist
+    const idleFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.scene.textures.exists(`player-idle-${i}`))
+      .map((i) => ({ key: `player-idle-${i}` }));
+    
+    if (!this.scene.anims.exists('player-idle') && idleFrames.length > 0) {
+      this.scene.anims.create({
+        key: 'player-idle',
+        frames: idleFrames,
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+
+    // Check if jump textures exist, fallback to idle if not
+    const jumpFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.scene.textures.exists(`player-jump-${i}`))
+      .map((i) => ({ key: `player-jump-${i}` }));
+    
+    if (!this.scene.anims.exists('player-jump-sequence')) {
+      // If no jump frames, use idle frames as fallback
+      const frames = jumpFrames.length > 0 ? jumpFrames : idleFrames;
+      if (frames.length > 0) {
+        this.scene.anims.create({
+          key: 'player-jump-sequence',
+          frames: frames,
+          frameRate: 12,
+          repeat: 0,
+        });
+      }
+    }
+  }
+
+  public playIdleAnimation(): void {
+    if (this.sprite && this.sprite.anims) {
+      this.sprite.play('player-idle', true);
+    }
+  }
+
+  public playJumpSequence(): void {
+    if (this.sprite && this.sprite.anims) {
+      this.sprite.play('player-jump-sequence', true);
+    }
   }
 
   public override update(delta: number): void {
@@ -41,16 +89,14 @@ export class Player extends BaseEntity {
 
     if (other instanceof Spike) {
       this.takeDamage(other.damage);
-      // Add knockback effect
+
       this.knockback(other);
     } else if (other instanceof Coin && !other.isCollected) {
       other.collect();
-      // Could trigger score increase here
     } else if (other instanceof Enemy && !other.isDead) {
       this.takeDamage(other.damage);
       this.knockback(other);
     } else if (other instanceof Spring) {
-      // Spring bounce effect will be handled by Spring entity
     }
   }
 
@@ -87,16 +133,15 @@ export class Player extends BaseEntity {
   }
 
   private knockback(other: BaseEntity): void {
-    // Simple knockback effect - push player away from the entity that hit them
     const pushForce = COLLISION.KNOCKBACK_FORCE;
     const deltaX = this.x - other.x;
     const deltaY = this.y - other.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    
+
     if (distance > 0) {
       const normalX = deltaX / distance;
       const normalY = deltaY / distance;
-      
+
       this.x += normalX * pushForce;
       this.y += normalY * pushForce;
     }
