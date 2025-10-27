@@ -169,11 +169,16 @@ export interface LevelSettings {
  * The main structure of a level JSON file.
  */
 export interface LevelData {
+  id: string;
   version: string; // should match LEVEL_SCHEMA_VERSION
-  name: string;
+  name?: string;
   description?: string;
-  settings: LevelSettings;
-  objects: LevelObject[];
+  isPublic: boolean;
+  plays?: number;
+  likes?: number;
+  settings?: LevelSettings;
+  objects?: LevelObject[];
+  chunks?: any; // For chunked level data
   metadata?: {
     createdBy?: string;
     createdAt?: string;
@@ -181,45 +186,3 @@ export interface LevelData {
     tags?: string[];
   };
 }
-
-//////////////////////////
-// 🔹 EXAMPLE TEMPLATE
-//////////////////////////
-
-/**
- * A minimal example of what a JSON level might look like.
- * This is useful for testing and schema validation.
- */
-export const exampleLevel: LevelData = {
-  version: LEVEL_SCHEMA_VERSION,
-  name: "Sample Level 1",
-  description: "This is a demo level showing JSON layout.",
-  settings: {
-    gravity: { x: 0, y: 1 },
-    backgroundColor: "#87CEEB",
-    bounds: { width: 2000, height: 1000 },
-  },
-  objects: [
-    {
-      id: "player_1",
-      type: LevelObjectType.Player,
-      position: { x: 100, y: 800 },
-      physics: { type: PhysicsType.Dynamic },
-      visual: { texture: "player_sprite", frame: 0 },
-    },
-    {
-      id: "ground_1",
-      type: LevelObjectType.Platform,
-      position: { x: 0, y: 950 },
-      scale: { x: 10, y: 1 },
-      physics: { type: PhysicsType.Static, isCollidable: true },
-      visual: { texture: "platform_tile" },
-    },
-  ],
-  metadata: {
-    createdBy: "Adarsh Dubey",
-    createdAt: new Date().toISOString(),
-    difficulty: "easy",
-  },
-};
-

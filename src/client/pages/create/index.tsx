@@ -40,6 +40,7 @@ export default function Create() {
     status: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // IMPORTANT: Keep Phaser game config stable to avoid destroying/recreating the scene on React re-renders
   const config = useMemo(() => createBlankCanvasConfig('#f6f7f8'), []);
@@ -106,6 +107,114 @@ export default function Create() {
     if (scene) {
       scene.setSelectedEntityType(null);
       scene.registry.set('selectedEntityType', null);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!scene) return;
+    
+    setIsPublishing(true);
+    const GRID = 32;
+    const entities = scene.getAllEntities();
+    
+    try {
+      const ground = entities.filter((e: any) => {
+        const t = String(e.type).toLowerCase().trim();
+        return t === 'ground' || t === 'grass' || t === 'tile';
+      });
+
+      const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
+      const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
+      const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+
+      const objects: LevelObject[] = [];
+
+      const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
+      const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+      const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
+
+      entities.forEach((e: any, idx: number) => {
+        const t = String(e.type).toLowerCase().trim();
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
+          const x = e.gridX * GRID + GRID / 2;
+          const y = toY(e.gridY);
+          let levelType: LevelObjectType = LevelObjectType.Spring;
+          if (t === 'spike') levelType = LevelObjectType.Spike;
+          else if (t === 'coin') levelType = LevelObjectType.Coin;
+          else if (t === 'lava') levelType = LevelObjectType.Lava;
+          objects.push({ 
+            id: `${t}_${idx + 1}`, 
+            type: levelType, 
+            position: { x, y } 
+          });
+        }
+      });
+
+      const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
+      if (doorEnt) {
+        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) } });
+      }
+
+      ground.forEach((g: any, i: number) => {
+        objects.push({
+          id: `platform_${i + 1}`,
+          type: LevelObjectType.Platform,
+          position: { x: g.gridX * GRID + GRID / 2, y: toY(g.gridY) },
+          scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT },
+          physics: { type: PhysicsType.Static, isCollidable: true },
+          visual: { tint: COLORS.PLATFORM_ALT },
+        });
+      });
+
+      const levelData = {
+        version: LEVEL_SCHEMA_VERSION,
+        name: 'Editor Level',
+        isPublic: true,
+        settings: {
+          gravity: { x: 0, y: 1 },
+          backgroundColor: '#87CEEB',
+          bounds: { width, height },
+        },
+        objects,
+      };
+
+      // Call API to publish level
+      // Note: Devvit Web handles authentication automatically
+      const response = await fetch('/api/levels/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(levelData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        // eslint-disable-next-line no-console
+        console.error('[Create] Publish error response:', errorData);
+        throw new Error(`Failed to publish: ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+      // eslint-disable-next-line no-console
+      console.info('[Create] Level published successfully:', result);
+      
+      setSaveBanner({ 
+        status: 'success', 
+        message: `Level published! ID: ${result.id}` 
+      });
+      setTimeout(() => setSaveBanner(null), 3000);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[Create] Publish failed:', error);
+      setSaveBanner({ 
+        status: 'error', 
+        message: `Publish failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+      setTimeout(() => setSaveBanner(null), 3000);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -381,6 +490,13 @@ export default function Create() {
                 className="px-2 py-1 sm:px-4 sm:py-2 bg-zinc-900 text-xs sm:text-sm text-white rounded font-medium"
               >
                 Save
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className="px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-xs sm:text-sm text-white rounded font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+              >
+                {isPublishing ? 'Publishing...' : 'Publish Level'}
               </button>
               <button
                 onClick={handlePlay}

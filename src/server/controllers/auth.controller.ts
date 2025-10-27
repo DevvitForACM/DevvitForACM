@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import { createOrGetUserFromReddit } from '../services/auth.service';
+import { createOrGetUserFromReddit } from '../services/auth.service.redis';
+import { RedisService } from '../services/redis.service';
+import { redis } from '@devvit/web/server';
 
 export async function redditCallback(req: Request, res: Response) {
   const { code, state } = req.query;
@@ -15,8 +17,10 @@ export async function redditCallback(req: Request, res: Response) {
   console.log(`🔍 Reddit callback received - Code: ${code.substring(0, 10)}..., State: ${state}`);
 
   try {
-    const result = await createOrGetUserFromReddit(code);
-    console.log('✅ Reddit authentication successful for user:', result.firebaseUid);
+    // Initialize Redis service
+    const redisService = new RedisService(redis);
+    const result = await createOrGetUserFromReddit(code, redisService);
+    console.log('Reddit authentication successful for user:', result.userId);
     // Return JWT to frontend. For web flow, you might redirect with token in query or set a cookie.
     return res.json({
       success: true,
@@ -24,7 +28,7 @@ export async function redditCallback(req: Request, res: Response) {
       message: 'Authentication successful'
     });
   } catch (err: any) {
-    console.error('❌ Reddit authentication failed:', err.message);
+    console.error('Reddit authentication failed:', err.message);
     return res.status(500).json({ 
       error: err.message || 'Auth failed',
       success: false
