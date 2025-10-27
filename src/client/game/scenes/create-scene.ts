@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
 import { createScrollControls } from '@/game/controls/camera-controls';
 
-const GRID_SIZE = 32;
-const BASELINE_Y = 0;
+const GRID_SIZE = 60;
 
 export class CreateScene extends Phaser.Scene {
   public cameraScrollSpeed: number = 0;
@@ -32,16 +31,16 @@ export class CreateScene extends Phaser.Scene {
     this.load.image('grass', `${base}Grass.png`);
     this.load.image('grass-filler', `${base}Grass-filler.png`);
 
-    for (let i = 1; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`player-idle-${i}`, `${base}animations/idle/${i}.png`);
     }
-    for (let i = 1; i <= 5; i++) {
-      this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`player-jump-${i}`, `${base}animations/jump/${i}.png`);
     }
 
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 0; i <= 4; i++) {
       const key = `coin-${i}`;
-      this.load.image(key, `${base}Animations/Coin/coin_2_${i}.png`);
+      this.load.image(key, `${base}animations/coin/${i}.png`);
     }
   }
 
@@ -61,7 +60,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('coin-spin')) {
       this.anims.create({
         key: 'coin-spin',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
         frameRate: 4,
         repeat: -1,
       });
@@ -70,7 +69,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('player-idle')) {
       this.anims.create({
         key: 'player-idle',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
         frameRate: 8,
         repeat: -1,
       });
@@ -78,7 +77,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('player-jump')) {
       this.anims.create({
         key: 'player-jump',
-        frames: [1, 2, 3, 4, 5].map((i) => ({ key: `player-jump-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-jump-${i}` })),
         frameRate: 10,
         repeat: -1,
       });
@@ -188,12 +187,12 @@ export class CreateScene extends Phaser.Scene {
       const sprite = this.add.image(0, 0, 'spike');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
-    } else if (t === 'coin' && this.textures.exists('coin-1')) {
-      const sprite = this.add.sprite(0, 0, 'coin-1');
+    } else if (t === 'coin' && this.textures.exists('coin-0')) {
+      const sprite = this.add.sprite(0, 0, 'coin-0');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      try {
+      if (this.anims.exists('coin-spin')) {
         sprite.play('coin-spin');
-      } catch {}
+      }
       container.add(sprite);
 
       this.tweens.add({
@@ -208,12 +207,12 @@ export class CreateScene extends Phaser.Scene {
       const sprite = this.add.image(0, 0, 'spring');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
-    } else if (t === 'player' && this.textures.exists('player-idle-1')) {
-      const sprite = this.add.sprite(0, 0, 'player-idle-1');
+    } else if (t === 'player' && this.textures.exists('player-idle-0')) {
+      const sprite = this.add.sprite(0, 0, 'player-idle-0');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      try {
+      if (this.anims.exists('player-idle')) {
         sprite.play('player-idle');
-      } catch {}
+      }
       container.add(sprite);
     } else if (
       (t === 'ground' || t === 'grass' || t === 'tile') &&
