@@ -2,8 +2,8 @@
  * level-schema.ts
  * --------------------------------------------
  * Defines the TypeScript schema for JSON-based game levels.
- * This schema uses a grid-based tile system (60x60 pixel cells) for level design,
- * with separate pixel-based positioning for dynamic entities.
+ * This schema is versioned, modular, and designed for scalable use
+ * with Phaser or any other rendering engine.
  * --------------------------------------------
  */
 
@@ -11,81 +11,62 @@
  * Version number for backward compatibility.
  * Allows older levels to remain supported after schema upgrades.
  */
-export const LEVEL_SCHEMA_VERSION = '2.0.0';
+export const LEVEL_SCHEMA_VERSION = '1.0.0';
 
 /**
- * Grid cell size in pixels
+ * Supported object types that can appear in a level.
+ * Extend this list as your game evolves.
  */
-export const GRID_CELL_SIZE = 60;
-
-/**
- * Tile types that can be placed on the grid.
- * These represent static level elements like platforms, obstacles, etc.
- */
-export enum TileType {
-  Empty = 'empty',
-  Grass = 'grass',
-  Dirt = 'dirt',
-  Stone = 'stone',
-  Spring = 'spring',
-  Spike = 'spike',
-  Coin = 'coin',
-  Door = 'door',
-  Water = 'water',
-  Lava = 'lava',
-}
-
-/**
- * Dynamic entity types that use pixel coordinates.
- * These are not part of the grid system.
- */
-export enum EntityType {
+export enum LevelObjectType {
   Player = 'player',
   Enemy = 'enemy',
+  Platform = 'platform',
+  Goal = 'goal',
   Collectible = 'collectible',
+  Obstacle = 'obstacle',
   Trigger = 'trigger',
   Decoration = 'decoration',
+  Spring = 'spring',
+  Spike = 'spike',
 }
 
 /**
- * Grid coordinate system (bottom-left origin)
+ * Common tags or layers — useful for selective collision or rendering.
  */
-export interface GridPosition {
-  x: number;
-  y: number;
+export enum LevelLayer {
+  Background = 'background',
+  Middleground = 'middleground',
+  Foreground = 'foreground',
+  UI = 'ui',
 }
 
 /**
- * Pixel coordinate system for dynamic entities
+ * Possible physics body types (useful for Matter.js or Arcade Physics).
  */
-export interface PixelPosition {
-  x: number;
-  y: number;
+export enum PhysicsType {
+  Static = 'static',
+  Dynamic = 'dynamic',
+  Kinematic = 'kinematic',
+  None = 'none',
 }
 
 /**
- * A single tile in the grid system
+ * Base interface for all game objects in a level.
  */
-export interface GridTile {
-  type: TileType;
-  gridX: number;
-  gridY: number;
-  properties?: Record<string, any>;
-}
-
-/**
- * Base interface for dynamic entities (not grid-based)
- */
-export interface BaseEntity {
+export interface BaseObject {
   id: string;
-  type: EntityType;
+  type: LevelObjectType;
   name?: string;
-  position: PixelPosition;
+  position: {
+    x: number;
+    y: number;
+  };
   rotation?: number;
   scale?: {
     x: number;
     y: number;
   };
+  layer?: LevelLayer;
   visible?: boolean;
 }
 
@@ -93,7 +74,7 @@ export interface BaseEntity {
  * Physics and collision properties applied to physical objects.
  */
 export interface PhysicsProperties {
-  type: 'static' | 'dynamic' | 'kinematic' | 'none';
+  type: PhysicsType;
   isCollidable?: boolean;
   gravityScale?: number;
   friction?: number;
@@ -122,9 +103,9 @@ export interface BehaviorProperties {
 }
 
 /**
- * Extended interface for dynamic entities with additional data.
+ * Extended interface for any object with additional data.
  */
-export interface LevelEntity extends BaseEntity {
+export interface LevelObject extends BaseObject {
   physics?: PhysicsProperties;
   visual?: VisualProperties;
   behavior?: BehaviorProperties;
@@ -153,15 +134,6 @@ export interface LegacyLevelFormat {
 }
 
 /**
- * Grid dimensions and layout settings
- * Cell size is fixed at 60 pixels and not configurable
- */
-export interface GridSettings {
-  width: number;
-  height: number;
-}
-
-/**
  * Defines background, gravity, and other environment-wide settings.
  */
 export interface LevelSettings {
@@ -180,16 +152,13 @@ export interface LevelSettings {
 
 /**
  * The main structure of a level JSON file.
- * Uses grid-based tiles for level design and pixel-based entities for dynamic objects.
  */
 export interface LevelData {
   version: string;
   name: string;
   description?: string;
   settings: LevelSettings;
-  grid: GridSettings;
-  tiles: GridTile[];
-  entities: LevelEntity[];
+  objects: LevelObject[];
   metadata?: {
     createdBy?: string;
     createdAt?: string;
@@ -200,68 +169,37 @@ export interface LevelData {
 
 /**
  * A minimal example of what a JSON level might look like.
- * This demonstrates the grid-based tile system with pixel-based entities.
+ * This is useful for testing and schema validation.
  */
 export const exampleLevel: LevelData = {
   version: LEVEL_SCHEMA_VERSION,
-  name: 'Sample Grid Level',
-  description:
-    'A demo level showing grid-based tiles and pixel-based entities.',
+  name: 'Sample Level 1',
+  description: 'This is a demo level showing JSON layout.',
   settings: {
     gravity: { x: 0, y: 1 },
     backgroundColor: '#87CEEB',
-    bounds: { width: 1200, height: 600 },
+    bounds: { width: 2000, height: 1000 },
   },
-  grid: {
-    width: 20,
-    height: 10,
-  },
-  tiles: [
-    { type: TileType.Grass, gridX: 0, gridY: 0 },
-    { type: TileType.Grass, gridX: 1, gridY: 0 },
-    { type: TileType.Grass, gridX: 2, gridY: 0 },
-    { type: TileType.Grass, gridX: 3, gridY: 0 },
-    { type: TileType.Grass, gridX: 4, gridY: 0 },
-    { type: TileType.Grass, gridX: 5, gridY: 0 },
-    { type: TileType.Grass, gridX: 6, gridY: 0 },
-    { type: TileType.Grass, gridX: 7, gridY: 0 },
-    { type: TileType.Grass, gridX: 8, gridY: 0 },
-    { type: TileType.Grass, gridX: 9, gridY: 0 },
-    { type: TileType.Grass, gridX: 10, gridY: 0 },
-    { type: TileType.Grass, gridX: 11, gridY: 0 },
-    { type: TileType.Grass, gridX: 12, gridY: 0 },
-    { type: TileType.Grass, gridX: 13, gridY: 0 },
-    { type: TileType.Grass, gridX: 14, gridY: 0 },
-    { type: TileType.Grass, gridX: 15, gridY: 0 },
-    { type: TileType.Grass, gridX: 16, gridY: 0 },
-    { type: TileType.Grass, gridX: 17, gridY: 0 },
-    { type: TileType.Grass, gridX: 18, gridY: 0 },
-    { type: TileType.Grass, gridX: 19, gridY: 0 },
-
-    { type: TileType.Grass, gridX: 3, gridY: 2 },
-    { type: TileType.Grass, gridX: 4, gridY: 2 },
-    { type: TileType.Grass, gridX: 5, gridY: 2 },
-
-    { type: TileType.Spring, gridX: 1, gridY: 0 },
-    { type: TileType.Spike, gridX: 2, gridY: 0 },
-
-    { type: TileType.Coin, gridX: 6, gridY: 2 },
-    { type: TileType.Coin, gridX: 8, gridY: 2 },
-    { type: TileType.Coin, gridX: 10, gridY: 2 },
-  ],
-  entities: [
+  objects: [
     {
       id: 'player_1',
-      type: EntityType.Player,
-      position: { x: 30, y: 540 },
-      physics: { type: 'dynamic' },
-      visual: { texture: 'player-idle-1' },
+      type: LevelObjectType.Player,
+      position: { x: 100, y: 800 },
+      physics: { type: PhysicsType.Dynamic },
+      visual: { texture: 'player_sprite', frame: 0 },
+    },
+    {
+      id: 'ground_1',
+      type: LevelObjectType.Platform,
+      position: { x: 0, y: 950 },
+      scale: { x: 10, y: 1 },
+      physics: { type: PhysicsType.Static, isCollidable: true },
+      visual: { texture: 'platform_tile' },
     },
   ],
   metadata: {
-    createdBy: 'Developer',
+    createdBy: 'Adarsh Dubey',
     createdAt: new Date().toISOString(),
     difficulty: 'easy',
-    tags: ['tutorial', 'grid-based'],
   },
 };

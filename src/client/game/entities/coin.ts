@@ -36,12 +36,10 @@ export class Coin extends BaseEntity {
   }
 
   private startSpinning(): void {
-    if (
-      this.sprite &&
-      this.sprite.anims &&
-      this.scene.anims.exists('coin-spin')
-    ) {
-      this.sprite.play('coin-spin');
+    if (this.sprite && this.sprite.anims) {
+      try {
+        this.sprite.play('coin-spin');
+      } catch {}
     }
   }
 

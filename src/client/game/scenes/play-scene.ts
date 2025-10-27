@@ -75,22 +75,15 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('Lava-filler', `${base}Lava-filler.png`);
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `${base}Animations/idle/${i}.png`);
-    }
-    // Optional run frames if available (note file names)
-    this.load.image('player-run-1', `${base}Animations/Run/running 1.png`);
-    this.load.image('player-run-2', `${base}Animations/Run/running 2.png`);
-    this.load.image('player-run-3', `${base}Animations/Run/running 3.png`);
-    this.load.image('player-run-4', `${base}Animations/Run/running inverted.png`);
-    this.load.image('player-run-5', `${base}Animations/Run/running 2.png`);
-    this.load.image('player-run-6', `${base}Animations/Run/running 3.png`);
-
-    for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `${base}Animations/jump/${i}.png`);
+      this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `${base}Animations/coin/${i}.png`);
+      this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
+    }
+
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`coin-${i}`, `${base}Animations/Coin/${i}.png`);
     }
   }
 
@@ -242,8 +235,16 @@ export class PlayScene extends Phaser.Scene {
       (child) => child.name && child.name.startsWith('platform_')
     ) as Phaser.GameObjects.GameObject[];
 
+    console.log(`[setupCollisions] Found ${platforms.length} platforms`);
+    platforms.forEach((p: any) => {
+      console.log(`[setupCollisions] Platform ${p.name}: x=${p.x}, y=${p.y}, visible=${p.visible}`);
+    });
+
     if (platforms.length > 0) {
       this.physics.add.collider(this.player, platforms);
+      console.log('[setupCollisions] Collider added between player and platforms');
+    } else {
+      console.warn('[setupCollisions] No platforms found!');
     }
   }
 
