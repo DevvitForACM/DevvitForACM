@@ -1,8 +1,10 @@
 import { useRouting } from '@/components/routing';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { SettingsModal } from '@/components/settings-modal';
 
 export default function Home() {
   const { navigate, location } = useRouting();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {}, [location]);
 
@@ -16,6 +18,39 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
       }}
     >
+      {/* Settings Button */}
+      <button
+        onClick={() => setSettingsOpen(true)}
+        className="absolute top-4 right-4 transform transition-transform hover:scale-110 active:scale-95"
+        style={{
+          background: '#6C63FF',
+          border: 'none',
+          boxShadow:
+            'inset 3px 3px 0 #8B88FF, inset -3px -3px 0 #5A52CC, 3px 3px 0 #4A43AA',
+          fontFamily: '"Courier New", monospace',
+          imageRendering: 'pixelated',
+        }}
+      >
+        <div
+          className="px-6 py-3 text-white font-bold text-lg tracking-wider"
+          style={{
+            textShadow: '2px 2px 0 #4A43AA',
+            filter: 'contrast(1.2)',
+          }}
+        >
+          ⚙️ SETTINGS
+        </div>
+        <div className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity duration-100"></div>
+        <div
+          className="absolute top-0 left-0 w-full h-1 bg-white opacity-30"
+          style={{ imageRendering: 'pixelated' }}
+        ></div>
+        <div
+          className="absolute top-0 left-0 w-1 h-full bg-white opacity-30"
+          style={{ imageRendering: 'pixelated' }}
+        ></div>
+      </button>
+
       <div className="flex flex-col items-center gap-8">
         {/* Game Title */}
         <div className="text-center mb-4">
@@ -29,7 +64,7 @@ export default function Home() {
               filter: 'contrast(1.3) brightness(1.1)',
             }}
           >
-            NAME
+            SNOOVENTURE
           </h1>
           <div
             className="text-2xl font-bold text-yellow-300 tracking-wider animate-pulse"
@@ -106,6 +141,8 @@ export default function Home() {
           ></div>
         </button>
       </div>
+
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
