@@ -115,7 +115,7 @@ class AudioManager {
 
   public toggleBGM(): void {
     this.settings.bgmEnabled = !this.settings.bgmEnabled;
-    
+
     if (this.bgmAudio) {
       if (this.settings.bgmEnabled) {
         this.playBGM();
@@ -123,14 +123,14 @@ class AudioManager {
         this.bgmAudio.pause();
       }
     }
-    
+
     this.saveSettings();
     this.notifyListeners();
   }
 
   public setBGMEnabled(enabled: boolean): void {
     this.settings.bgmEnabled = enabled;
-    
+
     if (this.bgmAudio) {
       if (enabled) {
         this.playBGM();
@@ -138,7 +138,7 @@ class AudioManager {
         this.bgmAudio.pause();
       }
     }
-    
+
     this.saveSettings();
     this.notifyListeners();
   }
@@ -161,6 +161,42 @@ class AudioManager {
     if (this.settings.bgmEnabled) {
       this.playBGM();
     }
+  }
+
+  public startBGMWithFadeIn(duration: number = 3000): void {
+    if (!this.settings.bgmEnabled || !this.bgmAudio) return;
+
+    // Set volume to 0 initially
+    this.bgmAudio.volume = 0;
+    
+    // Start playing
+    this.bgmAudio.play().catch((error) => {
+      console.log('BGM fade-in autoplay blocked:', error);
+    });
+
+    // Fade in over the specified duration
+    const targetVolume = this.settings.bgmVolume / 100;
+    const steps = 50; // Number of volume steps
+    const stepDuration = duration / steps;
+    const volumeStep = targetVolume / steps;
+    
+    let currentStep = 0;
+    
+    const fadeInterval = setInterval(() => {
+      if (!this.bgmAudio || currentStep >= steps) {
+        clearInterval(fadeInterval);
+        return;
+      }
+      
+      currentStep++;
+      const newVolume = Math.min(volumeStep * currentStep, targetVolume);
+      this.bgmAudio.volume = newVolume;
+      
+      if (currentStep >= steps) {
+        clearInterval(fadeInterval);
+        console.log('🎵 BGM fade-in complete at', Math.round(newVolume * 100) + '%');
+      }
+    }, stepDuration);
   }
 
   public createSFXAudio(src: string): HTMLAudioElement {
