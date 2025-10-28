@@ -50,13 +50,18 @@ export default function Settings() {
   }
 
   function playSample(soundType: 'coin' | 'jump' | 'death') {
-    // Map sound types to actual file paths
-    const soundMap = {
-      coin: '/assets/audio/coin1.mp3',
-      jump: '/assets/audio/jump1.mp3',
-      death: '/assets/audio/death1.mp3'
-    };
-    audioManager.playSFX(soundMap[soundType]);
+    console.log('🎵 Playing sample sound:', soundType);
+    switch (soundType) {
+      case 'coin':
+        audioManager.playCoinSound();
+        break;
+      case 'jump':
+        audioManager.playJumpSound();
+        break;
+      case 'death':
+        audioManager.playDeathSound();
+        break;
+    }
   }
 
   function resetSettings() {

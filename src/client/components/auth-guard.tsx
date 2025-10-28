@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { authService, type UserProfile } from '@/services/auth.service';
-import { audioManager } from '@/services/audio-manager';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -21,8 +20,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
       if (newUser?.isAuthenticated) {
         setShowToast(true);
         setToastClass('animate-fade-in');
-        
-        // BGM will be started when home page loads
         
         // Start fade out after 2.5 seconds
         setTimeout(() => {

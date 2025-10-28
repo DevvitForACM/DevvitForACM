@@ -168,7 +168,7 @@ class AudioManager {
 
     // Set volume to 0 initially
     this.bgmAudio.volume = 0;
-    
+
     // Start playing
     this.bgmAudio.play().catch((error) => {
       console.log('BGM fade-in autoplay blocked:', error);
@@ -179,19 +179,19 @@ class AudioManager {
     const steps = 50; // Number of volume steps
     const stepDuration = duration / steps;
     const volumeStep = targetVolume / steps;
-    
+
     let currentStep = 0;
-    
+
     const fadeInterval = setInterval(() => {
       if (!this.bgmAudio || currentStep >= steps) {
         clearInterval(fadeInterval);
         return;
       }
-      
+
       currentStep++;
       const newVolume = Math.min(volumeStep * currentStep, targetVolume);
       this.bgmAudio.volume = newVolume;
-      
+
       if (currentStep >= steps) {
         clearInterval(fadeInterval);
         console.log('🎵 BGM fade-in complete at', Math.round(newVolume * 100) + '%');
@@ -206,10 +206,90 @@ class AudioManager {
   }
 
   public playSFX(src: string): void {
+    console.log('🔊 Attempting to play SFX:', src);
     const audio = this.createSFXAudio(src);
+
+    // Add error handling to try alternative paths
+    audio.addEventListener('error', () => {
+      console.error('SFX loading error for:', src);
+      // Try alternative path without /assets/
+      const altSrc = src.replace('/assets/', '/');
+      console.log('🔊 Trying alternative path:', altSrc);
+      const altAudio = this.createSFXAudio(altSrc);
+      altAudio.play().catch((error) => {
+        console.error('Alternative SFX play error:', error);
+      });
+    });
+
     audio.play().catch((error) => {
       console.error('SFX play error:', error);
     });
+  }
+
+  // Convenience methods for specific sound effects
+  public playCoinSound(): void {
+    const paths = [
+      '/assets/audio/coin1.mp3',
+      '/audio/coin1.mp3',
+      '/assets/audio/coin.mp3',
+      '/audio/coin.mp3'
+    ];
+    this.tryPlaySFXWithFallbacks(paths, 'coin');
+  }
+
+  public playJumpSound(): void {
+    const paths = [
+      '/assets/audio/jump1.mp3',
+      '/audio/jump1.mp3',
+      '/assets/audio/jump.mp3',
+      '/audio/jump.mp3'
+    ];
+    this.tryPlaySFXWithFallbacks(paths, 'jump');
+  }
+
+  public playDeathSound(): void {
+    const paths = [
+      '/assets/audio/death1.mp3',
+      '/audio/death1.mp3',
+      '/assets/audio/death.mp3',
+      '/audio/death.mp3'
+    ];
+    this.tryPlaySFXWithFallbacks(paths, 'death');
+  }
+
+  private tryPlaySFXWithFallbacks(paths: string[], soundType: string): void {
+    console.log(`🔊 Trying to play ${soundType} sound with fallbacks:`, paths);
+
+    const tryNextPath = (index: number) => {
+      if (index >= paths.length) {
+        console.error(`❌ All ${soundType} sound paths failed`);
+        return;
+      }
+
+      const currentPath = paths[index];
+      if (!currentPath) {
+        tryNextPath(index + 1);
+        return;
+      }
+
+      const audio = this.createSFXAudio(currentPath);
+
+      audio.addEventListener('error', () => {
+        console.log(`❌ Failed to load ${soundType} from:`, currentPath);
+        tryNextPath(index + 1);
+      });
+
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`✅ Successfully loaded ${soundType} from:`, currentPath);
+      });
+
+      audio.play().catch((error) => {
+        console.log(`❌ Failed to play ${soundType} from:`, currentPath, error);
+        tryNextPath(index + 1);
+      });
+    };
+
+    tryNextPath(0);
   }
 
   public onSettingsChange(callback: (settings: AudioSettings) => void): void {
