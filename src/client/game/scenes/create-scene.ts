@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { createScrollControls } from '@/game/controls/camera-controls';
 
 const GRID_SIZE = 32;
-const BASELINE_Y = 0;
 
 export class CreateScene extends Phaser.Scene {
   public cameraScrollSpeed: number = 0;
