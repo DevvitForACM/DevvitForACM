@@ -35,18 +35,18 @@ export class PlayScene extends Phaser.Scene {
   private levelName?: string;
 
   private levelConfig: LevelConfig;
-  private dbg?: Phaser.GameObjects.Text;
-  private maxXAllowed: number = Infinity;
-  private worldHeight: number = 0;
-  private platformRects: Array<{ l: number; r: number; t: number; b: number }> = [];
+  // private dbg?: Phaser.GameObjects.Text;
+  // private maxXAllowed: number = Infinity;
+  // private worldHeight: number = 0;
+  // private platformRects: Array<{ l: number; r: number; t: number; b: number }> = [];
   private lastSafePos?: { x: number; y: number };
   private platformCount: number = 0;
-  private coinSprites: Phaser.GameObjects.Sprite[] = [];
+  // private coinSprites: Phaser.GameObjects.Sprite[] = [];
   // Grid-step debounce
-  private stepCooldownMs = 220;
-  private lastStepAt = 0;
-  private isStepping = false;
-  private lastDir: -1 | 1 = 1;
+  // private stepCooldownMs = 220;
+  // private lastStepAt = 0;
+  // private isStepping = false;
+  // private lastDir: -1 | 1 = 1;
   // Spring overlap cooldown
   private springCooldownMs = 250;
   private springCooldownUntil = 0;
@@ -68,7 +68,7 @@ export class PlayScene extends Phaser.Scene {
       }
     );
 
-    const base = '/assets/';
+    const base = '/';
     this.load.image('spring', `${base}Spring.png`);
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
@@ -79,15 +79,15 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('door', `${base}Door.png`);
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `/Idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `/Jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `${base}Animations/Coin/${i}.png`);
+      this.load.image(`coin-${i}`, `/Coin/${i}.png`);
     }
   }
 
@@ -105,6 +105,13 @@ export class PlayScene extends Phaser.Scene {
     level?: LevelConfig;
     levelData?: LevelData;
   }): void {
+    // Reset state on init
+    this.fromEditor = false;
+    this.editorLevelData = undefined;
+    this.platformCount = 0;
+    this.lastSafePos = undefined;
+    this.springCooldownUntil = 0;
+    
     if (data.levelData) {
       this.editorLevelData = data.levelData;
       this.fromEditor = true;
@@ -114,6 +121,18 @@ export class PlayScene extends Phaser.Scene {
     } else {
       this.fromEditor = false;
     }
+    
+    console.log('[PlayScene] Init called with fromEditor:', this.fromEditor);
+  }
+  
+  public shutdown(): void {
+    console.log('[PlayScene] Shutdown - cleaning up');
+    // Remove all event listeners
+    this.events.removeAllListeners();
+    // Clean up any tweens
+    this.tweens.killAll();
+    // Stop animations
+    this.anims.pauseAll();
   }
 
   public async create(): Promise<void> {
@@ -165,14 +184,13 @@ export class PlayScene extends Phaser.Scene {
       }
 
       if (this.editorLevelData) {
-        const created = loadLevel(this, this.editorLevelData);
+        loadLevel(this, this.editorLevelData);
         const b = this.editorLevelData.settings?.bounds;
         if (b) {
           this.cameras.main.setBounds(0, 0, b.width, b.height);
         }
       } else if (jsonData) {
-        const created = loadLevel(this, jsonData);
-        this.prepareGeometry(jsonData);
+        loadLevel(this, jsonData);
         const b = jsonData.settings?.bounds;
         if (b) {
           this.cameras.main.setBounds(0, 0, b.width, b.height);
@@ -228,7 +246,7 @@ export class PlayScene extends Phaser.Scene {
                 this.lastSafePos = pos;
               }
             }
-          } catch {}
+          } catch { }
           if (!this.lastSafePos) {
             this.lastSafePos = { x: this.player.x, y: this.player.y };
           }
@@ -317,7 +335,21 @@ export class PlayScene extends Phaser.Scene {
       return tagged || tex === 'lava' || /lava/i.test(name);
     }) as Phaser.GameObjects.GameObject[];
 
-    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}`);
+    const coins = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isCoin');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || tex === 'coin' || /coin/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    const doors = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isDoor');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || tex === 'door' || /door/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}, coins=${coins.length}, doors=${doors.length}`);
 
     spikes.forEach((spike) => {
       this.physics.add.overlap(this.player, spike, this.onPlayerSpikeOverlap, undefined, this);
@@ -328,6 +360,12 @@ export class PlayScene extends Phaser.Scene {
     lavas.forEach((lava) => {
       this.physics.add.overlap(this.player, lava, this.onPlayerLavaOverlap, undefined, this);
     });
+    coins.forEach((coin) => {
+      this.physics.add.overlap(this.player, coin, this.onPlayerCoinOverlap, undefined, this);
+    });
+    doors.forEach((door) => {
+      this.physics.add.overlap(this.player, door, this.onPlayerDoorOverlap, undefined, this);
+    });
   }
 
   private getOneBlockJumpVelocity(): number {
@@ -337,30 +375,19 @@ export class PlayScene extends Phaser.Scene {
     return Math.sqrt(2 * g * h * 1.8);
   }
 
-  private alignStaticsToBottom(objects: Phaser.GameObjects.GameObject[], floorY: number): void {
-    try {
-      objects.forEach((obj: any) => {
-        const isStatic = !!obj?.body && ((obj.body as any).immovable === true || (obj.body as any).isStatic);
-        const isPlatform = typeof obj?.getData === 'function' && obj.getData('isPlatform');
-        const isHazard = typeof obj?.getData === 'function' && (obj.getData('isSpike') || obj.getData('isSpring') || obj.getData('isLava'));
-        if (!isStatic && !isPlatform && !isHazard) return;
-        const h = obj.displayHeight ?? obj.height ?? 0;
-        if (!h) return;
-        const targetY = floorY - h / 2;
-        if (typeof obj.setY === 'function') obj.setY(targetY);
-        if (obj.body && typeof (obj.body as any).updateFromGameObject === 'function') {
-          (obj.body as any).updateFromGameObject();
-        }
-      });
-    } catch {}
-  }
+
 
   private onPlayerPlatformCollide(platform: Phaser.GameObjects.GameObject): void {
     if (!this.player || !this.playerBody) return;
-    // Compute platform top accurately
+    
+    // Only register as safe position if player is landing from above
     const platAny: any = platform as any;
     const body: any = platAny.body;
-    let platformTop: number | undefined = undefined;
+    
+    // Check if player is above the platform (landing on it, not hitting from below)
+    const playerBottom = this.playerBody.bottom;
+    let platformTop: number;
+
     if (body && typeof body.top === 'number') {
       platformTop = body.top;
     } else {
@@ -368,12 +395,16 @@ export class PlayScene extends Phaser.Scene {
       const py = platAny.y ?? this.player.y;
       platformTop = py - ph / 2;
     }
-    const playerHalfH = (this.player.displayHeight ?? 32) / 2;
-    const safeY = platformTop - playerHalfH - 1; // keep 1px above to avoid visual clipping
-    this.lastSafePos = { x: this.player.x, y: safeY };
-    try {
-      localStorage.setItem('lastSafePos', JSON.stringify(this.lastSafePos));
-    } catch {}
+
+    // Only update safe position if player is on top of platform (not below or inside)
+    if (this.playerBody.blocked.down && playerBottom <= platformTop + 5) {
+      const playerHalfH = (this.player.displayHeight ?? 32) / 2;
+      const safeY = platformTop - playerHalfH - 1;
+      this.lastSafePos = { x: this.player.x, y: safeY };
+      try {
+        localStorage.setItem('lastSafePos', JSON.stringify(this.lastSafePos));
+      } catch { }
+    }
   }
 
   private onPlayerSpikeOverlap(): void {
@@ -396,11 +427,11 @@ export class PlayScene extends Phaser.Scene {
     const top = typeof body?.top === 'number' ? body.top : (spring.y - (spring.displayHeight ?? spring.height ?? 24) / 2);
     const halfH = (this.player.displayHeight ?? 32) / 2;
     this.player.setY(top - halfH - 1);
-    // Compute bounce to ~1.5 tiles, clamp to SPRING.BOUNCE_FORCE (shorter)
+    // Compute bounce to ~3 tiles height
     const g = (this.physics as any)?.world?.gravity?.y ?? this.levelConfig.gravityY ?? 800;
-    const height = ENTITY_CONFIG.PLATFORM_HEIGHT * 1.5;
+    const height = ENTITY_CONFIG.PLATFORM_HEIGHT * 3;
     const neededV = Math.sqrt(2 * g * height);
-    const v = Math.min(neededV, SPRING.BOUNCE_FORCE);
+    const v = Math.min(neededV, SPRING.BOUNCE_FORCE * 2); // Allow higher bounce
     this.playerBody.setVelocityY(-v);
     // Save as safe position
     this.lastSafePos = { x: this.player.x, y: this.player.y };
@@ -409,6 +440,73 @@ export class PlayScene extends Phaser.Scene {
   private onPlayerLavaOverlap(): void {
     // Same behavior as spike
     this.onPlayerSpikeOverlap();
+  }
+
+  private onPlayerCoinOverlap(_p: any, coin: any): void {
+    if (!coin || !coin.active) return;
+    // Destroy the coin with a fade effect
+    this.tweens.add({
+      targets: coin,
+      alpha: 0,
+      scale: 1.5,
+      duration: 200,
+      ease: 'Power2',
+      onComplete: () => {
+        coin.destroy();
+      }
+    });
+    console.log('[PlayScene] Coin collected!');
+  }
+
+  private onPlayerDoorOverlap(): void {
+    if (!this.player) return;
+    
+    // Freeze player movement
+    this.playerBody.setVelocity(0, 0);
+    this.playerBody.allowGravity = false;
+    
+    // Show level complete message
+    const centerX = this.cameras.main.worldView.centerX;
+    const centerY = this.cameras.main.worldView.centerY;
+    
+    const bg = this.add.rectangle(centerX, centerY, 400, 200, 0x000000, 0.8);
+    bg.setScrollFactor(0);
+    bg.setDepth(1000);
+    bg.setOrigin(0.5, 0.5);
+    
+    const text = this.add.text(centerX, centerY, 'Level Finished!', {
+      fontSize: '48px',
+      color: '#00ff00',
+      fontStyle: 'bold',
+      align: 'center'
+    });
+    text.setScrollFactor(0);
+    text.setDepth(1001);
+    text.setOrigin(0.5, 0.5);
+    
+    // Pulse animation
+    this.tweens.add({
+      targets: text,
+      scale: 1.1,
+      duration: 500,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        // After animation, respawn player to start
+        const startX = this.levelConfig.playerStartX ?? 50;
+        const startY = this.levelConfig.playerStartY ?? 100;
+        this.player.setPosition(startX, startY);
+        this.playerBody.setVelocity(0, 0);
+        this.playerBody.allowGravity = true;
+        
+        // Remove message
+        bg.destroy();
+        text.destroy();
+      }
+    });
+    
+    console.log('[PlayScene] Level completed!');
   }
 
   public override update(_time: number, delta: number): void {
@@ -473,14 +571,14 @@ export class PlayScene extends Phaser.Scene {
       this.playerBody.setVelocityY(-jump);
     }
 
-    // Debug overlay text
-    if (this.dbg) {
-      const cam = this.cameras.main;
-      const px = Math.round(this.player.x);
-      const py = Math.round(this.player.y);
-      const vy = Math.round(this.playerBody.velocity.y);
-      this.dbg.setText(`player=(${px},${py}) vy=${vy} onFloor=${onFloor} objs=${this.children.list.length}`);
-    }
+    // // Debug overlay text
+    // if (this.dbg) {
+    //   const cam = this.cameras.main;
+    //   const px = Math.round(this.player.x);
+    //   const py = Math.round(this.player.y);
+    //   const vy = Math.round(this.playerBody.velocity.y);
+    //   this.dbg.setText(`player=(${px},${py}) vy=${vy} onFloor=${onFloor} objs=${this.children.list.length}`);
+    // }
 
     // Flip sprite based on direction
     if (vx < 0) this.player.setFlipX(true);

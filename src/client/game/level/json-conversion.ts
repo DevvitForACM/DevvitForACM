@@ -342,15 +342,39 @@ function createCoin(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const textureKey = obj.visual?.texture || 'coin-0';
-  const coinSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
-  // Use standard coin size and ensure it renders above ground
-  coinSprite.setDisplaySize(ENTITY_SIZES.COIN.WIDTH, ENTITY_SIZES.COIN.HEIGHT);
-  coinSprite.setDepth(5);
-  coinSprite.setName(obj.id);
+  const coinW = ENTITY_SIZES.COIN.WIDTH;
+  const coinH = ENTITY_SIZES.COIN.HEIGHT;
+  
+  let coinSprite: Phaser.GameObjects.Sprite;
+  
+  if ((scene as any).physics?.world) {
+    // Create sprite with physics
+    coinSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
+    coinSprite.setDisplaySize(coinW, coinH);
+    coinSprite.setDepth(5);
+    coinSprite.setName(obj.id);
+    
+    // Set physics body
+    const body = coinSprite.body as Phaser.Physics.Arcade.Body;
+    body.setSize(coinW, coinH);
+    body.setAllowGravity(false); // Coins float in place
+    body.setImmovable(true);
+  } else {
+    // No physics, just visual
+    coinSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
+    coinSprite.setDisplaySize(coinW, coinH);
+    coinSprite.setDepth(5);
+    coinSprite.setName(obj.id);
+  }
+  
+  // Tag as coin for collision detection
+  (coinSprite as any).setData && (coinSprite as any).setData('isCoin', true);
+  
   // Auto-play spin if available
   if (scene.anims.exists('coin-spin')) {
     try { coinSprite.play('coin-spin'); } catch {}
   }
+  
   return coinSprite;
 }
 

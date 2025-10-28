@@ -29,7 +29,7 @@ export class CreateScene extends Phaser.Scene {
   }
 
   preload(): void {
-    const base = '/assets/';
+    const base = '/';
     this.load.image('spring', `${base}Spring.png`);
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
@@ -37,19 +37,18 @@ export class CreateScene extends Phaser.Scene {
     this.load.image('grass-filler', `${base}Grass-filler.png`);
     this.load.image('lava', `${base}Lava.png`);
     this.load.image('door', `${base}Door.png`);
-
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `/Idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `/Jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `${base}Animations/Coin/${i}.png`);
+      this.load.image(`coin-${i}`, `/Coin/${i}.png`);
     }
-  }
+  };
 
   public create(): void {
     this.drawGrid();
@@ -126,7 +125,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('coin-spin') && coinFrames.length > 0) {
       this.anims.create({
         key: 'coin-spin',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
         frameRate: 4,
         repeat: -1,
       });
@@ -139,7 +138,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('player-idle') && idleFrames.length > 0) {
       this.anims.create({
         key: 'player-idle',
-        frames: [1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
         frameRate: 8,
         repeat: -1,
       });
@@ -152,7 +151,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('player-jump') && jumpFrames.length > 0) {
       this.anims.create({
         key: 'player-jump',
-        frames: [1, 2, 3, 4, 5].map((i) => ({ key: `player-jump-${i}` })),
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-jump-${i}` })),
         frameRate: 10,
         repeat: -1,
       });

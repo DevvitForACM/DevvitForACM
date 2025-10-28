@@ -132,8 +132,18 @@ export default function Create() {
       const objects: LevelObject[] = [];
 
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
-      const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      
+      if (playerEnt) {
+        const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
+        if (blocksAtPlayerX.length > 0) {
+          const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
+          const blockBaseY = toY(highestGridY);
+          playerY = blockBaseY - GRID;
+        }
+      }
+      
       objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
       entities.forEach((e: any, idx: number) => {
@@ -248,8 +258,18 @@ export default function Create() {
     const playerEnt = entities.find(
       (e: any) => String(e.type).toLowerCase().trim() === 'player'
     );
-    const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-    const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+    let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+    let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+    
+    if (playerEnt) {
+      const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
+      if (blocksAtPlayerX.length > 0) {
+        const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
+        const blockBaseY = toY(highestGridY);
+        playerY = blockBaseY - GRID;
+      }
+    }
+    
     objects.push({
       id: 'player_1',
       type: LevelObjectType.Player,
@@ -381,8 +401,27 @@ export default function Create() {
       const playerEnt = entities.find(
         (e: any) => String(e.type).toLowerCase().trim() === 'player'
       );
-      const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      
+      // Find the topmost block at the player's X position
+      let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      
+      if (playerEnt) {
+        // Find all blocks at the same X coordinate as the player
+        const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
+        
+        if (blocksAtPlayerX.length > 0) {
+          // Find the highest gridY (topmost block)
+          const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
+          // Place player on top of the highest block
+          // The block's Y is its base, so we need to place player above it
+          const blockBaseY = toY(highestGridY);
+          // Platform height is GRID (32), player should be above the block
+          playerY = blockBaseY - GRID;
+          console.log(`[Create] Player at gridX=${playerEnt.gridX}, highestGridY=${highestGridY}, blockBaseY=${blockBaseY}, playerY=${playerY}`);
+        }
+      }
+      
       objects.push({
         id: 'player_1',
         type: LevelObjectType.Player,
@@ -458,20 +497,12 @@ export default function Create() {
 
     setIsPlaying(true);
     
-    // Clean up any existing PlayScene first
-    const existingPlayScene = scene.scene.get(SCENE_KEYS.PLAY);
-    if (existingPlayScene) {
-      existingPlayScene.scene.stop(SCENE_KEYS.PLAY);
-      // Force scene restart by stopping and starting
-      existingPlayScene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
-    }
-    
+    // Stop CreateScene first
     scene.scene.stop(SCENE_KEYS.CREATE);
     
-    // If PlayScene doesn't exist, start it fresh
-    if (!existingPlayScene) {
-      scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
-    }
+    // Restart PlayScene with new data (this will call init and create again)
+    console.log('[Create] Restarting PlayScene with', levelData.objects.length, 'objects');
+    scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
   };
 
   const handleReturnToEditor = () => {
