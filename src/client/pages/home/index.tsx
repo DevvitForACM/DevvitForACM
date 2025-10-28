@@ -7,17 +7,10 @@ export default function Home() {
   const { navigate } = useRouting();
 
   useEffect(() => {
-    // Start BGM when home page loads with dramatic fade-in
     console.log('🎵 Home page loaded, starting BGM with fade-in...');
-    
-    // Ensure BGM is enabled and volume is at maximum intensity
-    audioManager.setBGMEnabled(true);
     audioManager.setBGMVolume(100);
-    
-    // Start BGM with fade-in effect (0% to 100% over 3 seconds)
     audioManager.startBGMWithFadeIn(3000);
-  }, []); // Empty dependency array - runs only once when component mounts
-
+  }, []);
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center"
