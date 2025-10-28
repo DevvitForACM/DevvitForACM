@@ -1,12 +1,11 @@
 import { useRouting } from '@/components/routing';
-import { useState, useEffect } from 'react';
-import { SettingsModal } from '@/components/settings-modal';
+import { useEffect } from 'react';
+import Settings from './settings';
 
 export default function Home() {
   const { navigate, location } = useRouting();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  useEffect(() => {}, [location]);
+  useEffect(() => { }, [location]);
 
   return (
     <div
@@ -18,38 +17,10 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Settings Button */}
-      <button
-        onClick={() => setSettingsOpen(true)}
-        className="absolute top-4 right-4 transform transition-transform hover:scale-110 active:scale-95"
-        style={{
-          background: '#6C63FF',
-          border: 'none',
-          boxShadow:
-            'inset 3px 3px 0 #8B88FF, inset -3px -3px 0 #5A52CC, 3px 3px 0 #4A43AA',
-          fontFamily: '"Courier New", monospace',
-          imageRendering: 'pixelated',
-        }}
-      >
-        <div
-          className="px-6 py-3 text-white font-bold text-lg tracking-wider"
-          style={{
-            textShadow: '2px 2px 0 #4A43AA',
-            filter: 'contrast(1.2)',
-          }}
-        >
-          ⚙️ SETTINGS
-        </div>
-        <div className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity duration-100"></div>
-        <div
-          className="absolute top-0 left-0 w-full h-1 bg-white opacity-30"
-          style={{ imageRendering: 'pixelated' }}
-        ></div>
-        <div
-          className="absolute top-0 left-0 w-1 h-full bg-white opacity-30"
-          style={{ imageRendering: 'pixelated' }}
-        ></div>
-      </button>
+      {/* Settings - clicking the inner SETTINGS div opens the panel */}
+      <div className="absolute top-4 right-4">
+        <Settings />
+      </div>
 
       <div className="flex flex-col items-center gap-8">
         {/* Game Title */}
@@ -142,7 +113,7 @@ export default function Home() {
         </button>
       </div>
 
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
     </div>
   );
 }
