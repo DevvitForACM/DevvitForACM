@@ -1,0 +1,559 @@
+{
+  "version": "1.0.0",
+  "name": "Boundary Conditions Test Level",
+  "description": "Large-scale test level with 4000x1000px dimensions to validate boundary handling, camera following, and performance with extreme coordinates and entity placement",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#1a1a2e",
+    "bounds": { "width": 4000, "height": 1000 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 200, "y": 900 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "ground_platform_start",
+      "type": "platform",
+      "position": { "x": 0, "y": 980 },
+      "scale": { "x": 10, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "ground_platform_middle_1",
+      "type": "platform",
+      "position": { "x": 1000, "y": 980 },
+      "scale": { "x": 10, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "ground_platform_middle_2",
+      "type": "platform",
+      "position": { "x": 2000, "y": 980 },
+      "scale": { "x": 10, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "ground_platform_middle_3",
+      "type": "platform",
+      "position": { "x": 3000, "y": 980 },
+      "scale": { "x": 10, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "ground_platform_end",
+      "type": "platform",
+      "position": { "x": 3900, "y": 980 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "left_boundary_wall",
+      "type": "platform",
+      "position": { "x": -10, "y": 0 },
+      "scale": { "x": 1, "y": 25 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "right_boundary_wall",
+      "type": "platform",
+      "position": { "x": 4010, "y": 0 },
+      "scale": { "x": 1, "y": 25 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "top_boundary_ceiling",
+      "type": "platform",
+      "position": { "x": 0, "y": -10 },
+      "scale": { "x": 100, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "extreme_left_coin",
+      "type": "coin",
+      "position": { "x": 5, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "extreme_right_coin",
+      "type": "coin",
+      "position": { "x": 3995, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "extreme_top_coin",
+      "type": "coin",
+      "position": { "x": 2000, "y": 5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "extreme_bottom_coin",
+      "type": "coin",
+      "position": { "x": 2000, "y": 995 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "corner_top_left_coin",
+      "type": "coin",
+      "position": { "x": 5, "y": 5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "corner_top_right_coin",
+      "type": "coin",
+      "position": { "x": 3995, "y": 5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "corner_bottom_left_coin",
+      "type": "coin",
+      "position": { "x": 5, "y": 995 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "corner_bottom_right_coin",
+      "type": "coin",
+      "position": { "x": 3995, "y": 995 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "high_platform_far_left",
+      "type": "platform",
+      "position": { "x": 100, "y": 200 },
+      "scale": { "x": 3, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "high_platform_far_right",
+      "type": "platform",
+      "position": { "x": 3800, "y": 200 },
+      "scale": { "x": 3, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "mid_level_platform_1",
+      "type": "platform",
+      "position": { "x": 500, "y": 500 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "mid_level_platform_2",
+      "type": "platform",
+      "position": { "x": 1500, "y": 400 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "mid_level_platform_3",
+      "type": "platform",
+      "position": { "x": 2500, "y": 600 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "mid_level_platform_4",
+      "type": "platform",
+      "position": { "x": 3500, "y": 300 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "camera_test_spring_left",
+      "type": "spring",
+      "position": { "x": 300, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1200 }
+    },
+    {
+      "id": "camera_test_spring_right",
+      "type": "spring",
+      "position": { "x": 3700, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1200 }
+    },
+    {
+      "id": "boundary_collision_spike_left",
+      "type": "spike",
+      "position": { "x": 50, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "boundary_collision_spike_right",
+      "type": "spike",
+      "position": { "x": 3950, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_test_enemy_1",
+      "type": "enemy",
+      "position": { "x": 800, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 100 }
+    },
+    {
+      "id": "performance_test_enemy_2",
+      "type": "enemy",
+      "position": { "x": 1800, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 150 }
+    },
+    {
+      "id": "performance_test_enemy_3",
+      "type": "enemy",
+      "position": { "x": 2800, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 75 }
+    },
+    {
+      "id": "performance_test_enemy_4",
+      "type": "enemy",
+      "position": { "x": 3200, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "speed": 120,
+        "targetId": "player_1"
+      }
+    },
+    {
+      "id": "long_distance_door_1",
+      "type": "door",
+      "position": { "x": 1000, "y": 920 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": false, "targetLevel": "checkpoint-1" }
+    },
+    {
+      "id": "long_distance_door_2",
+      "type": "door",
+      "position": { "x": 3000, "y": 920 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": true, "targetLevel": "checkpoint-2" }
+    },
+    {
+      "id": "memory_test_coin_cluster_1",
+      "type": "coin",
+      "position": { "x": 600, "y": 470 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_2",
+      "type": "coin",
+      "position": { "x": 620, "y": 470 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_3",
+      "type": "coin",
+      "position": { "x": 640, "y": 470 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_4",
+      "type": "coin",
+      "position": { "x": 660, "y": 470 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_5",
+      "type": "coin",
+      "position": { "x": 680, "y": 470 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_6",
+      "type": "coin",
+      "position": { "x": 600, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_7",
+      "type": "coin",
+      "position": { "x": 620, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_8",
+      "type": "coin",
+      "position": { "x": 640, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_9",
+      "type": "coin",
+      "position": { "x": 660, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_test_coin_cluster_10",
+      "type": "coin",
+      "position": { "x": 680, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_1",
+      "type": "coin",
+      "position": { "x": 1200, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_2",
+      "type": "coin",
+      "position": { "x": 1300, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_3",
+      "type": "coin",
+      "position": { "x": 1400, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_4",
+      "type": "coin",
+      "position": { "x": 1500, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_5",
+      "type": "coin",
+      "position": { "x": 1600, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_6",
+      "type": "coin",
+      "position": { "x": 1700, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_7",
+      "type": "coin",
+      "position": { "x": 1800, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "large_scale_coin_trail_8",
+      "type": "coin",
+      "position": { "x": 1900, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_stress_platform_1",
+      "type": "platform",
+      "position": { "x": 10, "y": 800 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "boundary_stress_platform_2",
+      "type": "platform",
+      "position": { "x": 3990, "y": 800 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "boundary_stress_platform_3",
+      "type": "platform",
+      "position": { "x": 2000, "y": 50 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "performance_spike_array_1",
+      "type": "spike",
+      "position": { "x": 2200, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_2",
+      "type": "spike",
+      "position": { "x": 2250, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_3",
+      "type": "spike",
+      "position": { "x": 2300, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_4",
+      "type": "spike",
+      "position": { "x": 2350, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_5",
+      "type": "spike",
+      "position": { "x": 2400, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_6",
+      "type": "spike",
+      "position": { "x": 2450, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_7",
+      "type": "spike",
+      "position": { "x": 2500, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "performance_spike_array_8",
+      "type": "spike",
+      "position": { "x": 2550, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "camera_following_test_spring_1",
+      "type": "spring",
+      "position": { "x": 1000, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1500 }
+    },
+    {
+      "id": "camera_following_test_spring_2",
+      "type": "spring",
+      "position": { "x": 3000, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1500 }
+    },
+    {
+      "id": "extreme_distance_marker_1",
+      "type": "coin",
+      "position": { "x": 0, "y": 500 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "extreme_distance_marker_2",
+      "type": "coin",
+      "position": { "x": 4000, "y": 500 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "memory_usage_test_platform_1",
+      "type": "platform",
+      "position": { "x": 400, "y": 700 },
+      "scale": { "x": 8, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "memory_usage_test_platform_2",
+      "type": "platform",
+      "position": { "x": 1400, "y": 700 },
+      "scale": { "x": 8, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "memory_usage_test_platform_3",
+      "type": "platform",
+      "position": { "x": 2400, "y": 700 },
+      "scale": { "x": 8, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "memory_usage_test_platform_4",
+      "type": "platform",
+      "position": { "x": 3400, "y": 700 },
+      "scale": { "x": 8, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "boundary_validation_final_coin",
+      "type": "coin",
+      "position": { "x": 3900, "y": 920 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    }
+  ],
+  "metadata": {
+    "createdBy": "Test Level Generator",
+    "createdAt": "2024-10-28",
+    "difficulty": "extreme",
+    "tags": [
+      "test",
+      "boundary-conditions",
+      "large-scale",
+      "camera-following",
+      "performance",
+      "memory-usage",
+      "extreme-coordinates",
+      "boundary-collision"
+    ]
+  }
+}
