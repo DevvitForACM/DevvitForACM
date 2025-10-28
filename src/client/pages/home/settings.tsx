@@ -1,14 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { settingsService, type GameSettings } from '@/components/settings-modal';
+import { audioManager, type AudioSettings } from '../../services/audio-manager';
 
 export default function Settings() {
   const [open, setOpen] = useState(false);
-  const [gameSettings, setGameSettings] = useState<GameSettings>(settingsService.getSettings());
-  const [bgmVolume, setBgmVolume] = useState(100);
-  const [sfxVolume, setSfxVolume] = useState(100);
 
-  // Audio refs
-  const bgmRef = useRef<HTMLAudioElement>(null);
+  const [audioSettings, setAudioSettings] = useState<AudioSettings>(audioManager.getSettings());
+
+  // Audio refs for SFX testing
   const death1Ref = useRef<HTMLAudioElement>(null);
   const coin1Ref = useRef<HTMLAudioElement>(null);
   const jump1Ref = useRef<HTMLAudioElement>(null);
@@ -24,80 +23,51 @@ export default function Settings() {
       }
     });
 
-    // Load settings from service
-    const settings = settingsService.getSettings();
-    setGameSettings(settings);
+    // Load settings from services
+    settingsService.getSettings();
 
-    // Set up audio elements
-    if (bgmRef.current) {
-      bgmRef.current.volume = bgmVolume / 100;
-      bgmRef.current.loop = true;
+    // Set up SFX audio elements with current volume
+    [death1Ref.current, coin1Ref.current, jump1Ref.current].forEach(audio => {
+      if (audio) {
+        audio.volume = audioSettings.sfxVolume / 100;
+      }
+    });
 
-      // Always try to play BGM since it should be on by default
-      const playBGM = () => {
-        if (bgmRef.current) {
-          bgmRef.current.play().catch((error) => {
-            console.log('BGM autoplay blocked, will play on user interaction:', error);
-          });
+    // Listen for audio settings changes
+    const handleAudioSettingsChange = (newAudioSettings: AudioSettings) => {
+      setAudioSettings(newAudioSettings);
+      // Update SFX volumes
+      [death1Ref.current, coin1Ref.current, jump1Ref.current].forEach(audio => {
+        if (audio) {
+          audio.volume = newAudioSettings.sfxVolume / 100;
         }
-      };
-
-      // Try immediate play
-      playBGM();
-
-      // Also try on first user interaction
-      const handleFirstInteraction = () => {
-        playBGM();
-        document.removeEventListener('click', handleFirstInteraction);
-        document.removeEventListener('keydown', handleFirstInteraction);
-      };
-
-      document.addEventListener('click', handleFirstInteraction);
-      document.addEventListener('keydown', handleFirstInteraction);
-    }
-
-    // Listen for settings changes
-    const handleSettingsChange = (newSettings: GameSettings) => {
-      setGameSettings(newSettings);
+      });
     };
 
-    settingsService.onSettingsChange(handleSettingsChange);
+    audioManager.onSettingsChange(handleAudioSettingsChange);
 
     return () => {
-      settingsService.removeSettingsListener(handleSettingsChange);
+      audioManager.removeSettingsListener(handleAudioSettingsChange);
     };
-  }, [bgmVolume]);
+  }, []);
 
   function updateBGMVolume(volume: number) {
-    setBgmVolume(volume);
-    if (bgmRef.current) {
-      bgmRef.current.volume = volume / 100;
-    }
+    audioManager.setBGMVolume(volume);
   }
 
   function updateSFXVolume(volume: number) {
-    setSfxVolume(volume);
-    [death1Ref.current, coin1Ref.current, jump1Ref.current].forEach(audio => {
-      if (audio) audio.volume = volume / 100;
-    });
+    audioManager.setSFXVolume(volume);
   }
 
   function toggleBGM() {
-    settingsService.toggleBGM();
-    if (bgmRef.current) {
-      if (gameSettings.bgm.enabled) {
-        bgmRef.current.pause();
-      } else {
-        bgmRef.current.play().catch(console.error);
-      }
-    }
+    audioManager.toggleBGM();
   }
 
   function playSample(audioRef: React.RefObject<HTMLAudioElement | null>) {
     if (!audioRef.current) return;
     try {
       audioRef.current.currentTime = 0;
-      audioRef.current.volume = sfxVolume / 100;
+      audioRef.current.volume = audioSettings.sfxVolume / 100;
       audioRef.current.play().catch(() => { });
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -105,8 +75,9 @@ export default function Settings() {
   }
 
   function resetSettings() {
-    setBgmVolume(100);
-    setSfxVolume(100);
+    audioManager.setBGMVolume(100);
+    audioManager.setSFXVolume(100);
+    audioManager.setBGMEnabled(true);
     settingsService.updateSettings({
       bgm: { enabled: true },
       sounds: {
@@ -155,26 +126,18 @@ export default function Settings() {
         }
       `}</style>
 
-      {/* Audio Elements */}
-      <audio ref={bgmRef} id="bgm" preload="auto" crossOrigin="anonymous">
-        <source src="/audio/bgm.mp3" type="audio/mpeg" />
-        <source src="/assets/bgm.mp3" type="audio/mpeg" />
-        <source src="./audio/bgm.mp3" type="audio/mpeg" />
-      </audio>
+      {/* SFX Audio Elements */}
       <audio ref={death1Ref} id="death1" preload="auto" crossOrigin="anonymous">
+        <source src="/assets/audio/death1.mp3" type="audio/mpeg" />
         <source src="/audio/death1.mp3" type="audio/mpeg" />
-        <source src="/assets/death1.mp3" type="audio/mpeg" />
-        <source src="./audio/death1.mp3" type="audio/mpeg" />
       </audio>
       <audio ref={coin1Ref} id="coin1" preload="auto" crossOrigin="anonymous">
+        <source src="/assets/audio/coin1.mp3" type="audio/mpeg" />
         <source src="/audio/coin1.mp3" type="audio/mpeg" />
-        <source src="/assets/coin1.mp3" type="audio/mpeg" />
-        <source src="./audio/coin1.mp3" type="audio/mpeg" />
       </audio>
       <audio ref={jump1Ref} id="jump1" preload="auto" crossOrigin="anonymous">
+        <source src="/assets/audio/jump1.mp3" type="audio/mpeg" />
         <source src="/audio/jump1.mp3" type="audio/mpeg" />
-        <source src="/assets/jump1.mp3" type="audio/mpeg" />
-        <source src="./audio/jump1.mp3" type="audio/mpeg" />
       </audio>
 
       {/* wrapper reproduces the original button styling but only the inner div opens settings */}
@@ -303,9 +266,9 @@ export default function Settings() {
                     onClick={toggleBGM}
                     className="relative group transform transition-transform hover:scale-105 active:translate-y-1"
                     style={{
-                      background: gameSettings.bgm.enabled ? '#4CAF50' : '#F44336',
+                      background: audioSettings.bgmEnabled ? '#4CAF50' : '#F44336',
                       border: 'none',
-                      boxShadow: gameSettings.bgm.enabled
+                      boxShadow: audioSettings.bgmEnabled
                         ? 'inset 2px 2px 0 #66BB6A, inset -2px -2px 0 #2E7D32, 3px 3px 0 #1B5E20'
                         : 'inset 2px 2px 0 #EF5350, inset -2px -2px 0 #C62828, 3px 3px 0 #B71C1C',
                       fontFamily: '"Courier New", monospace',
@@ -315,11 +278,11 @@ export default function Settings() {
                     <div
                       className="px-4 py-2 text-white font-bold text-sm tracking-wider"
                       style={{
-                        textShadow: gameSettings.bgm.enabled ? '1px 1px 0 #1B5E20' : '1px 1px 0 #B71C1C',
+                        textShadow: audioSettings.bgmEnabled ? '1px 1px 0 #1B5E20' : '1px 1px 0 #B71C1C',
                         filter: 'contrast(1.2)',
                       }}
                     >
-                      {gameSettings.bgm.enabled ? '🔊 ON' : '🔇 OFF'}
+                      {audioSettings.bgmEnabled ? '🔊 ON' : '🔇 OFF'}
                     </div>
                   </button>
                   <div
@@ -330,7 +293,7 @@ export default function Settings() {
                       filter: 'contrast(1.2)',
                     }}
                   >
-                    {bgmVolume}%
+                    {audioSettings.bgmVolume}%
                   </div>
                 </div>
               </div>
@@ -347,18 +310,18 @@ export default function Settings() {
                   type="range"
                   min={0}
                   max={100}
-                  value={bgmVolume}
+                  value={audioSettings.bgmVolume}
                   onChange={(e) => updateBGMVolume(Number(e.target.value))}
-                  disabled={!gameSettings.bgm.enabled}
+                  disabled={!audioSettings.bgmEnabled}
                   style={{
                     width: '100%',
                     height: '12px',
-                    background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${bgmVolume}%, #444 ${bgmVolume}%, #444 100%)`,
+                    background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${audioSettings.bgmVolume}%, #444 ${audioSettings.bgmVolume}%, #444 100%)`,
                     outline: 'none',
-                    cursor: gameSettings.bgm.enabled ? 'pointer' : 'not-allowed',
+                    cursor: audioSettings.bgmEnabled ? 'pointer' : 'not-allowed',
                     appearance: 'none',
                     WebkitAppearance: 'none',
-                    opacity: gameSettings.bgm.enabled ? 1 : 0.5,
+                    opacity: audioSettings.bgmEnabled ? 1 : 0.5,
                   }}
                   className="slider"
                 />
@@ -386,7 +349,7 @@ export default function Settings() {
                     filter: 'contrast(1.2)',
                   }}
                 >
-                  {sfxVolume}%
+                  {audioSettings.sfxVolume}%
                 </div>
               </div>
               <div
@@ -402,12 +365,12 @@ export default function Settings() {
                   type="range"
                   min={0}
                   max={100}
-                  value={sfxVolume}
+                  value={audioSettings.sfxVolume}
                   onChange={(e) => updateSFXVolume(Number(e.target.value))}
                   style={{
                     width: '100%',
                     height: '12px',
-                    background: `linear-gradient(to right, #FF9800 0%, #FF9800 ${sfxVolume}%, #444 ${sfxVolume}%, #444 100%)`,
+                    background: `linear-gradient(to right, #FF9800 0%, #FF9800 ${audioSettings.sfxVolume}%, #444 ${audioSettings.sfxVolume}%, #444 100%)`,
                     outline: 'none',
                     cursor: 'pointer',
                     appearance: 'none',
@@ -496,11 +459,12 @@ export default function Settings() {
                 </button>
                 <button
                   onClick={() => {
-                    if (bgmRef.current) {
-                      if (bgmRef.current.paused) {
-                        bgmRef.current.play().catch(console.error);
+                    const bgmAudio = audioManager.getBGMAudio();
+                    if (bgmAudio) {
+                      if (bgmAudio.paused) {
+                        bgmAudio.play().catch(console.error);
                       } else {
-                        bgmRef.current.pause();
+                        bgmAudio.pause();
                       }
                     }
                   }}
