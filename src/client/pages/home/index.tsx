@@ -1,8 +1,32 @@
 import { useRouting } from '@/components/routing';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import Settings from './settings';
+
+// Local fallback SettingsModal to avoid missing module during development
+function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div className="bg-black bg-opacity-50 absolute inset-0" />
+      <div
+        className="relative bg-white rounded p-6 z-10"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <h2 className="text-xl font-bold mb-4">Settings</h2>
+        <button onClick={onClose} className="mt-4 px-4 py-2 bg-gray-200 rounded">Close</button>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { navigate, location } = useRouting();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {}, [location]);
 
@@ -16,6 +40,11 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
       }}
     >
+      {/* Settings - clicking the inner SETTINGS div opens the panel */}
+      <div className="absolute top-4 right-4">
+        <Settings />
+      </div>
+
       <div className="flex flex-col items-center gap-8">
         {/* Game Title */}
         <div className="text-center mb-4">
@@ -29,7 +58,7 @@ export default function Home() {
               filter: 'contrast(1.3) brightness(1.1)',
             }}
           >
-            NAME
+            SNOOVENTURE
           </h1>
           <div
             className="text-2xl font-bold text-yellow-300 tracking-wider animate-pulse"
@@ -106,6 +135,8 @@ export default function Home() {
           ></div>
         </button>
       </div>
+
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
