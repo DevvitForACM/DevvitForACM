@@ -3,6 +3,7 @@ import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/ty
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
 import authRoutes from './routes/auth.routes';
+import leaderboardRoutes from './routes/leaderboard.routes';
 
 const app = express();
 
@@ -149,6 +150,9 @@ app.use(router);
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// leaderboard routes
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
