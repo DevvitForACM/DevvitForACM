@@ -1,0 +1,220 @@
+{
+  "version": "1.0.0",
+  "name": "Underground Maze",
+  "description": "Navigate through a complex underground maze with multiple paths",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#2F4F4F",
+    "bounds": { "width": 2000, "height": 900 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 800 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "maze_floor",
+      "type": "platform",
+      "position": { "x": 0, "y": 880 },
+      "scale": { "x": 50, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_wall_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 780 },
+      "scale": { "x": 1, "y": 5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_wall_2",
+      "type": "platform",
+      "position": { "x": 400, "y": 680 },
+      "scale": { "x": 1, "y": 10 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_wall_3",
+      "type": "platform",
+      "position": { "x": 600, "y": 780 },
+      "scale": { "x": 1, "y": 5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_wall_4",
+      "type": "platform",
+      "position": { "x": 800, "y": 680 },
+      "scale": { "x": 1, "y": 10 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_platform_1",
+      "type": "platform",
+      "position": { "x": 300, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_platform_2",
+      "type": "platform",
+      "position": { "x": 500, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_platform_3",
+      "type": "platform",
+      "position": { "x": 700, "y": 580 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_platform_4",
+      "type": "platform",
+      "position": { "x": 900, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "upper_path_1",
+      "type": "platform",
+      "position": { "x": 1100, "y": 580 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "upper_path_2",
+      "type": "platform",
+      "position": { "x": 1300, "y": 480 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "upper_path_3",
+      "type": "platform",
+      "position": { "x": 1500, "y": 380 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "lower_path_1",
+      "type": "platform",
+      "position": { "x": 1100, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "lower_path_2",
+      "type": "platform",
+      "position": { "x": 1300, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "final_platform",
+      "type": "platform",
+      "position": { "x": 1700, "y": 680 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "maze_spring_1",
+      "type": "spring",
+      "position": { "x": 350, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "maze_spring_2",
+      "type": "spring",
+      "position": { "x": 750, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1200 }
+    },
+    {
+      "id": "hidden_coin_1",
+      "type": "coin",
+      "position": { "x": 350, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "hidden_coin_2",
+      "type": "coin",
+      "position": { "x": 550, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-1" }
+    },
+    {
+      "id": "hidden_coin_3",
+      "type": "coin",
+      "position": { "x": 750, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-2" }
+    },
+    {
+      "id": "hidden_coin_4",
+      "type": "coin",
+      "position": { "x": 1150, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-3" }
+    },
+    {
+      "id": "hidden_coin_5",
+      "type": "coin",
+      "position": { "x": 1350, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-4" }
+    },
+    {
+      "id": "maze_trap_1",
+      "type": "spike",
+      "position": { "x": 450, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "maze_trap_2",
+      "type": "spike",
+      "position": { "x": 650, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "maze_guard",
+      "type": "enemy",
+      "position": { "x": 1200, "y": 740 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 80 }
+    },
+    {
+      "id": "exit_door",
+      "type": "door",
+      "position": { "x": 1750, "y": 620 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": false, "targetLevel": "surface-world" }
+    }
+  ]
+}
