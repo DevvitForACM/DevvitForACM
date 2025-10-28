@@ -1,38 +1,19 @@
-/**
- * level-schema.ts
- * --------------------------------------------
- * Defines the TypeScript schema for JSON-based game levels.
- * This schema is versioned, modular, and designed for scalable use
- * with Phaser or any other rendering engine.
- * --------------------------------------------
- */
-
-/**
- * Version number for backward compatibility.
- * Allows older levels to remain supported after schema upgrades.
- */
 export const LEVEL_SCHEMA_VERSION = '1.0.0';
 
-/**
- * Supported object types that can appear in a level.
- * Extend this list as your game evolves.
- */
 export enum LevelObjectType {
   Player = 'player',
   Enemy = 'enemy',
   Platform = 'platform',
   Goal = 'goal',
-  Collectible = 'collectible',
+  Coin = 'coin',
   Obstacle = 'obstacle',
+  Door = 'door',
   Trigger = 'trigger',
   Decoration = 'decoration',
   Spring = 'spring',
   Spike = 'spike',
 }
 
-/**
- * Common tags or layers — useful for selective collision or rendering.
- */
 export enum LevelLayer {
   Background = 'background',
   Middleground = 'middleground',
@@ -40,9 +21,6 @@ export enum LevelLayer {
   UI = 'ui',
 }
 
-/**
- * Possible physics body types (useful for Matter.js or Arcade Physics).
- */
 export enum PhysicsType {
   Static = 'static',
   Dynamic = 'dynamic',
@@ -50,9 +28,6 @@ export enum PhysicsType {
   None = 'none',
 }
 
-/**
- * Base interface for all game objects in a level.
- */
 export interface BaseObject {
   id: string;
   type: LevelObjectType;
@@ -70,9 +45,6 @@ export interface BaseObject {
   visible?: boolean;
 }
 
-/**
- * Physics and collision properties applied to physical objects.
- */
 export interface PhysicsProperties {
   type: PhysicsType;
   isCollidable?: boolean;
@@ -82,9 +54,6 @@ export interface PhysicsProperties {
   density?: number;
 }
 
-/**
- * Sprite and texture properties for rendering.
- */
 export interface VisualProperties {
   texture?: string;
   frame?: string | number;
@@ -92,9 +61,6 @@ export interface VisualProperties {
   alpha?: number;
 }
 
-/**
- * Optional AI or behavior metadata for dynamic objects.
- */
 export interface BehaviorProperties {
   movementPattern?: 'patrol' | 'follow' | 'idle';
   speed?: number;
@@ -102,15 +68,15 @@ export interface BehaviorProperties {
   triggerEvents?: string[];
 }
 
-/**
- * Extended interface for any object with additional data.
- */
+
 export interface LevelObject extends BaseObject {
+  templateId?: string; 
   physics?: PhysicsProperties;
   visual?: VisualProperties;
   behavior?: BehaviorProperties;
   properties?: Record<string, any>;
 }
+
 
 export interface LegacyLevelFormat {
   world: {
@@ -133,32 +99,25 @@ export interface LegacyLevelFormat {
   }[];
 }
 
-/**
- * Defines background, gravity, and other environment-wide settings.
- */
+
 export interface LevelSettings {
-  gravity?: {
-    x: number;
-    y: number;
-  };
+  gravity?: { x: number; y: number };
   backgroundColor?: string;
   music?: string;
   ambientLight?: number;
-  bounds?: {
-    width: number;
-    height: number;
+  bounds?: { width: number; height: number };
+  defaults?: {
+    physics?: Partial<PhysicsProperties>;
+    visual?: Partial<VisualProperties>;
   };
 }
 
-/**
- * The main structure of a level JSON file.
- */
 export interface LevelData {
   version: string;
   name: string;
   description?: string;
   settings: LevelSettings;
-  objects: LevelObject[];
+  objects: LevelObject[] | Record<LevelObjectType, LevelObject[]>; // NEW
   metadata?: {
     createdBy?: string;
     createdAt?: string;
@@ -167,34 +126,63 @@ export interface LevelData {
   };
 }
 
-/**
- * A minimal example of what a JSON level might look like.
- * This is useful for testing and schema validation.
- */
+export const DEFAULT_TEMPLATES: Record<string, Partial<LevelObject>> = {
+  [LevelObjectType.Platform]: {
+    physics: { type: PhysicsType.Static, isCollidable: true },
+    visual: { texture: 'platform_tile' },
+  },
+  [LevelObjectType.Player]: {
+    physics: { type: PhysicsType.Dynamic },
+    visual: { texture: 'player_sprite', frame: 0 },
+  },
+  [LevelObjectType.Spike]: {
+    physics: { type: PhysicsType.Static, isCollidable: true },
+    visual: { texture: 'spike_tile' },
+  },
+};
+
+export function expandLevelObject(obj: LevelObject): LevelObject {
+  const template = DEFAULT_TEMPLATES[obj.templateId || obj.type] || {};
+  return {
+    ...template,
+    ...obj,
+    physics: {
+      ...(template.physics || {}),
+      ...(obj.physics || {}),
+      type: obj.physics?.type ?? template.physics?.type ?? PhysicsType.None,
+    },
+    visual: { ...(template.visual || {}), ...(obj.visual || {}) },
+    behavior: { ...(template.behavior || {}), ...(obj.behavior || {}) },
+  };
+}
+
+
 export const exampleLevel: LevelData = {
   version: LEVEL_SCHEMA_VERSION,
   name: 'Sample Level 1',
-  description: 'This is a demo level showing JSON layout.',
+  description: 'Optimized demo level with templates and defaults.',
   settings: {
     gravity: { x: 0, y: 1 },
     backgroundColor: '#87CEEB',
     bounds: { width: 2000, height: 1000 },
+    defaults: {
+      physics: { friction: 0.1, restitution: 0.2 },
+      visual: { alpha: 1 },
+    },
   },
   objects: [
     {
       id: 'player_1',
       type: LevelObjectType.Player,
       position: { x: 100, y: 800 },
-      physics: { type: PhysicsType.Dynamic },
-      visual: { texture: 'player_sprite', frame: 0 },
+      templateId: 'player',
     },
     {
       id: 'ground_1',
       type: LevelObjectType.Platform,
       position: { x: 0, y: 950 },
       scale: { x: 10, y: 1 },
-      physics: { type: PhysicsType.Static, isCollidable: true },
-      visual: { texture: 'platform_tile' },
+      templateId: 'platform',
     },
   ],
   metadata: {

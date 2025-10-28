@@ -18,11 +18,15 @@ export function loadLevel(
 ): Phaser.GameObjects.GameObject[] {
   const level: LevelData = 'version' in json ? json : convertLegacyLevel(json);
 
+  const objectsArray = Array.isArray(level.objects)
+    ? level.objects
+    : Object.values(level.objects).flat();
+
   console.log(
     '[loadLevel] Loading level:',
     level.name,
     'with',
-    level.objects.length,
+    objectsArray.length,
     'objects'
   );
   validateLevel(level);
@@ -30,7 +34,7 @@ export function loadLevel(
 
   const createdObjects: Phaser.GameObjects.GameObject[] = [];
 
-  level.objects.forEach((obj) => {
+  objectsArray.forEach((obj: LevelObject) => {
     console.log('[loadLevel] Creating object:', obj.type, 'at', obj.position);
     const gameObject = createGameObject(scene, obj);
     if (gameObject) {
@@ -48,6 +52,7 @@ export function loadLevel(
 function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
   const objects: LevelObject[] = [];
 
+  // Player
   objects.push({
     id: 'player_1',
     type: LevelObjectType.Player,
@@ -59,6 +64,7 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
     },
   });
 
+  // Platforms
   legacy.platforms.forEach((p, i) => {
     objects.push({
       id: `platform_${i + 1}`,
@@ -107,7 +113,12 @@ function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
       scene.physics.world.gravity.y = settings.gravity.y ?? 800;
     }
     if (settings.bounds) {
-      scene.physics.world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+      scene.physics.world.setBounds(
+        0,
+        0,
+        settings.bounds.width,
+        settings.bounds.height
+      );
     }
   }
 }
@@ -125,8 +136,10 @@ function createGameObject(
       return createSpring(scene, obj);
     case LevelObjectType.Spike:
       return createSpike(scene, obj);
-    case LevelObjectType.Collectible:
+    case LevelObjectType.Coin:
       return createCoin(scene, obj);
+    case LevelObjectType.Door:
+      return createDoor(scene, obj); // ✅ New door case
     default:
       return null;
   }
@@ -139,26 +152,46 @@ function createPlayer(
   const textureKey = obj.visual?.texture || 'player-idle-0';
 
   if ((scene as any).physics?.world) {
-    const playerSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
+    const playerSprite = scene.physics.add.sprite(
+      obj.position.x,
+      obj.position.y,
+      textureKey
+    );
     playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
     playerSprite.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
     playerSprite.setCollideWorldBounds(true);
-    
-    const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+
+    const player = new Player(
+      scene,
+      obj.id,
+      obj.position.x,
+      obj.position.y,
+      textureKey
+    );
     player.sprite.destroy();
     player.sprite = playerSprite;
-    
+
     return playerSprite;
   } else {
-    const playerSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
+    const playerSprite = scene.add.sprite(
+      obj.position.x,
+      obj.position.y,
+      textureKey
+    );
     playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
-    
-    const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+
+    const player = new Player(
+      scene,
+      obj.id,
+      obj.position.x,
+      obj.position.y,
+      textureKey
+    );
     player.sprite.destroy();
     player.sprite = playerSprite;
-    
+
     return playerSprite;
   }
 }
@@ -213,14 +246,45 @@ function createCoin(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const textureKey = obj.visual?.texture || 'coin-0';
-  const coinSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
+  const coinSprite = scene.add.sprite(
+    obj.position.x,
+    obj.position.y,
+    textureKey
+  );
   coinSprite.setDisplaySize(60, 60);
   coinSprite.setName(obj.id);
-  
-  const coin = new Coin(scene, obj.id, obj.position.x, obj.position.y, textureKey);
+
+  const coin = new Coin(
+    scene,
+    obj.id,
+    obj.position.x,
+    obj.position.y,
+    textureKey
+  );
   coin.sprite = coinSprite;
-  
+
   return coinSprite;
+}
+
+function createDoor(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  const textureKey = obj.visual?.texture || 'door';
+
+  const doorSprite = scene.add.sprite(x, y, textureKey);
+  doorSprite.setDisplaySize(80, 120);
+  doorSprite.setName(obj.id);
+
+  // optional physics body
+  if ((scene as any).physics?.world) {
+    scene.physics.add.existing(doorSprite, true);
+  }
+
+  console.log('[loadLevel] Created door at', x, y);
+  return doorSprite;
 }
 
 function validateLevel(level: LevelData): void {
