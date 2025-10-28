@@ -1,0 +1,518 @@
+{
+  "version": "1.0.0",
+  "name": "Complex Gameplay Scenarios Test Level",
+  "description": "Test level featuring puzzle-like entity arrangements, sequential interactions, timing-dependent scenarios, and multi-step challenges combining all entity types for comprehensive gameplay validation",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#4A4A4A",
+    "bounds": { "width": 2500, "height": 700 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 600 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "ground_platform",
+      "type": "platform",
+      "position": { "x": 0, "y": 680 },
+      "scale": { "x": 25, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "puzzle_section_1_platform",
+      "type": "platform",
+      "position": { "x": 200, "y": 580 },
+      "scale": { "x": 3, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "puzzle_1_coin_gate_1",
+      "type": "coin",
+      "position": { "x": 220, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "requiredForProgress": true, "gateId": "gate_1" }
+    },
+    {
+      "id": "puzzle_1_coin_gate_2",
+      "type": "coin",
+      "position": { "x": 250, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "requiredForProgress": true, "gateId": "gate_1" }
+    },
+    {
+      "id": "puzzle_1_coin_gate_3",
+      "type": "coin",
+      "position": { "x": 280, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "requiredForProgress": true, "gateId": "gate_1" }
+    },
+    {
+      "id": "puzzle_1_spike_barrier",
+      "type": "spike",
+      "position": { "x": 350, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": { "gateId": "gate_1", "disabledWhenGateOpen": true }
+    },
+    {
+      "id": "puzzle_1_spring_access",
+      "type": "spring",
+      "position": { "x": 380, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": {
+        "gateId": "gate_1",
+        "enabledWhenGateOpen": true,
+        "bounceForce": 1200
+      }
+    },
+    {
+      "id": "timing_section_platform_1",
+      "type": "platform",
+      "position": { "x": 500, "y": 480 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "timing_section_platform_2",
+      "type": "platform",
+      "position": { "x": 650, "y": 380 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "timing_section_platform_3",
+      "type": "platform",
+      "position": { "x": 800, "y": 280 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "timing_enemy_patrol_1",
+      "type": "enemy",
+      "position": { "x": 520, "y": 420 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 80 },
+      "properties": { "patrolRange": 100, "timingCritical": true }
+    },
+    {
+      "id": "timing_enemy_patrol_2",
+      "type": "enemy",
+      "position": { "x": 670, "y": 320 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 120 },
+      "properties": { "patrolRange": 80, "timingCritical": true }
+    },
+    {
+      "id": "timing_coin_reward_1",
+      "type": "coin",
+      "position": { "x": 550, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "timingWindow": 2.0, "requiredForProgress": true }
+    },
+    {
+      "id": "timing_coin_reward_2",
+      "type": "coin",
+      "position": { "x": 700, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "timingWindow": 1.5, "requiredForProgress": true }
+    },
+    {
+      "id": "timing_coin_reward_3",
+      "type": "coin",
+      "position": { "x": 850, "y": 250 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "timingWindow": 1.0, "requiredForProgress": true }
+    },
+    {
+      "id": "multi_step_challenge_platform_1",
+      "type": "platform",
+      "position": { "x": 950, "y": 580 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "multi_step_challenge_platform_2",
+      "type": "platform",
+      "position": { "x": 1100, "y": 480 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "multi_step_challenge_platform_3",
+      "type": "platform",
+      "position": { "x": 1250, "y": 380 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "multi_step_spring_1",
+      "type": "spring",
+      "position": { "x": 980, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 900, "stepId": 1 }
+    },
+    {
+      "id": "multi_step_spike_hazard_1",
+      "type": "spike",
+      "position": { "x": 1020, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": { "stepId": 1, "avoidanceRequired": true }
+    },
+    {
+      "id": "multi_step_spike_hazard_2",
+      "type": "spike",
+      "position": { "x": 1050, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": { "stepId": 1, "avoidanceRequired": true }
+    },
+    {
+      "id": "multi_step_coin_checkpoint_1",
+      "type": "coin",
+      "position": { "x": 1130, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "stepId": 2, "checkpointMarker": true }
+    },
+    {
+      "id": "multi_step_enemy_guardian",
+      "type": "enemy",
+      "position": { "x": 1180, "y": 420 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "speed": 60,
+        "targetId": "player_1"
+      },
+      "properties": {
+        "stepId": 2,
+        "guardianBehavior": true,
+        "activationRange": 150
+      }
+    },
+    {
+      "id": "multi_step_spring_2",
+      "type": "spring",
+      "position": { "x": 1280, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1100, "stepId": 3 }
+    },
+    {
+      "id": "multi_step_final_coin",
+      "type": "coin",
+      "position": { "x": 1280, "y": 200 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "stepId": 3, "finalObjective": true }
+    },
+    {
+      "id": "state_persistence_platform_1",
+      "type": "platform",
+      "position": { "x": 1400, "y": 580 },
+      "scale": { "x": 3, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava" }
+    },
+    {
+      "id": "state_persistence_platform_2",
+      "type": "platform",
+      "position": { "x": 1550, "y": 480 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava" }
+    },
+    {
+      "id": "state_persistence_door_locked",
+      "type": "door",
+      "position": { "x": 1450, "y": 520 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": {
+        "isLocked": true,
+        "keyRequirement": "persistence_key",
+        "stateId": "door_1",
+        "persistAcrossSessions": true
+      }
+    },
+    {
+      "id": "state_persistence_key_coin_1",
+      "type": "coin",
+      "position": { "x": 1420, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": {
+        "keyId": "persistence_key_part_1",
+        "persistAcrossSessions": true,
+        "requiredForDoor": "door_1"
+      }
+    },
+    {
+      "id": "state_persistence_key_coin_2",
+      "type": "coin",
+      "position": { "x": 1480, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": {
+        "keyId": "persistence_key_part_2",
+        "persistAcrossSessions": true,
+        "requiredForDoor": "door_1"
+      }
+    },
+    {
+      "id": "state_persistence_enemy_respawn",
+      "type": "enemy",
+      "position": { "x": 1500, "y": 520 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 40 },
+      "properties": {
+        "respawnOnDeath": true,
+        "respawnDelay": 3.0,
+        "persistAcrossSessions": true,
+        "stateId": "guardian_enemy_1"
+      }
+    },
+    {
+      "id": "state_persistence_spring_unlock",
+      "type": "spring",
+      "position": { "x": 1580, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": {
+        "bounceForce": 1300,
+        "unlockedByDoor": "door_1",
+        "persistAcrossSessions": true
+      }
+    },
+    {
+      "id": "combination_puzzle_platform_1",
+      "type": "platform",
+      "position": { "x": 1700, "y": 580 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spikes" }
+    },
+    {
+      "id": "combination_puzzle_platform_2",
+      "type": "platform",
+      "position": { "x": 1850, "y": 480 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spikes" }
+    },
+    {
+      "id": "combination_puzzle_platform_3",
+      "type": "platform",
+      "position": { "x": 2000, "y": 380 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spikes" }
+    },
+    {
+      "id": "combination_spring_sequence_1",
+      "type": "spring",
+      "position": { "x": 1730, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": {
+        "bounceForce": 800,
+        "sequenceId": "spring_combo",
+        "sequenceOrder": 1,
+        "timingWindow": 2.0
+      }
+    },
+    {
+      "id": "combination_spike_challenge_1",
+      "type": "spike",
+      "position": { "x": 1780, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": { "sequenceId": "spike_dodge", "avoidanceRequired": true }
+    },
+    {
+      "id": "combination_spike_challenge_2",
+      "type": "spike",
+      "position": { "x": 1810, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": { "sequenceId": "spike_dodge", "avoidanceRequired": true }
+    },
+    {
+      "id": "combination_coin_sequence_1",
+      "type": "coin",
+      "position": { "x": 1880, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": {
+        "sequenceId": "coin_combo",
+        "sequenceOrder": 1,
+        "timingWindow": 1.5
+      }
+    },
+    {
+      "id": "combination_spring_sequence_2",
+      "type": "spring",
+      "position": { "x": 1880, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": {
+        "bounceForce": 1000,
+        "sequenceId": "spring_combo",
+        "sequenceOrder": 2,
+        "timingWindow": 1.0
+      }
+    },
+    {
+      "id": "combination_enemy_final",
+      "type": "enemy",
+      "position": { "x": 1950, "y": 420 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "speed": 100,
+        "targetId": "player_1"
+      },
+      "properties": {
+        "finalChallenge": true,
+        "activationTrigger": "coin_combo_complete",
+        "defeatRequired": true
+      }
+    },
+    {
+      "id": "combination_coin_sequence_2",
+      "type": "coin",
+      "position": { "x": 2030, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": {
+        "sequenceId": "coin_combo",
+        "sequenceOrder": 2,
+        "timingWindow": 1.0
+      }
+    },
+    {
+      "id": "level_completion_door",
+      "type": "door",
+      "position": { "x": 2200, "y": 620 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": {
+        "isLocked": false,
+        "isOpen": true,
+        "targetLevel": "next-level",
+        "completionTrigger": true,
+        "requiresAllObjectives": true
+      }
+    },
+    {
+      "id": "completion_platform",
+      "type": "platform",
+      "position": { "x": 2150, "y": 580 },
+      "scale": { "x": 4, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "completion_celebration_coin_1",
+      "type": "coin",
+      "position": { "x": 2170, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "celebrationItem": true, "optional": true }
+    },
+    {
+      "id": "completion_celebration_coin_2",
+      "type": "coin",
+      "position": { "x": 2200, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "celebrationItem": true, "optional": true }
+    },
+    {
+      "id": "completion_celebration_coin_3",
+      "type": "coin",
+      "position": { "x": 2230, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "celebrationItem": true, "optional": true }
+    },
+    {
+      "id": "checkpoint_platform_1",
+      "type": "platform",
+      "position": { "x": 400, "y": 650 },
+      "scale": { "x": 1, "y": 0.2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "checkpointId": "checkpoint_1", "saveProgress": true }
+    },
+    {
+      "id": "checkpoint_platform_2",
+      "type": "platform",
+      "position": { "x": 900, "y": 650 },
+      "scale": { "x": 1, "y": 0.2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "checkpointId": "checkpoint_2", "saveProgress": true }
+    },
+    {
+      "id": "checkpoint_platform_3",
+      "type": "platform",
+      "position": { "x": 1350, "y": 650 },
+      "scale": { "x": 1, "y": 0.2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "checkpointId": "checkpoint_3", "saveProgress": true }
+    },
+    {
+      "id": "checkpoint_platform_4",
+      "type": "platform",
+      "position": { "x": 1650, "y": 650 },
+      "scale": { "x": 1, "y": 0.2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "checkpointId": "checkpoint_4", "saveProgress": true }
+    }
+  ],
+  "metadata": {
+    "createdBy": "Test Level Generator",
+    "createdAt": "2024-10-28",
+    "difficulty": "hard",
+    "tags": [
+      "test",
+      "complex-gameplay",
+      "puzzle-scenarios",
+      "sequential-interactions",
+      "timing-dependent",
+      "multi-step-challenges",
+      "state-persistence",
+      "level-completion",
+      "comprehensive-mechanics"
+    ]
+  }
+}
