@@ -16,7 +16,8 @@ const ENTITY_TYPES_DATA = {
   enemy: { name: 'Enemy', icon: '👾', color: '#ef4444' },
   spike: { name: 'Spike', icon: '🔺', color: '#ff4500' },
   spring: { name: 'Spring', icon: '🟢', color: '#00ff00' },
-  ground: { name: 'Ground', icon: '🟫', color: '#78716c' },
+  ground: { name: 'Grass', icon: '🌿', color: '#4ade80' },
+  dirt: { name: 'Dirt', icon: '🟫', color: '#a16207' },
   lava: { name: 'Lava', icon: '🔥', color: '#f97316' },
   coin: { name: 'Coin', icon: '💰', color: '#eab308' },
   door: { name: 'Door', icon: '🚪', color: '#8b5cf6' },
@@ -27,7 +28,8 @@ const ENTITY_TYPES = [
   { id: 'enemy', name: 'Enemy', icon: '👾', color: '#ef4444' },
   { id: 'spike', name: 'Spike', icon: '🔺', color: '#ff4500' },
   { id: 'spring', name: 'Spring', icon: '🟢', color: '#00ff00' },
-  { id: 'ground', name: 'Ground', icon: '🟫', color: '#78716c' },
+  { id: 'ground', name: 'Grass', icon: '🌿', color: '#4ade80' },
+  { id: 'dirt', name: 'Dirt', icon: '🟫', color: '#a16207' },
   { id: 'lava', name: 'Lava', icon: '🔥', color: '#f97316' },
   { id: 'coin', name: 'Coin', icon: '💰', color: '#eab308' },
   { id: 'door', name: 'Door', icon: '🚪', color: '#8b5cf6' },
@@ -118,13 +120,13 @@ export default function Create() {
     const entities = scene.getAllEntities();
     
     try {
-      const ground = entities.filter((e: any) => {
+      const groundOrDirt = entities.filter((e: any) => {
         const t = String(e.type).toLowerCase().trim();
-        return t === 'ground' || t === 'grass' || t === 'tile';
+        return t === 'ground' || t === 'grass' || t === 'tile' || t === 'dirt';
       });
 
-      const width = Math.max(1000, ...ground.map((g: any) => (g.gridX + 2) * GRID));
-      const height = Math.max(600, ...ground.map((g: any) => (g.gridY + 2) * GRID));
+      const width = Math.max(1000, ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID));
+      const height = Math.max(600, ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID));
       const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
 
       const objects: LevelObject[] = [];
@@ -140,30 +142,31 @@ export default function Create() {
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
+          let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-          else if (t === 'coin') levelType = LevelObjectType.Coin;
-          else if (t === 'lava') levelType = LevelObjectType.Lava;
-          objects.push({ 
-            id: `${t}_${idx + 1}`, 
-            type: levelType, 
-            position: { x, y } 
-          });
+          else if (t === 'coin') levelType = LevelObjectType.Collectible;
+          else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
+          const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+          if (visual) obj.visual = visual;
+          objects.push(obj);
         }
       });
 
       const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
       if (doorEnt) {
-        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) } });
+        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) }, visual: { texture: 'door' } });
       }
 
-      ground.forEach((g: any, i: number) => {
+      groundOrDirt.forEach((g: any, i: number) => {
+        const t = String(g.type).toLowerCase().trim();
+        const texture = t === 'dirt' ? 'ground' : 'grass';
         objects.push({
           id: `platform_${i + 1}`,
           type: LevelObjectType.Platform,
           position: { x: g.gridX * GRID + GRID / 2, y: toY(g.gridY) },
           scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT },
           physics: { type: PhysicsType.Static, isCollidable: true },
-          visual: { tint: COLORS.PLATFORM_ALT },
+          visual: { texture },
         });
       });
 
@@ -225,18 +228,18 @@ export default function Create() {
 
     console.info('[Create] Saving level… entities:', entities.length);
 
-    const ground = entities.filter((e: any) => {
+    const groundOrDirt = entities.filter((e: any) => {
       const t = String(e.type).toLowerCase().trim();
-      return t === 'ground' || t === 'grass' || t === 'tile';
+      return t === 'ground' || t === 'grass' || t === 'tile' || t === 'dirt';
     });
 
     const width = Math.max(
       1000,
-      ...ground.map((g: any) => (g.gridX + 2) * GRID)
+      ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID)
     );
     const height = Math.max(
       600,
-      ...ground.map((g: any) => (g.gridY + 2) * GRID)
+      ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID)
     );
     const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
 
@@ -256,23 +259,24 @@ export default function Create() {
 
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t === 'spring' || t === 'spike') {
+      if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
         const x = e.gridX * GRID + GRID / 2;
         const y = toY(e.gridY);
-        const levelType =
-          t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
-        objects.push({
-          id: `${t}_${idx + 1}`,
-          type: levelType,
-          position: { x, y },
-        });
+        let levelType: LevelObjectType = LevelObjectType.Spring;
+        let visual: any = undefined;
+        if (t === 'spike') levelType = LevelObjectType.Spike;
+        else if (t === 'coin') levelType = LevelObjectType.Collectible;
+        else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
+        const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+        if (visual) obj.visual = visual;
+        objects.push(obj);
       }
     });
 
     const doorEnt = entities.find(
       (e: any) => String(e.type).toLowerCase().trim() === 'door'
     );
-    if (doorEnt) {
+  if (doorEnt) {
       objects.push({
         id: 'goal_1',
         type: LevelObjectType.Goal,
@@ -280,10 +284,13 @@ export default function Create() {
           x: doorEnt.gridX * GRID + GRID / 2,
           y: toY(doorEnt.gridY),
         },
+        visual: { texture: 'door' },
       });
     }
 
-    ground.forEach((g: any, i: number) => {
+    groundOrDirt.forEach((g: any, i: number) => {
+      const t = String(g.type).toLowerCase().trim();
+      const texture = t === 'dirt' ? 'ground' : 'grass';
       objects.push({
         id: `platform_${i + 1}`,
         type: LevelObjectType.Platform,
@@ -296,7 +303,7 @@ export default function Create() {
           y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
         },
         physics: { type: PhysicsType.Static, isCollidable: true },
-        visual: { tint: COLORS.PLATFORM_ALT },
+        visual: { texture },
       });
     });
 
@@ -350,34 +357,24 @@ export default function Create() {
     const currentEntities = scene.getAllEntities();
     setSavedEntities(currentEntities);
 
-    const saved = localStorage.getItem('editorLevelJSON');
+    // Always build fresh level data from current editor entities for Play
     let levelData: LevelData | null = null;
-    if (!levelData && saved) {
-      try {
-        levelData = JSON.parse(saved) as LevelData;
-      } catch {}
-
-      console.debug(
-        '[Create] Play: using saved JSON from localStorage ->',
-        !!levelData
-      );
-    }
-    if (!levelData) {
+    {
       const GRID = 32;
       const entities = scene.getAllEntities();
-      const ground = entities.filter((e: any) => {
+      const groundOrDirt = entities.filter((e: any) => {
         const t = String(e.type).toLowerCase().trim();
-        return t === 'ground' || t === 'grass' || t === 'tile';
+        return t === 'ground' || t === 'grass' || t === 'tile' || t === 'dirt';
       });
       const objects: LevelObject[] = [];
 
       const width = Math.max(
         1000,
-        ...ground.map((g: any) => (g.gridX + 2) * GRID)
+        ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID)
       );
       const height = Math.max(
         600,
-        ...ground.map((g: any) => (g.gridY + 2) * GRID)
+        ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID)
       );
       const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
 
@@ -404,24 +401,28 @@ export default function Create() {
             x: doorEnt.gridX * GRID + GRID / 2,
             y: toY(doorEnt.gridY),
           },
+          visual: { texture: 'door' },
         });
       }
 
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike') {
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
-          const levelType =
-            t === 'spring' ? LevelObjectType.Spring : LevelObjectType.Spike;
-          objects.push({
-            id: `${t}_${idx + 1}`,
-            type: levelType,
-            position: { x, y },
-          });
+          let levelType: LevelObjectType = LevelObjectType.Spring;
+          let visual: any = undefined;
+          if (t === 'spike') levelType = LevelObjectType.Spike;
+          else if (t === 'coin') levelType = LevelObjectType.Collectible;
+          else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
+          const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+          if (visual) obj.visual = visual;
+          objects.push(obj);
         }
       });
-      ground.forEach((g: any, i: number) => {
+      groundOrDirt.forEach((g: any, i: number) => {
+        const t = String(g.type).toLowerCase().trim();
+        const texture = t === 'dirt' ? 'ground' : 'grass';
         objects.push({
           id: `platform_${i + 1}`,
           type: LevelObjectType.Platform,
@@ -434,7 +435,7 @@ export default function Create() {
             y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
           },
           physics: { type: PhysicsType.Static, isCollidable: true },
-          visual: { tint: COLORS.PLATFORM_ALT },
+          visual: { texture },
         });
       });
 

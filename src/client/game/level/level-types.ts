@@ -27,7 +27,7 @@ export const DEFAULT_LEVEL: LevelConfig = {
   worldHeight: 600,
   gravityY: 1000,
   moveSpeed: 240,
-  jumpVelocity: 480,
+  jumpVelocity: 360,
   deadzoneXFrac: 0.35,
   bgColor: 'black',
   useMapControls: true,

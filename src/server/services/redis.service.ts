@@ -11,7 +11,7 @@
  * - Transaction support for atomic operations
  */
 
-import { RedisClient } from '@devvit/public-api';
+import type { RedisClient } from '@devvit/redis';
 
 export interface RedisServiceOptions {
   defaultTTL?: number; // Default TTL in seconds (e.g., 30 days = 2592000)

@@ -71,7 +71,7 @@ export const LevelController = {
         console.error('[createLevel] Validation failed:', validationResult.error);
         return res.status(400).json({
           error: 'Invalid level data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         });
       }
 
@@ -81,28 +81,34 @@ export const LevelController = {
       const now = new Date().toISOString();
 
       const level: LevelData = {
-        ...levelData,
         id: levelId,
         version: LEVEL_SCHEMA_VERSION,
+        isPublic: levelData.isPublic,
         plays: 0,
         likes: 0,
+        ...(levelData.name && { name: levelData.name }),
+        ...(levelData.description && { description: levelData.description }),
+        ...(levelData.settings && { settings: levelData.settings }),
+        ...(levelData.objects && { objects: levelData.objects }),
+        ...(levelData.chunks && { chunks: levelData.chunks }),
         metadata: {
-          ...levelData.metadata,
           createdBy: user.uid,
           createdAt: now,
+          ...(levelData.metadata?.difficulty && { difficulty: levelData.metadata.difficulty }),
+          ...(levelData.metadata?.tags && { tags: levelData.metadata.tags }),
         },
       };
 
       console.log('[createLevel] Creating Redis services...');
-      console.log('[createLevel] Context:', { hasContext: !!context, hasRedis: !!context?.redis });
-      
+      console.log('[createLevel] Context:', { hasContext: !!context, hasRedis: !!redis });
+
       if (!redis) {
         console.error('[createLevel] Redis client is undefined!');
         return res.status(500).json({ error: 'Redis service unavailable' });
       }
 
       const db = new LevelsServiceRedis(redis);
-      
+
       console.log('[createLevel] Saving to Redis...');
       await db.set(`levels/${levelId}`, level);
       console.log('[createLevel] Saved successfully');
@@ -140,7 +146,7 @@ export const LevelController = {
         return res.status(500).json({ error: 'Redis not available' });
       }
       const db = new LevelsServiceRedis(redis);
-      
+
       let levels = await db.getLevelsByUser(userId);
 
       if (!user || user.uid !== userId) {
@@ -183,94 +189,94 @@ export const LevelController = {
   },
 
   // PATCH /levels/:id
- async updateLevel(req: AuthedRequest, res: Response) {
-  const user = req.user;
-  const { id } = req.params;
-  const updates = req.body;
+  async updateLevel(req: AuthedRequest, res: Response) {
+    const user = req.user;
+    const { id } = req.params;
+    const updates = req.body;
 
-  if (!user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  if (!id) {
-    return res.status(400).json({ error: 'Level ID is required' });
-  }
-
-  try {
-    if (!redis) {
-      return res.status(500).json({ error: 'Redis not available' });
-    }
-    const db = new LevelsServiceRedis(redis);
-    const doc = await db.get(`levels/${id}`);
-
-    if (!doc.exists()) {
-      return res.status(404).json({ error: 'Level not found' });
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const level = doc.val() as LevelData;
-
-    if (level.metadata?.createdBy !== user.uid) {
-      return res.status(403).json({ error: 'You can only update your own levels' });
+    if (!id) {
+      return res.status(400).json({ error: 'Level ID is required' });
     }
 
-    // Remove protected fields
-    const {
-      plays,
-      likes,
-      id: levelId,
-      metadata,
-      ...allowedUpdates
-    } = updates;
+    try {
+      if (!redis) {
+        return res.status(500).json({ error: 'Redis not available' });
+      }
+      const db = new LevelsServiceRedis(redis);
+      const doc = await db.get(`levels/${id}`);
 
-    const safeUpdates: any = { ...allowedUpdates };
+      if (!doc.exists()) {
+        return res.status(404).json({ error: 'Level not found' });
+      }
 
-    if (metadata) {
-      safeUpdates.metadata = {
-        ...metadata,
-        createdBy: level.metadata?.createdBy,
-        createdAt: level.metadata?.createdAt,
+      const level = doc.val() as LevelData;
+
+      if (level.metadata?.createdBy !== user.uid) {
+        return res.status(403).json({ error: 'You can only update your own levels' });
+      }
+
+      // Remove protected fields
+      const {
+        plays,
+        likes,
+        id: levelId,
+        metadata,
+        ...allowedUpdates
+      } = updates;
+
+      const safeUpdates: any = { ...allowedUpdates };
+
+      if (metadata) {
+        safeUpdates.metadata = {
+          ...metadata,
+          createdBy: level.metadata?.createdBy,
+          createdAt: level.metadata?.createdAt,
+        };
+      }
+
+      if (Object.keys(safeUpdates).length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
+      }
+
+      // Validate updates
+      const validationResult = LevelDataSchema.partial().safeParse(safeUpdates);
+
+      if (!validationResult.success) {
+        return res.status(400).json({
+          error: 'Invalid update data'
+        });
+      }
+
+      // Merge old data with safeUpdates and overwrite with set
+      const updatedLevel = {
+        ...level,
+        ...safeUpdates,
       };
-    }
 
-    if (Object.keys(safeUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
+      await db.set(`levels/${id}`, updatedLevel);
 
-    // Validate updates
-    const validationResult = LevelDataSchema.partial().safeParse(safeUpdates);
-
-    if (!validationResult.success) {
-      return res.status(400).json({
-        error: 'Invalid update data'
+      return res.status(200).json({
+        message: 'Level updated successfully',
+        updated: Object.keys(safeUpdates),
       });
+    } catch (err) {
+      console.error('Error updating level:', err);
+
+      if (err instanceof Error) {
+        return res.status(500).json({
+          error: 'Failed to update level',
+          message: err.message,
+        });
+      }
+
+      return res.status(500).json({ error: 'Internal server error' });
     }
-
-    // Merge old data with safeUpdates and overwrite with set
-    const updatedLevel = {
-      ...level,
-      ...safeUpdates,
-    };
-
-    await db.set(`levels/${id}`, updatedLevel);
-
-    return res.status(200).json({
-      message: 'Level updated successfully',
-      updated: Object.keys(safeUpdates),
-    });
-  } catch (err) {
-    console.error('Error updating level:', err);
-
-    if (err instanceof Error) {
-      return res.status(500).json({
-        error: 'Failed to update level',
-        message: err.message,
-      });
-    }
-
-    return res.status(500).json({ error: 'Internal server error' });
   }
-}
-,
+  ,
 
   // DELETE /levels/:id
   async deleteLevel(req: AuthedRequest, res: Response) {

@@ -29,25 +29,25 @@ export class CreateScene extends Phaser.Scene {
   }
 
   preload(): void {
-    const base =
-      (import.meta as unknown as { env?: { BASE_URL?: string } }).env
-        ?.BASE_URL ?? '/';
-
+    const base = '/assets/';
     this.load.image('spring', `${base}Spring.png`);
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
+    this.load.image('ground', `${base}Ground.png`);
     this.load.image('grass-filler', `${base}Grass-filler.png`);
+    this.load.image('lava', `${base}Lava.png`);
+    this.load.image('door', `${base}Door.png`);
 
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 0; i <= 4; i++) {
       this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
     }
-    for (let i = 1; i <= 5; i++) {
+
+    for (let i = 0; i <= 4; i++) {
       this.load.image(`player-jump-${i}`, `${base}Animations/Jump/${i}.png`);
     }
 
-    for (let i = 1; i <= 4; i++) {
-      const key = `coin-${i}`;
-      this.load.image(key, `${base}Animations/Coin/coin_2_${i}.png`);
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`coin-${i}`, `${base}Animations/Coin/${i}.png`);
     }
   }
 
@@ -264,13 +264,6 @@ export class CreateScene extends Phaser.Scene {
     const t = String(data.type).toLowerCase().trim();
 
     if (t === 'spike' && this.textures.exists('spike')) {
-      // Add filler background
-      if (this.textures.exists('grass-filler')) {
-        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass-filler');
-        filler.setOrigin(0, 0);
-        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
-        container.add(filler);
-      }
       const sprite = this.add.image(0, 0, 'spike');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
@@ -305,28 +298,23 @@ export class CreateScene extends Phaser.Scene {
       (t === 'ground' || t === 'grass' || t === 'tile') &&
       this.textures.exists('grass')
     ) {
-      const filler = this.add.image(
-        -GRID_SIZE / 2,
-        -GRID_SIZE / 2,
-        'grass-filler'
-      );
-      filler.setOrigin(0, 0);
-      filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
-      container.add(filler);
-
       const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass');
       sprite.setOrigin(0, 0);
       sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
       container.add(sprite);
+    } else if (t === 'dirt' && (this.textures.exists('ground') || this.textures.exists('grass-filler'))) {
+      const key = this.textures.exists('ground') ? 'ground' : 'grass-filler';
+      const dirt = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, key);
+      dirt.setOrigin(0, 0);
+      dirt.setDisplaySize(GRID_SIZE, GRID_SIZE);
+      container.add(dirt);
     } else if (t === 'lava' && this.textures.exists('lava')) {
-      // Add filler background
-      if (this.textures.exists('Lava-filler')) {
-        const filler = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'Lava-filler');
-        filler.setOrigin(0, 0);
-        filler.setDisplaySize(GRID_SIZE, GRID_SIZE);
-        container.add(filler);
-      }
       const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'lava');
+      sprite.setOrigin(0, 0);
+      sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
+      container.add(sprite);
+    } else if (t === 'door' && this.textures.exists('door')) {
+      const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'door');
       sprite.setOrigin(0, 0);
       sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
       container.add(sprite);

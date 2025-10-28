@@ -27,16 +27,16 @@ export class LeaderboardServiceRedis {
    */
   async updateScore(request: UpdateScoreRequest): Promise<LeaderboardEntry> {
     const { userId, username, score } = request;
-    
+
     if (!userId || !username || typeof score !== 'number') {
       throw new Error('Invalid leaderboard entry data');
     }
 
     const timestamp = Date.now();
-    
+
     // Store score in sorted set
     await this.redisService.zAdd(LEADERBOARD_KEY, userId, score);
-    
+
     // Store user details in hash
     await this.redisService.hSetAll(
       `${USER_PREFIX}${userId}`,
@@ -76,8 +76,8 @@ export class LeaderboardServiceRedis {
     const entries: LeaderboardEntry[] = [];
     for (const userId of userIds) {
       const userData = await this.redisService.hGetAll(`${USER_PREFIX}${userId}`);
-      
-      if (userData) {
+
+      if (userData && userData.userId && userData.username && userData.score && userData.timestamp) {
         entries.push({
           userId: userData.userId,
           username: userData.username,
@@ -96,14 +96,14 @@ export class LeaderboardServiceRedis {
   async getUserRank(userId: string): Promise<number | null> {
     // Check if user exists in sorted set
     const score = await this.redisService.zScore(LEADERBOARD_KEY, userId);
-    
+
     if (score === null) {
       return null;
     }
 
     // Get rank (0-based) from sorted set, reversed for highest score first
     const rank = await this.redisService.zRank(LEADERBOARD_KEY, userId, true);
-    
+
     if (rank === null) {
       return null;
     }
@@ -117,8 +117,8 @@ export class LeaderboardServiceRedis {
    */
   async getUserEntry(userId: string): Promise<LeaderboardEntry | null> {
     const userData = await this.redisService.hGetAll(`${USER_PREFIX}${userId}`);
-    
-    if (!userData) {
+
+    if (!userData || !userData.userId || !userData.username || !userData.score || !userData.timestamp) {
       return null;
     }
 
@@ -142,7 +142,7 @@ export class LeaderboardServiceRedis {
    */
   async getUsersByScoreRange(minScore: number, maxScore: number): Promise<LeaderboardEntry[]> {
     const count = await this.redisService.zCount(LEADERBOARD_KEY, minScore, maxScore);
-    
+
     if (count === 0) {
       return [];
     }
@@ -159,10 +159,10 @@ export class LeaderboardServiceRedis {
   async incrementScore(userId: string, increment: number): Promise<number> {
     // Increment score in sorted set
     const newScore = await this.redisService.zIncrBy(LEADERBOARD_KEY, userId, increment);
-    
+
     // Update user hash
     const userData = await this.redisService.hGetAll(`${USER_PREFIX}${userId}`);
-    
+
     if (userData) {
       await this.redisService.hSet(`${USER_PREFIX}${userId}`, 'score', newScore.toString());
       await this.redisService.hSet(`${USER_PREFIX}${userId}`, 'timestamp', Date.now().toString());
@@ -177,10 +177,10 @@ export class LeaderboardServiceRedis {
   async removeUser(userId: string): Promise<void> {
     // Remove from sorted set
     await this.redisService.zRem(LEADERBOARD_KEY, userId);
-    
+
     // Remove user hash
     await this.redisService.del(`${USER_PREFIX}${userId}`);
-    
+
     console.log(`Removed user ${userId} from leaderboard`);
   }
 
@@ -190,19 +190,19 @@ export class LeaderboardServiceRedis {
   async clearLeaderboard(): Promise<void> {
     // This would require getting all user IDs first
     const totalPlayers = await this.getTotalPlayers();
-    
+
     if (totalPlayers > 0) {
       const allUserIds = await this.redisService.zRange(LEADERBOARD_KEY, 0, -1, false);
-      
+
       // Delete all user hashes
       for (const userId of allUserIds) {
         await this.redisService.del(`${USER_PREFIX}${userId}`);
       }
-      
+
       // Delete the sorted set
       await this.redisService.del(LEADERBOARD_KEY);
     }
-    
+
     console.log('Cleared leaderboard');
   }
 
@@ -213,7 +213,7 @@ export class LeaderboardServiceRedis {
    */
   async getLeaderboardAroundUser(userId: string, range: number = 5): Promise<LeaderboardEntry[]> {
     const rank = await this.redisService.zRank(LEADERBOARD_KEY, userId, true);
-    
+
     if (rank === null) {
       return [];
     }
@@ -226,8 +226,8 @@ export class LeaderboardServiceRedis {
     const entries: LeaderboardEntry[] = [];
     for (const uid of userIds) {
       const userData = await this.redisService.hGetAll(`${USER_PREFIX}${uid}`);
-      
-      if (userData) {
+
+      if (userData && userData.userId && userData.username && userData.score && userData.timestamp) {
         entries.push({
           userId: userData.userId,
           username: userData.username,
@@ -251,7 +251,7 @@ export class LeaderboardServiceRedis {
         score: entry.score,
       });
     }
-    
+
     console.log(`Batch updated ${entries.length} leaderboard entries`);
   }
 }

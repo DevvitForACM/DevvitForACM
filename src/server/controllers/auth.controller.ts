@@ -5,9 +5,9 @@ import { redis } from '@devvit/web/server';
 
 export async function redditCallback(req: Request, res: Response) {
   const { code, state } = req.query;
-  
+
   if (!code || typeof code !== 'string') {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Missing authorization code',
       message: 'This endpoint expects a Reddit OAuth callback with a code parameter.',
       receivedParams: req.query
@@ -29,7 +29,7 @@ export async function redditCallback(req: Request, res: Response) {
     });
   } catch (err: any) {
     console.error('Reddit authentication failed:', err.message);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: err.message || 'Auth failed',
       success: false
     });
@@ -40,7 +40,7 @@ export async function redditAuthStatus(_req: Request, res: Response) {
   const clientId = process.env.REDDIT_CLIENT_ID;
   const redirectUri = process.env.REDDIT_REDIRECT_URI;
   const hasCredentials = !!(clientId && process.env.REDDIT_CLIENT_SECRET && redirectUri);
-  
+
   return res.json({
     service: 'Reddit OAuth Backend',
     status: 'running',
@@ -56,8 +56,8 @@ export async function redditAuthStatus(_req: Request, res: Response) {
       status: '/auth/status',
       health: '/health'
     },
-    message: hasCredentials 
-      ? 'Ready to handle Reddit OAuth callbacks' 
+    message: hasCredentials
+      ? 'Ready to handle Reddit OAuth callbacks'
       : 'Missing Reddit OAuth credentials in .env file'
   });
 }

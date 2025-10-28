@@ -6,6 +6,8 @@ import {
   CAMERA_CONFIG,
   GAME_CONFIG,
   SCENE_KEYS,
+  ENTITY_CONFIG,
+  SPRING,
 } from '@/constants/game-constants';
 import { DEFAULT_LEVEL } from '@/game/level/level-types';
 
@@ -38,12 +40,16 @@ export class PlayScene extends Phaser.Scene {
   private worldHeight: number = 0;
   private platformRects: Array<{ l: number; r: number; t: number; b: number }> = [];
   private lastSafePos?: { x: number; y: number };
+  private platformCount: number = 0;
   private coinSprites: Phaser.GameObjects.Sprite[] = [];
   // Grid-step debounce
   private stepCooldownMs = 220;
   private lastStepAt = 0;
   private isStepping = false;
   private lastDir: -1 | 1 = 1;
+  // Spring overlap cooldown
+  private springCooldownMs = 250;
+  private springCooldownUntil = 0;
 
   constructor(level?: LevelConfig, levelName?: string) {
     super({ key: SCENE_KEYS.PLAY });
@@ -54,25 +60,23 @@ export class PlayScene extends Phaser.Scene {
   }
 
   preload() {
-    const base =
-      (import.meta as unknown as { env?: { BASE_URL?: string } }).env
-        ?.BASE_URL ?? '/';
-
     this.load.on(
       Phaser.Loader.Events.FILE_LOAD_ERROR,
       (file: Phaser.Loader.File) => {
         const msg = `Load error: ${file?.key ?? ''} -> ${file?.src ?? ''}`;
-
         console.warn(msg);
       }
     );
 
+    const base = '/assets/';
     this.load.image('spring', `${base}Spring.png`);
     this.load.image('spike', `${base}Spikes.png`);
     this.load.image('grass', `${base}Grass.png`);
+    this.load.image('ground', `${base}Ground.png`);
     this.load.image('grass-filler', `${base}Grass-filler.png`);
     this.load.image('lava', `${base}Lava.png`);
     this.load.image('Lava-filler', `${base}Lava-filler.png`);
+    this.load.image('door', `${base}Door.png`);
 
     for (let i = 0; i <= 4; i++) {
       this.load.image(`player-idle-${i}`, `${base}Animations/Idle/${i}.png`);
@@ -143,19 +147,36 @@ export class PlayScene extends Phaser.Scene {
       );
       dbg.setScrollFactor(0);
 
+      // Ensure coin animation exists
+      const coinFrames = [0, 1, 2, 3, 4]
+        .filter((i) => this.textures.exists(`coin-${i}`))
+        .map((i) => ({ key: `coin-${i}` }));
+      if (!this.anims.exists('coin-spin') && coinFrames.length > 0) {
+        this.anims.create({
+          key: 'coin-spin',
+          frames: coinFrames,
+          frameRate: 6,
+          repeat: -1,
+        });
+      }
+
       if ((this.physics as any)?.world) {
         this.physics.world.gravity.y = this.levelConfig.gravityY;
       }
 
       if (this.editorLevelData) {
-        loadLevel(this, this.editorLevelData);
+        const created = loadLevel(this, this.editorLevelData);
         const b = this.editorLevelData.settings?.bounds;
-        if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
+        if (b) {
+          this.cameras.main.setBounds(0, 0, b.width, b.height);
+        }
       } else if (jsonData) {
-        loadLevel(this, jsonData);
+        const created = loadLevel(this, jsonData);
         this.prepareGeometry(jsonData);
         const b = jsonData.settings?.bounds;
-        if (b) this.cameras.main.setBounds(0, 0, b.width, b.height);
+        if (b) {
+          this.cameras.main.setBounds(0, 0, b.width, b.height);
+        }
       } else {
         this.add
           .text(50, 50, 'No level data found', {
@@ -198,6 +219,23 @@ export class PlayScene extends Phaser.Scene {
           this.playerBody = player.body as Phaser.Physics.Arcade.Body;
           this.setupPlayerControls();
           this.setupCollisions();
+          // Initialize last safe position (load from storage if available)
+          try {
+            const saved = localStorage.getItem('lastSafePos');
+            if (saved) {
+              const pos = JSON.parse(saved);
+              if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+                this.lastSafePos = pos;
+              }
+            }
+          } catch {}
+          if (!this.lastSafePos) {
+            this.lastSafePos = { x: this.player.x, y: this.player.y };
+          }
+          // Harden player physics
+          this.playerBody.setBounce(0, 0);
+          this.playerBody.setDragX(900);
+          this.playerBody.setMaxVelocity(400, 1200);
         }
       } else {
         console.warn('[PlayScene] Player not found!');
@@ -223,29 +261,154 @@ export class PlayScene extends Phaser.Scene {
     };
     this.input.keyboard!.addCapture([Phaser.Input.Keyboard.KeyCodes.SPACE]);
 
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
-      if (this.playerBody?.blocked.down) {
-        this.playerBody.setVelocityY(-this.levelConfig.jumpVelocity);
-      }
-    });
+    // Remove the click handler - we'll handle jump in update()
   }
 
   private setupCollisions(): void {
-    const platforms = this.children.list.filter(
-      (child) => child.name && child.name.startsWith('platform_')
-    ) as Phaser.GameObjects.GameObject[];
+    const platforms = this.children.list.filter((child: any) => {
+      const isPlatform = typeof child?.getData === 'function' && child.getData('isPlatform');
+      const isHazard = typeof child?.getData === 'function' && (child.getData('isSpike') || child.getData('isSpring') || child.getData('isLava'));
+      const hasBody = !!(child as any)?.body;
+      return hasBody && isPlatform && !isHazard;
+    }) as Phaser.GameObjects.GameObject[];
 
-    console.log(`[setupCollisions] Found ${platforms.length} platforms`);
+    console.log(`[setupCollisions] Found ${platforms.length} platforms with physics bodies`);
     platforms.forEach((p: any) => {
-      console.log(`[setupCollisions] Platform ${p.name}: x=${p.x}, y=${p.y}, visible=${p.visible}`);
+      console.log(`[setupCollisions] Platform ${p.name}: x=${p.x}, y=${p.y}, body=${!!p.body}, immovable=${p.body?.immovable}`);
     });
 
+    this.platformCount = platforms.length;
     if (platforms.length > 0) {
-      this.physics.add.collider(this.player, platforms);
-      console.log('[setupCollisions] Collider added between player and platforms');
+      // Add collider for each platform with callback to capture last safe block
+      platforms.forEach((platform) => {
+        this.physics.add.collider(
+          this.player,
+          platform,
+          // collide callback
+          (_p: any, plat: any) => this.onPlayerPlatformCollide(plat as any),
+          undefined,
+          this
+        );
+      });
+      console.log(`[setupCollisions] Added ${platforms.length} colliders between player and platforms`);
     } else {
       console.warn('[setupCollisions] No platforms found!');
     }
+
+    // Overlaps for spikes and springs (non-blocking hazards)
+    const spikes = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isSpike');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || tex === 'spike' || /spike/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    const springs = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isSpring');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || tex === 'spring' || /spring/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    const lavas = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isLava');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || tex === 'lava' || /lava/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}`);
+
+    spikes.forEach((spike) => {
+      this.physics.add.overlap(this.player, spike, this.onPlayerSpikeOverlap, undefined, this);
+    });
+    springs.forEach((spring) => {
+      this.physics.add.overlap(this.player, spring, this.onPlayerSpringOverlap, undefined, this);
+    });
+    lavas.forEach((lava) => {
+      this.physics.add.overlap(this.player, lava, this.onPlayerLavaOverlap, undefined, this);
+    });
+  }
+
+  private getOneBlockJumpVelocity(): number {
+    const g = (this.physics as any)?.world?.gravity?.y ?? this.levelConfig.gravityY ?? 800;
+    const h = ENTITY_CONFIG.PLATFORM_HEIGHT; // one cell high
+    // Slightly higher than one block (~1.8x) per request
+    return Math.sqrt(2 * g * h * 1.8);
+  }
+
+  private alignStaticsToBottom(objects: Phaser.GameObjects.GameObject[], floorY: number): void {
+    try {
+      objects.forEach((obj: any) => {
+        const isStatic = !!obj?.body && ((obj.body as any).immovable === true || (obj.body as any).isStatic);
+        const isPlatform = typeof obj?.getData === 'function' && obj.getData('isPlatform');
+        const isHazard = typeof obj?.getData === 'function' && (obj.getData('isSpike') || obj.getData('isSpring') || obj.getData('isLava'));
+        if (!isStatic && !isPlatform && !isHazard) return;
+        const h = obj.displayHeight ?? obj.height ?? 0;
+        if (!h) return;
+        const targetY = floorY - h / 2;
+        if (typeof obj.setY === 'function') obj.setY(targetY);
+        if (obj.body && typeof (obj.body as any).updateFromGameObject === 'function') {
+          (obj.body as any).updateFromGameObject();
+        }
+      });
+    } catch {}
+  }
+
+  private onPlayerPlatformCollide(platform: Phaser.GameObjects.GameObject): void {
+    if (!this.player || !this.playerBody) return;
+    // Compute platform top accurately
+    const platAny: any = platform as any;
+    const body: any = platAny.body;
+    let platformTop: number | undefined = undefined;
+    if (body && typeof body.top === 'number') {
+      platformTop = body.top;
+    } else {
+      const ph = (platAny.displayHeight ?? platAny.height ?? 0);
+      const py = platAny.y ?? this.player.y;
+      platformTop = py - ph / 2;
+    }
+    const playerHalfH = (this.player.displayHeight ?? 32) / 2;
+    const safeY = platformTop - playerHalfH - 1; // keep 1px above to avoid visual clipping
+    this.lastSafePos = { x: this.player.x, y: safeY };
+    try {
+      localStorage.setItem('lastSafePos', JSON.stringify(this.lastSafePos));
+    } catch {}
+  }
+
+  private onPlayerSpikeOverlap(): void {
+    if (!this.player || !this.playerBody) return;
+    // Flash red and respawn at last safe block
+    this.player.setTint(0xff0000);
+    this.time.delayedCall(120, () => this.player.clearTint());
+    const rx = this.lastSafePos?.x ?? this.levelConfig.playerStartX ?? this.player.x;
+    const ry = this.lastSafePos?.y ?? this.levelConfig.playerStartY ?? this.player.y;
+    this.player.setPosition(rx, ry);
+    this.playerBody.setVelocity(0, 0);
+  }
+
+  private onPlayerSpringOverlap(_p: any, spring: any): void {
+    const now = this.time.now;
+    if (now < this.springCooldownUntil) return;
+    this.springCooldownUntil = now + this.springCooldownMs;
+    // Place player just above spring then apply bounce
+    const body: any = spring?.body;
+    const top = typeof body?.top === 'number' ? body.top : (spring.y - (spring.displayHeight ?? spring.height ?? 24) / 2);
+    const halfH = (this.player.displayHeight ?? 32) / 2;
+    this.player.setY(top - halfH - 1);
+    // Compute bounce to ~1.5 tiles, clamp to SPRING.BOUNCE_FORCE (shorter)
+    const g = (this.physics as any)?.world?.gravity?.y ?? this.levelConfig.gravityY ?? 800;
+    const height = ENTITY_CONFIG.PLATFORM_HEIGHT * 1.5;
+    const neededV = Math.sqrt(2 * g * height);
+    const v = Math.min(neededV, SPRING.BOUNCE_FORCE);
+    this.playerBody.setVelocityY(-v);
+    // Save as safe position
+    this.lastSafePos = { x: this.player.x, y: this.player.y };
+  }
+
+  private onPlayerLavaOverlap(): void {
+    // Same behavior as spike
+    this.onPlayerSpikeOverlap();
   }
 
   public override update(_time: number, delta: number): void {
@@ -255,6 +418,28 @@ export class PlayScene extends Phaser.Scene {
 
     if (!this.player || !this.playerBody || !this.cursors) return;
 
+    // If there are no platforms, freeze movement and keep player at last saved grass block
+    if (this.platformCount === 0) {
+      const targetX = this.lastSafePos?.x ?? this.levelConfig.playerStartX ?? this.player.x;
+      const targetY = this.lastSafePos?.y ?? this.levelConfig.playerStartY ?? this.player.y;
+      this.player.setPosition(targetX, targetY);
+      this.playerBody.setVelocity(0, 0);
+      this.playerBody.allowGravity = false;
+      return;
+    } else {
+      this.playerBody.allowGravity = true;
+    }
+
+    // Check if player fell off the world - respawn to last safe position if available
+    const worldHeight = this.editorLevelData?.settings?.bounds?.height || 600;
+    if (this.player.y > worldHeight + 100) {
+      console.log('[PlayScene] Player fell off world, respawning');
+      const respawnX = this.lastSafePos?.x ?? this.levelConfig.playerStartX ?? 50;
+      const respawnY = this.lastSafePos?.y ?? this.levelConfig.playerStartY ?? 100;
+      this.player.setPosition(respawnX, respawnY);
+      this.playerBody.setVelocity(0, 0);
+    }
+
     const left = this.cursors.left.isDown || this.wasd.left.isDown;
     const right = this.cursors.right.isDown || this.wasd.right.isDown;
     const up =
@@ -262,25 +447,44 @@ export class PlayScene extends Phaser.Scene {
       this.wasd.up.isDown ||
       this.cursors.space.isDown;
 
+    // Horizontal movement
     let vx = 0;
     if (left) vx = -this.levelConfig.moveSpeed;
     if (right) vx = this.levelConfig.moveSpeed;
-
     this.playerBody.setVelocityX(vx);
+
+    // Check if player is on the ground
+    const onFloor = this.playerBody.blocked.down; // use blocked.down for reliable ground check
+
+    // Record last safe (on-floor) position for respawn
+    if (onFloor) {
+      this.lastSafePos = { x: this.player.x, y: this.player.y };
+      // Prevent downward "sinking" when grounded
+      if (this.playerBody.velocity.y > 0) {
+        this.playerBody.setVelocityY(0);
+      }
+    }
+
+    // Jump - only when on ground and jump key pressed
+    if (up && onFloor) {
+      // compute velocity to reach ~1 block height only
+      const oneBlockV = this.getOneBlockJumpVelocity();
+      const jump = Math.min(this.levelConfig.jumpVelocity, oneBlockV);
+      this.playerBody.setVelocityY(-jump);
+    }
 
     // Debug overlay text
     if (this.dbg) {
       const cam = this.cameras.main;
-      const px = this.mPlayer ? Math.round(this.mPlayer.x) : (this.player ? Math.round(this.player.x) : 0);
-      const py = this.mPlayer ? Math.round(this.mPlayer.y) : (this.player ? Math.round(this.player.y) : 0);
-      this.dbg.setText(`cam=(${Math.round(cam.scrollX)},${Math.round(cam.scrollY)}) zoom=${cam.zoom} player=(${px},${py}) objs=${this.children.list.length}`);
+      const px = Math.round(this.player.x);
+      const py = Math.round(this.player.y);
+      const vy = Math.round(this.playerBody.velocity.y);
+      this.dbg.setText(`player=(${px},${py}) vy=${vy} onFloor=${onFloor} objs=${this.children.list.length}`);
     }
 
+    // Flip sprite based on direction
     if (vx < 0) this.player.setFlipX(true);
     else if (vx > 0) this.player.setFlipX(false);
-
-    // Check if player is on the ground
-    const onFloor = this.playerBody.blocked.down || this.playerBody.touching.down;
 
     // Play animations only if they exist
     if (!onFloor) {

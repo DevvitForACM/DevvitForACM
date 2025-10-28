@@ -10,7 +10,7 @@
  * - levels:public (Sorted Set): Public levels sorted by creation time
  */
 
-import { RedisClient } from '@devvit/public-api';
+import type { RedisClient } from '@devvit/redis';
 import { LevelData } from '../models/level';
 
 export class LevelsServiceRedis {
