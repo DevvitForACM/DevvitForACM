@@ -10,11 +10,11 @@ export function setupCollisions(
   onEnemyHit: () => void,
   onSpringHit: (_p: any, spring: any) => void,
   onCoinHit: (_p: any, coin: any) => void,
-  onDoorHit: () => void,
   onPlatformCollide: (platform: Phaser.GameObjects.GameObject) => void
 ): {
   platforms: Phaser.GameObjects.GameObject[];
   enemies: Phaser.GameObjects.GameObject[];
+  doors: Phaser.GameObjects.GameObject[];
 } {
   const platforms = scene.children.list.filter((child: any) => {
     const isPlatform =
@@ -97,9 +97,9 @@ export function setupCollisions(
   coins.forEach((coin) => {
     scene.physics.add.overlap(player, coin, onCoinHit, undefined, scene);
   });
-  doors.forEach((door) => {
-    scene.physics.add.overlap(player, door, onDoorHit, undefined, scene);
-  });
+
+  // Note: doors are NOT collidable - player must press jump to finish
+  // Doors are returned so the scene can check distance for interaction
 
   enemies.forEach((enemy) => {
     platforms.forEach((platform) => {
@@ -108,7 +108,7 @@ export function setupCollisions(
     scene.physics.add.overlap(player, enemy, onEnemyHit, undefined, scene);
   });
 
-  return { platforms, enemies };
+  return { platforms, enemies, doors };
 }
 
 export function handlePlatformCollision(

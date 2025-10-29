@@ -70,14 +70,19 @@ export class CreateScene extends Phaser.Scene {
     this.gridGraphics = createGrid(this);
     this.drawGridInternal();
 
-    // Position camera so gridY=0 (at pixelY≈-16) is visible near the bottom
-    // With scrollY = -(height - 2*GRID_SIZE), viewport shows Y from -(height-64) to 64
-    // This puts gridY=0 comfortably in view at the bottom portion
+    // Position camera at origin
     this.cameras.main.scrollX = 0;
-    this.cameras.main.scrollY = -(this.cameras.main.height - GRID.SIZE * 2);
+    this.cameras.main.scrollY = 0;
+    
     const zoom = calculateResponsiveZoom(this.cameras.main);
     this.cameras.main.setZoom(zoom);
     this.cameras.main.roundPixels = true;
+
+    // Set camera bounds: limited editing area
+    const maxWorldWidth = 3000; // Allow scrolling right
+    const maxWorldHeight = 2000; // Allow scrolling up
+    // Bounds: left edge at x=0, top edge at y=-maxWorldHeight, width and height define the area
+    this.cameras.main.setBounds(0, -maxWorldHeight, maxWorldWidth, maxWorldHeight);
 
     this.input.mouse?.disableContextMenu();
     this.scale.on('resize', this.handleResize, this);
@@ -129,8 +134,21 @@ export class CreateScene extends Phaser.Scene {
       this.handlePointerDown(pointer);
     });
 
-    this.input.on('pointerup', () => {
-      this.handlePointerUp();
+    // Handle scene wake event (when resumed from pause)
+    this.events.on('wake', () => {
+      console.log('[CreateScene] Scene woke up (resumed)');
+      // Reset camera scroll speeds that might have been set by controls
+      this.cameraScrollSpeed = 0;
+      this.cameraScrollSpeedY = 0;
+    });
+
+    // Handle scene pause event
+    this.events.on('pause', () => {
+      console.log('[CreateScene] Scene paused');
+      // Reset any ongoing interactions
+      this.isDragging = false;
+      this.lastDragGridX = -999;
+      this.lastDragGridY = -999;
     });
   }
 
@@ -191,42 +209,13 @@ export class CreateScene extends Phaser.Scene {
       (obj: any) => obj.getData && obj.getData('entityId')
     );
 
-    if (hitUI || this.controls.isSwiping) return;
+    if (hitUI || this.controls.isSwiping || hitEntity) return;
 
     const wx = pointer.worldX;
     const wy = pointer.worldY;
     const gridX = Math.floor(wx / GRID_SIZE);
     const gridY = -Math.floor(wy / GRID_SIZE) - 1;
-
-    // If clicking on an entity with eraser selected, delete it
-    if (hitEntity) {
-      const selectedType = this.registry.get('selectedEntityType') as string | null;
-      if (selectedType === 'eraser') {
-        const entityContainer = hitObjects.find(
-          (obj: any) => obj.getData && obj.getData('entityId')
-        ) as Phaser.GameObjects.Container;
-        if (entityContainer) {
-          const entityId = entityContainer.getData('entityId') as string;
-          this.removeEntity(entityId);
-          this.isDragging = true;
-          this.lastDragGridX = gridX;
-          this.lastDragGridY = gridY;
-        }
-      }
-      return;
-    }
-
-    // Start drag placement/deletion
-    this.isDragging = true;
-    this.lastDragGridX = gridX;
-    this.lastDragGridY = gridY;
     this.placeAtGrid(gridX, gridY);
-  }
-
-  private handlePointerUp(): void {
-    this.isDragging = false;
-    this.lastDragGridX = -999;
-    this.lastDragGridY = -999;
   }
 
   public placeEntity(data: EntityData): void {
@@ -343,9 +332,8 @@ export class CreateScene extends Phaser.Scene {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
       this.cameras.main.scrollY += this.cameraScrollSpeedY * (delta / 16);
 
-      if (this.cameras.main.scrollX < 0) {
-        this.cameras.main.scrollX = 0;
-      }
+      // Camera bounds are enforced by Phaser via setBounds()
+      // Left edge (x=0) and bottom edge (y=0) act as walls
 
       const cam = this.cameras.main;
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
@@ -356,38 +344,39 @@ export class CreateScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Find the entity that occupies a given cell.
+   * Handles both regular entities and 2-cell entities (player/door).
+   * Returns the entity ID if found, null otherwise.
+   */
+  private findEntityAtCell(gridX: number, gridY: number): string | null {
+    for (const [entityId, container] of this.placedEntities) {
+      const entityGridX = container.getData('gridX');
+      const entityGridY = container.getData('gridY');
+      
+      // Check if this cell matches the entity's primary cell
+      if (entityGridX === gridX && entityGridY === gridY) {
+        return entityId;
+      }
+      
+      // Check if this cell matches the entity's extra cell (for 2-cell entities like player/door)
+      const extraCell = container.getData('occupiesExtraCell');
+      if (extraCell === `${gridX},${gridY}`) {
+        return entityId;
+      }
+    }
+    return null;
+  }
+
   private placeAtGrid(gridX: number, gridY: number): void {
     if (gridX < 0) return;
-
-    const sel =
-      (this.registry.get('selectedEntityType') as string | null) ?? null;
-    if (!sel) return;
-
-    // Handle eraser mode - delete entity at this grid position
-    if (sel === 'eraser') {
-      const cellKey = `${gridX},${gridY}`;
-      if (this.occupiedCells.has(cellKey)) {
-        // Find the entity at this position
-        const entityToDelete = Array.from(this.placedEntities.values()).find(
-          (container) =>
-            container.getData('gridX') === gridX &&
-            container.getData('gridY') === gridY
-        );
-        if (entityToDelete) {
-          const entityId = entityToDelete.getData('entityId') as string;
-          this.removeEntity(entityId);
-        }
-      }
-      return;
-    }
-
-    const cellKey = `${gridX},${gridY}`;
-    if (this.occupiedCells.has(cellKey)) return;
 
     const entityTypes = this.registry.get('entityTypes') as
       | Record<string, { name: string; color: string; icon: string }>
       | undefined;
-    if (!entityTypes) return;
+    const sel =
+      (this.registry.get('selectedEntityType') as string | null) ?? null;
+    if (!entityTypes || !sel) return;
 
     let key = sel;
     if (!entityTypes[key]) {
@@ -400,7 +389,31 @@ export class CreateScene extends Phaser.Scene {
     if (!info) return;
 
     const low = key.toLowerCase().trim();
+    
+    // Check if we're trying to place a player or door when one already exists
     if ((low === 'player' || low === 'door') && this.hasType(low)) return;
+
+    // Remove any existing entity at the target cell (handles both 1-cell and 2-cell entities)
+    // If a 2-cell entity (player/door) is found, the entire entity will be removed
+    const cellKey = `${gridX},${gridY}`;
+    if (this.occupiedCells.has(cellKey)) {
+      const existingEntityId = this.findEntityAtCell(gridX, gridY);
+      if (existingEntityId) {
+        this.removeEntity(existingEntityId);
+      }
+    }
+
+    // For 2-cell entities (player/door), also check and clear the cell above
+    // This ensures the entire area is clear before placing the new entity
+    if (low === 'player' || low === 'door') {
+      const cellAbove = `${gridX},${gridY + 1}`;
+      if (this.occupiedCells.has(cellAbove)) {
+        const existingEntityId = this.findEntityAtCell(gridX, gridY + 1);
+        if (existingEntityId) {
+          this.removeEntity(existingEntityId);
+        }
+      }
+    }
 
     this.placeEntity({
       type: key,
@@ -412,15 +425,31 @@ export class CreateScene extends Phaser.Scene {
     });
   }
 
-  public destroy(): void {
+  public shutdown(): void {
+    // Clean up event listeners
+    this.events.removeAllListeners();
     this.scale.off('resize', this.handleResize, this);
+    this.input.off('pointermove');
+    this.input.off('pointerout');
+    this.input.off('pointerdown');
+    this.input.off('pointerup');
+    
+    // Kill all tweens
+    this.tweens.killAll();
+  }
+
+  public destroy(): void {
+    this.shutdown();
+    
     if (this.gridGraphics && this.gridGraphics.active)
       this.gridGraphics.destroy();
     this.gridGraphics = undefined;
     if (this.coordinateText && this.coordinateText.active)
       this.coordinateText.destroy();
     this.coordinateText = undefined;
-    this.placedEntities.forEach((container) => container.destroy());
+    this.placedEntities.forEach((container) => {
+      if (container && container.active) container.destroy();
+    });
     this.placedEntities.clear();
     this.occupiedCells.clear();
   }

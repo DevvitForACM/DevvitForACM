@@ -52,6 +52,13 @@ export function placeEntity(
 
   placedEntities.set(entityId, container);
   occupiedCells.add(`${data.gridX},${data.gridY}`);
+  
+  // Player and door occupy 2 cells vertically (current cell and the one above)
+  if (t === 'player' || t === 'door') {
+    occupiedCells.add(`${data.gridX},${data.gridY + 1}`);
+    container.setData('occupiesExtraCell', `${data.gridX},${data.gridY + 1}`);
+  }
+  
   onEntityPlaced();
 }
 
@@ -87,7 +94,10 @@ function createEntityVisual(
     container.add(sprite);
   } else if (type === 'player' && scene.textures.exists('player-idle-0')) {
     const sprite = scene.add.sprite(0, 0, 'player-idle-0');
-    sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
+    // Player is 60x100 (occupies 2 cells vertically)
+    sprite.setDisplaySize(GRID_SIZE - 4, 100 - 4);
+    // Shift sprite down by half a cell to center it across 2 cells
+    sprite.setY(GRID_SIZE / 4);
     try {
       sprite.play('player-idle');
     } catch {}
@@ -126,9 +136,12 @@ function createEntityVisual(
     sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
     container.add(sprite);
   } else if (type === 'door' && scene.textures.exists('door')) {
-    const sprite = scene.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'door');
-    sprite.setOrigin(0, 0);
-    sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
+    const sprite = scene.add.image(0, 0, 'door');
+    sprite.setOrigin(0.5, 0.5);
+    // Door is 60x100 (occupies 2 cells vertically)
+    sprite.setDisplaySize(GRID_SIZE - 4, 100 - 4);
+    // Shift sprite down by half a cell to center it across 2 cells
+    sprite.setY(GRID_SIZE / 4);
     container.add(sprite);
   }
 }
@@ -143,6 +156,13 @@ function handleEntityClick(
   pointer.event?.preventDefault();
   pointer.event?.stopPropagation();
 
+  // Check if entity is baseline (irremovable)
+  const isBaseline = container.getData('isBaseline');
+  if (isBaseline) {
+    // Baseline entities cannot be removed or replaced
+    return;
+  }
+
   const entityId = container.getData('entityId') as string;
   const gridX = container.getData('gridX') as number;
   const gridY = container.getData('gridY') as number;
@@ -150,14 +170,30 @@ function handleEntityClick(
 
   const sel =
     (scene.registry.get('selectedEntityType') as string | null) ?? null;
-  const entityTypes = scene.registry.get('entityTypes') as
-    | Record<string, { name: string; color: string; icon: string }>
-    | undefined;
 
   const isRightClick = pointer.rightButtonDown() || pointer.button === 2;
 
+  // Right-click always deletes
   if (isRightClick) {
-    if (sel && entityTypes) {
+    onRemove(entityId);
+    return;
+  }
+
+  // Left-click with eraser selected deletes
+  if (sel === 'eraser') {
+    onRemove(entityId);
+    return;
+  }
+
+  // Left-click with different entity selected replaces
+  if (!sel) {
+    onRemove(entityId);
+  } else {
+    const entityTypes = scene.registry.get('entityTypes') as
+      | Record<string, { name: string; color: string; icon: string }>
+      | undefined;
+    
+    if (entityTypes) {
       let key = sel;
       if (!entityTypes[key]) {
         const match = Object.keys(entityTypes).find(
@@ -171,27 +207,6 @@ function handleEntityClick(
         onRemove(entityId);
         onReplace(gridX, gridY, key);
       }
-    } else {
-      onRemove(entityId);
-    }
-    return;
-  }
-
-  if (!sel) {
-    onRemove(entityId);
-  } else if (entityTypes) {
-    let key = sel;
-    if (!entityTypes[key]) {
-      const match = Object.keys(entityTypes).find(
-        (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
-      );
-      if (match) key = match;
-    }
-
-    const info = entityTypes[key];
-    if (info && key.toLowerCase() !== currentEntityType.toLowerCase()) {
-      onRemove(entityId);
-      onReplace(gridX, gridY, key);
     }
   }
 }
@@ -207,6 +222,13 @@ export function removeEntity(
   const gridX = container.getData('gridX');
   const gridY = container.getData('gridY');
   occupiedCells.delete(`${gridX},${gridY}`);
+  
+  // Remove extra cell if this entity occupied one (e.g., player)
+  const extraCell = container.getData('occupiesExtraCell');
+  if (extraCell) {
+    occupiedCells.delete(extraCell);
+  }
+  
   placedEntities.delete(entityId);
   container.destroy();
   onEntityRemoved();
@@ -218,19 +240,38 @@ export function clearAllEntities(
   occupiedCells: Set<string>,
   onEntitiesCleared: () => void
 ): void {
-  placedEntities.forEach((c) => {
-    if (c && c.active) c.destroy();
+  // Remove all non-baseline entities
+  const toRemove: string[] = [];
+  placedEntities.forEach((c, entityId) => {
+    const isBaseline = c.getData('isBaseline');
+    if (!isBaseline && c && c.active) {
+      c.destroy();
+      toRemove.push(entityId);
+    }
   });
+
+  toRemove.forEach(id => placedEntities.delete(id));
 
   scene.children.list.forEach((child) => {
     const c = child as Phaser.GameObjects.Container;
-    if (c?.getData && c.getData('entityId')) {
+    if (c?.getData && c.getData('entityId') && !c.getData('isBaseline')) {
       if (c.active) c.destroy();
     }
   });
 
-  placedEntities.clear();
+  // Clear occupied cells but preserve baseline cells
+  const baselineCells = new Set<string>();
+  placedEntities.forEach(c => {
+    if (c.getData('isBaseline')) {
+      const gridX = c.getData('gridX');
+      const gridY = c.getData('gridY');
+      baselineCells.add(`${gridX},${gridY}`);
+    }
+  });
+
   occupiedCells.clear();
+  baselineCells.forEach(cell => occupiedCells.add(cell));
+  
   onEntitiesCleared();
 }
 
@@ -239,11 +280,55 @@ export function getAllEntities(
 ): EntityData[] {
   const entities: EntityData[] = [];
   placedEntities.forEach((c) => {
-    entities.push({
-      type: c.getData('entityType'),
-      gridX: c.getData('gridX'),
-      gridY: c.getData('gridY'),
-    });
+    // Exclude baseline entities from export (they're auto-generated)
+    if (!c.getData('isBaseline')) {
+      entities.push({
+        type: c.getData('entityType'),
+        gridX: c.getData('gridX'),
+        gridY: c.getData('gridY'),
+      });
+    }
   });
   return entities;
+}
+
+export function createBaselineGrassRow(
+  scene: Phaser.Scene,
+  placedEntities: Map<string, Phaser.GameObjects.Container>,
+  occupiedCells: Set<string>,
+  onRemoveEntity: (entityId: string) => void,
+  onReplaceEntity: (gridX: number, gridY: number, newType: string) => void,
+  numberOfTiles: number = 50 // Default: 50 tiles wide (50 * 60 = 3000px)
+): void {
+  console.log(`[CreateScene] Creating baseline grass row with ${numberOfTiles} tiles`);
+  
+  // Create grass platforms at gridY = 0 across the entire width
+  for (let gridX = 0; gridX < numberOfTiles; gridX++) {
+    const cellKey = `${gridX},0`;
+    
+    // Skip if already occupied (shouldn't happen but safety check)
+    if (occupiedCells.has(cellKey)) {
+      continue;
+    }
+
+    placeEntity(
+      scene,
+      {
+        type: 'grass',
+        gridX: gridX,
+        gridY: 0,
+        name: 'Grass',
+        color: '#22c55e',
+        icon: '🟩',
+        isBaseline: true, // Mark as irremovable
+      },
+      placedEntities,
+      occupiedCells,
+      () => {}, // Don't increment entity count for baseline
+      onRemoveEntity,
+      onReplaceEntity
+    );
+  }
+  
+  console.log('[CreateScene] Baseline grass row created');
 }

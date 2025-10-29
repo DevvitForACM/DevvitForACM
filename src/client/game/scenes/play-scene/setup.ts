@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { LevelData } from '@/game/level/level-schema';
 import { loadLevel } from '@/game/level/json-conversion';
-import { GAME_CONFIG, GAMEPLAY } from '@/constants/game-constants';
+import { GAMEPLAY } from '@/constants/game-constants';
 
 export async function fetchLevelData(levelName: string): Promise<LevelData | null> {
   try {
@@ -120,6 +120,13 @@ export function createAnimations(scene: Phaser.Scene): void {
 export function setupPhysics(scene: Phaser.Scene): void {
   if ((scene.physics as any)?.world) {
     scene.physics.world.gravity.y = GAMEPLAY.GRAVITY;
+    
+    // Set physics world bounds: walls at left (x=0) and bottom (y=0)
+    // This prevents players from falling through or going past these edges
+    const worldWidth = 3000; // Match CreateScene max width
+    const worldHeight = 2000; // Match CreateScene max height
+    scene.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    scene.physics.world.setBoundsCollision(true, true, true, true);
   }
 }
 

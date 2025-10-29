@@ -37,18 +37,19 @@ export default function Settings() {
       {/* Settings Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative inline-block rounded-md transition-transform hover:scale-110 active:scale-95 cursor-pointer font-mono"
+        className="relative inline-block hover:brightness-110 active:translate-y-1 transition-all cursor-pointer"
         style={{
-          background: '#6C63FF',
-          boxShadow: 'inset 3px 3px 0 #8B88FF, inset -3px -3px 0 #5A52CC, 3px 3px 0 #4A43AA',
+          background: '#6b7280',
+          border: 'none',
+          boxShadow: 'inset 3px 3px 0 #9ca3af, inset -3px -3px 0 #4b5563, 3px 3px 0 #374151',
+          fontFamily: '"Courier New", monospace',
           imageRendering: 'pixelated',
         }}
       >
         <div
-          className="px-3 py-2 sm:px-6 sm:py-3 text-white font-bold text-sm sm:text-base md:text-lg tracking-wider select-none"
+          className="px-3 py-2 sm:px-6 sm:py-3 text-white font-bold text-sm sm:text-base md:text-lg tracking-wider select-none uppercase"
           style={{
-            textShadow: '2px 2px 0 #4A43AA',
-            filter: 'contrast(1.2)',
+            textShadow: '2px 2px 0 #000',
           }}
         >
           ⚙️ SETTINGS
@@ -58,27 +59,33 @@ export default function Settings() {
       {/* Modal */}
       {open && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/85"
+          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/75"
           onClick={(e) => {
             // Only close if clicking the backdrop, not the modal content
             if (e.target === e.currentTarget) {
               setOpen(false);
             }
           }}
+          style={{
+            fontFamily: '"Courier New", monospace',
+            imageRendering: 'pixelated',
+          }}
         >
           <div
-            className="relative text-white p-4 sm:p-6 md:p-8 max-w-md w-full mx-2 sm:mx-4 bg-[#2A2A2A] font-mono max-h-[90vh] overflow-y-auto"
+            className="relative text-white p-4 sm:p-6 md:p-8 max-w-md w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto"
             style={{
-              boxShadow: 'inset 4px 4px 0 #444, inset -4px -4px 0 #111, 6px 6px 0 #000',
+              background: '#1f2937',
+              border: '4px solid #000',
+              boxShadow: 'inset 4px 4px 0 #374151, inset -4px -4px 0 #111827, 8px 8px 0 #000',
               imageRendering: 'pixelated',
             }}
           >
             {/* Title */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-6 sm:mb-8">
               <h2
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 tracking-[3px]"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-300 mb-2 tracking-[3px] uppercase"
                 style={{
-                  textShadow: '3px 3px 0 #333',
+                  textShadow: '3px 3px 0 #000',
                   imageRendering: 'pixelated',
                 }}
               >
@@ -87,68 +94,106 @@ export default function Settings() {
             </div>
 
             {/* BGM Volume */}
-            <div className="mb-6">
+            <div className="mb-6 sm:mb-8">
               <label className="block mb-3">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-3">
                   <span
-                    className="text-yellow-300 font-bold text-base sm:text-lg"
-                    style={{ textShadow: '2px 2px 0 #B8860B' }}
+                    className="text-yellow-300 font-bold text-base sm:text-lg uppercase tracking-wide"
+                    style={{ textShadow: '2px 2px 0 #000' }}
                   >
-                    🎵 MUSIC VOLUME
+                    🎵 MUSIC
                   </span>
-                  <span className="text-white font-bold text-lg">{settings.bgmVolume}%</span>
+                  <span
+                    className="text-white font-bold text-lg px-3 py-1"
+                    style={{
+                      background: '#4b5563',
+                      boxShadow: 'inset 2px 2px 0 #6b7280, 2px 2px 0 #374151',
+                      textShadow: '2px 2px 0 #000',
+                    }}
+                  >
+                    {settings.bgmVolume}%
+                  </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={settings.bgmVolume}
-                  onChange={(e) => handleBGMChange(Number(e.target.value))}
-                  onInput={(e) => handleBGMChange(Number((e.target as HTMLInputElement).value))}
-                  className="w-full h-3 rounded appearance-none cursor-pointer slider-bgm"
+                <div
                   style={{
-                    background: `linear-gradient(to right, #4CAF50 0%, #4CAF50 ${settings.bgmVolume}%, #444 ${settings.bgmVolume}%, #444 100%)`,
+                    background: '#111827',
+                    border: '3px solid #000',
+                    boxShadow: 'inset 2px 2px 0 #1f2937',
+                    padding: '4px',
                   }}
-                />
+                >
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={settings.bgmVolume}
+                    onChange={(e) => handleBGMChange(Number(e.target.value))}
+                    onInput={(e) => handleBGMChange(Number((e.target as HTMLInputElement).value))}
+                    className="w-full h-3 appearance-none cursor-pointer slider-bgm"
+                    style={{
+                      background: `linear-gradient(to right, #10b981 0%, #10b981 ${settings.bgmVolume}%, #374151 ${settings.bgmVolume}%, #374151 100%)`,
+                    }}
+                  />
+                </div>
               </label>
             </div>
 
             {/* SFX Volume */}
-            <div className="mb-6">
+            <div className="mb-6 sm:mb-8">
               <label className="block mb-3">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-3">
                   <span
-                    className="text-yellow-300 font-bold text-base sm:text-lg"
-                    style={{ textShadow: '2px 2px 0 #B8860B' }}
+                    className="text-yellow-300 font-bold text-base sm:text-lg uppercase tracking-wide"
+                    style={{ textShadow: '2px 2px 0 #000' }}
                   >
-                    🔊 SOUND EFFECTS
+                    🔊 SFX
                   </span>
-                  <span className="text-white font-bold text-lg">{settings.sfxVolume}%</span>
+                  <span
+                    className="text-white font-bold text-lg px-3 py-1"
+                    style={{
+                      background: '#4b5563',
+                      boxShadow: 'inset 2px 2px 0 #6b7280, 2px 2px 0 #374151',
+                      textShadow: '2px 2px 0 #000',
+                    }}
+                  >
+                    {settings.sfxVolume}%
+                  </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={settings.sfxVolume}
-                  onChange={(e) => handleSFXChange(Number(e.target.value))}
-                  onInput={(e) => handleSFXChange(Number((e.target as HTMLInputElement).value))}
-                  className="w-full h-3 rounded appearance-none cursor-pointer slider-sfx"
+                <div
                   style={{
-                    background: `linear-gradient(to right, #FF9800 0%, #FF9800 ${settings.sfxVolume}%, #444 ${settings.sfxVolume}%, #444 100%)`,
+                    background: '#111827',
+                    border: '3px solid #000',
+                    boxShadow: 'inset 2px 2px 0 #1f2937',
+                    padding: '4px',
                   }}
-                />
+                >
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={settings.sfxVolume}
+                    onChange={(e) => handleSFXChange(Number(e.target.value))}
+                    onInput={(e) => handleSFXChange(Number((e.target as HTMLInputElement).value))}
+                    className="w-full h-3 appearance-none cursor-pointer slider-sfx"
+                    style={{
+                      background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${settings.sfxVolume}%, #374151 ${settings.sfxVolume}%, #374151 100%)`,
+                    }}
+                  />
+                </div>
               </label>
             </div>
 
             {/* Close Button */}
             <button
               onClick={() => setOpen(false)}
-              className="w-full px-6 py-3 text-white font-bold text-lg tracking-wider transition-transform hover:scale-105 active:translate-y-1 bg-[#F44336]"
+              className="w-full px-6 py-3 text-white font-bold text-lg tracking-wider hover:brightness-110 active:translate-y-1 transition-all uppercase"
               style={{
-                boxShadow: 'inset 3px 3px 0 #EF5350, inset -3px -3px 0 #C62828, 3px 3px 0 #B71C1C',
-                textShadow: '2px 2px 0 #B71C1C',
+                background: '#dc2626',
+                border: 'none',
+                boxShadow: 'inset 3px 3px 0 #ef4444, inset -3px -3px 0 #991b1b, 3px 3px 0 #7f1d1d',
+                textShadow: '2px 2px 0 #000',
               }}
             >
               ✕ CLOSE

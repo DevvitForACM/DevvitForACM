@@ -48,8 +48,9 @@ export function buildLevelData(
     (e: any) => String(e.type).toLowerCase().trim() === 'player'
   );
   const playerX = playerEnt ? playerEnt.gridX * GRID.SIZE + GRID.SIZE / 2 : 200;
+  // Player is 100px tall (vs 60px for tiles), so adjust Y by (100/2 - 60/2) = 20px
   const playerY = playerEnt
-    ? toY(playerEnt.gridY)
+    ? toY(playerEnt.gridY) - 20
     : Math.max(200, height - 100);
 
   objects.push({
@@ -112,12 +113,13 @@ export function buildLevelData(
         visual: { texture: 'door' },
       });
     } else {
+      // Door is 100px tall (vs 60px for tiles), so adjust Y by (100/2 - 60/2) = 20px
       objects.push({
         id: 'goal_1',
         type: LevelObjectType.Goal,
         position: {
           x: doorEnt.gridX * GRID.SIZE + GRID.SIZE / 2,
-          y: toY(doorEnt.gridY),
+          y: toY(doorEnt.gridY) - 20,
         },
         visual: { texture: 'door' },
       });

@@ -110,7 +110,7 @@ export const ENTITY_SIZES = {
   },
   DOOR: {
     WIDTH: 60,
-    HEIGHT: 60,
+    HEIGHT: 100,
   },
   COIN: {
     WIDTH: 60,
