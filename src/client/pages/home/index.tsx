@@ -1,11 +1,16 @@
 import { useRouting } from '@/components/routing';
 import { useEffect } from 'react';
+import Settings from './settings';
+import { audioManager } from '@/services/audio-manager';
 
 export default function Home() {
-  const { navigate, location } = useRouting();
+  const { navigate } = useRouting();
 
-  useEffect(() => {}, [location]);
-
+  useEffect(() => {
+    console.log('🎵 Home page loaded, starting BGM with fade-in...');
+    audioManager.setBGMVolume(100);
+    audioManager.startBGMWithFadeIn(3000);
+  }, []);
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center"
@@ -16,6 +21,11 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
       }}
     >
+      {/* Settings - clicking the inner SETTINGS div opens the panel */}
+      <div className="absolute top-4 right-4">
+        <Settings />
+      </div>
+
       <div className="flex flex-col items-center gap-8">
         {/* Game Title */}
         <div className="text-center mb-4">
@@ -29,7 +39,7 @@ export default function Home() {
               filter: 'contrast(1.3) brightness(1.1)',
             }}
           >
-            NAME
+            SNOOVENTURE
           </h1>
           <div
             className="text-2xl font-bold text-yellow-300 tracking-wider animate-pulse"
@@ -106,6 +116,8 @@ export default function Home() {
           ></div>
         </button>
       </div>
+
+
     </div>
   );
 }

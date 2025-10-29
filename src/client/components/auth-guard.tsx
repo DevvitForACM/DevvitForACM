@@ -8,15 +8,48 @@ interface AuthGuardProps {
 export function AuthGuard({ children }: AuthGuardProps) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastClass, setToastClass] = useState('animate-fade-in');
 
   useEffect(() => {
     const handleAuthChange = (newUser: UserProfile | null) => {
       setUser(newUser);
       setIsLoading(false);
+      
+      // Show toast when user successfully logs in
+      if (newUser?.isAuthenticated) {
+        setShowToast(true);
+        setToastClass('animate-fade-in');
+        
+        // Start fade out after 2.5 seconds
+        setTimeout(() => {
+          setToastClass('animate-fade-out');
+        }, 2500);
+        
+        // Hide toast after fade out completes
+        setTimeout(() => {
+          setShowToast(false);
+        }, 3000);
+      }
+    };
+
+    const initAuth = async () => {
+      // Check if already authenticated
+      const currentUser = await authService.checkAuthStatus();
+      
+      // If not authenticated, automatically start authentication
+      if (!currentUser?.isAuthenticated) {
+        try {
+          await authService.startAuthentication();
+        } catch (error) {
+          console.error('Auto-authentication failed:', error);
+          setIsLoading(false);
+        }
+      }
     };
 
     authService.onAuthChange(handleAuthChange);
+    initAuth();
 
     return () => {
       authService.removeAuthListener(handleAuthChange);
