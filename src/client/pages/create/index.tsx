@@ -234,7 +234,7 @@ export default function Create() {
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
       // Player Y is just the center of their grid cell
-      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
       
       objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
@@ -376,7 +376,7 @@ export default function Create() {
     );
     const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
     // Player Y is just the center of their grid cell
-    let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+    const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
     
     objects.push({
       id: 'player_1',
@@ -525,7 +525,7 @@ export default function Create() {
       
       // Player Y is just the center of their grid cell
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      const playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
       
       console.log(`[Create] Player at gridX=${playerEnt?.gridX}, gridY=${playerEnt?.gridY}, worldY=${playerY}, height=${height}`);
       

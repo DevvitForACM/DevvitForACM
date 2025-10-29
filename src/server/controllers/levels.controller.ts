@@ -113,10 +113,51 @@ export const LevelController = {
       await db.set(`levels/${levelId}`, level);
       console.log('[createLevel] Saved successfully');
 
+      // Attempt to create subreddit post for public levels (await so caller can see result)
+      let postId: string | undefined;
+      let postError: string | undefined;
+      if (level.isPublic) {
+        try {
+          const { createLevelPost } = await import('../core/post');
+          const post = await createLevelPost(level, user.username);
+          postId = (post as any)?.id ?? undefined;
+          console.log('[createLevel] Reddit post created for level:', levelId, 'postId:', postId);
+        } catch (postErr) {
+          postError = postErr instanceof Error ? postErr.message : String(postErr);
+          console.warn('[createLevel] Failed to create Reddit post for level:', levelId, postErr);
+        }
+      }
+
+      // Post to creator's profile if not the owner (requires OAuth tokens with submit scope)
+      let profilePostId: string | undefined;
+      let profilePostError: string | undefined;
+      try {
+        const owner = process.env.OWNER_USERNAME || process.env.MY_REDDIT_USERNAME;
+        if (!owner || user.username?.toLowerCase() !== owner.toLowerCase()) {
+          const { RedisService } = await import('../services/redis.service');
+          const { submitProfilePost } = await import('../services/profile-post.service');
+          const svc = new RedisService(redis!);
+          const title = `Published a new level: ${level.name ?? level.id}`;
+          const deepLink = postId ? `https://redd.it/${postId}` : '';
+          const text = (level.description ? `${level.description}\n\n` : '') +
+            (deepLink ? `Play now: ${deepLink}\n\n` : `Level ID: ${level.id}\n\n`) +
+            `Tip: Open in the Reddit app for the best experience.`;
+          const result = await submitProfilePost(svc, user.uid, user.username, title, text);
+          profilePostId = result.id;
+        }
+      } catch (e) {
+        profilePostError = e instanceof Error ? e.message : String(e);
+        console.warn('[createLevel] Failed to create profile post:', profilePostError);
+      }
+
       return res.status(201).json({
         message: 'Level created successfully',
         id: levelId,
         level,
+        postId,
+        postError,
+        profilePostId,
+        profilePostError,
       });
     } catch (err) {
       console.error('Error creating level:', err);

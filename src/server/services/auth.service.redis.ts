@@ -56,7 +56,7 @@ interface UserProfile {
 /**
  * Exchange Reddit authorization code for access token
  */
-async function exchangeRedditCode(code: string): Promise<{ access_token: string;[k: string]: unknown }> {
+async function exchangeRedditCode(code: string): Promise<{ access_token: string; refresh_token?: string; expires_in?: number; scope?: string; token_type?: string; [k: string]: unknown }> {
   if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_REDIRECT_URI) {
     throw new Error('Reddit OAuth credentials not configured. Please check your .env file.');
   }
@@ -84,7 +84,7 @@ async function exchangeRedditCode(code: string): Promise<{ access_token: string;
   }
 
   const json = await res.json();
-  return json as { access_token: string;[k: string]: unknown };
+  return json as { access_token: string; refresh_token?: string; expires_in?: number; scope?: string; token_type?: string; [k: string]: unknown };
 }
 
 /**
@@ -169,6 +169,21 @@ export async function createOrGetUserFromReddit(
       console.error('Could not store user profile in Redis:', (dbErr as Error).message);
       throw dbErr;
     }
+  }
+
+  // Store OAuth tokens for posting to profile
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = tokenData.expires_in ? now + Number(tokenData.expires_in) : undefined;
+    await redisService.hSetAll(`users:${userId}:oauth`, {
+      access_token: accessToken,
+      refresh_token: tokenData.refresh_token ? String(tokenData.refresh_token) : '',
+      scope: tokenData.scope ? String(tokenData.scope) : '',
+      token_type: tokenData.token_type ? String(tokenData.token_type) : 'bearer',
+      expires_at: expiresAt ? String(expiresAt) : '',
+    });
+  } catch (e) {
+    console.warn('Failed storing OAuth tokens for user:', userId, e);
   }
 
   // Issue server JWT for API access

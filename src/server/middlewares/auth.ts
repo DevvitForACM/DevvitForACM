@@ -16,13 +16,15 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
 
   // 1) Prefer Devvit context
   if (devvitContext && devvitContext.userId) {
+    const ctxAny = devvitContext as any;
+    const usernameFromCtx = typeof ctxAny?.username === 'string' ? ctxAny.username : undefined;
     console.log('[requireAuth] Using Devvit context auth', {
       userId: devvitContext.userId,
-      username: devvitContext.username,
+      username: usernameFromCtx,
     });
     req.user = {
       uid: devvitContext.userId,
-      username: devvitContext.username || 'anonymous',
+      username: usernameFromCtx || 'anonymous',
     };
     return next();
   }

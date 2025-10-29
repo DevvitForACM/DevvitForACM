@@ -3,6 +3,7 @@ export type InitResponse = {
   postId: string;
   count: number;
   username: string;
+  postData?: Record<string, unknown> | null;
 };
 
 export type IncrementResponse = {

@@ -11,9 +11,12 @@ const appRoutes: AppRoute[] = [
 ];
 
 export default function App() {
+  // Derive initial route from hash (e.g., #/play?level=abc)
+  const hash = typeof window !== 'undefined' ? window.location.hash : '';
+  const initialPath = hash && hash.startsWith('#') ? hash.slice(1) : '/';
   return (
     <AuthGuard>
-      <RoutingController routes={appRoutes} />
+      <RoutingController routes={appRoutes} initialPath={initialPath} />
     </AuthGuard>
   );
 }
