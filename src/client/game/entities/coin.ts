@@ -25,10 +25,15 @@ export class Coin extends BaseEntity {
   }
 
   private createAnimations(): void {
-    if (!this.scene.anims.exists('coin-spin')) {
+    // Check if textures exist before creating animation
+    const coinFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.scene.textures.exists(`coin-${i}`))
+      .map((i) => ({ key: `coin-${i}` }));
+    
+    if (!this.scene.anims.exists('coin-spin') && coinFrames.length > 0) {
       this.scene.anims.create({
         key: 'coin-spin',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frames: coinFrames,
         frameRate: 4,
         repeat: -1,
       });

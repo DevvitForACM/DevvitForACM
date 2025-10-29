@@ -1,8 +1,9 @@
 import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
+import authRoutes from './routes/auth.routes';
+import levelRoutes from './routes/level.routes';
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
-import authRoutes from './routes/auth.routes';
 
 const app = express();
 
@@ -16,7 +17,7 @@ app.use(express.text());
 // Debug middleware to log all requests and current user
 app.use(async (req, _res, next) => {
   console.log(`🔍 SERVER: ${req.method} ${req.path} - ${new Date().toISOString()}`);
-  
+
   // Get current Reddit user from Devvit context
   try {
     const currentUser = await reddit.getCurrentUsername();
@@ -24,7 +25,7 @@ app.use(async (req, _res, next) => {
   } catch (error) {
     console.log(`👤 SERVER: Could not get current user: ${error}`);
   }
-  
+
   console.log(`🔍 SERVER: Query params:`, req.query);
   if (req.body && Object.keys(req.body).length > 0) {
     console.log('📦 SERVER: Body:', JSON.stringify(req.body, null, 2));
@@ -49,16 +50,14 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
     }
 
     try {
-      const [count, username] = await Promise.all([
-        redis.get('count'),
-        reddit.getCurrentUsername(),
-      ]);
+      const count = await redis.get('count');
+      const username = await reddit.getCurrentUsername() || 'anonymous';
 
       res.json({
         type: 'init',
         postId: postId,
         count: count ? parseInt(count) : 0,
-        username: username ?? 'anonymous',
+        username: username,
       });
     } catch (error) {
       console.error(`API Init Error for post ${postId}:`, error);
@@ -150,6 +149,33 @@ app.use(router);
 // Auth routes
 app.use('/api/auth', authRoutes);
 
+// Auth routes (Reddit OAuth)
+app.use('/auth', authRoutes);
+
+// Level routes
+app.use('/api/levels', levelRoutes);
+
+// Global error handler - must be after all routes
+app.use((err: Error, req: express.Request, res: express.Response) => {
+  console.error('[Global Error Handler] Error:', err);
+  console.error('[Global Error Handler] Stack:', err.stack);
+  console.error('[Global Error Handler] Request:', req.method, req.url);
+
+  if (!res.headersSent) {
+    res.status(500).json({
+      error: 'Internal server error',
+      message: err.message,
+      stack: err.stack
+    });
+  }
+});
+
+// Get port from environment variable with fallback
+const port = getServerPort();
+
+const server = createServer(app);
+server.on('error', (err) => console.error(`server error; ${err.stack}`));
+server.listen(port, () => console.log(`http://localhost:${port}`));
 // Health check endpoint
 app.get('/health', (_req, res) => {
   console.log('🏥 SERVER: Health check endpoint accessed');
@@ -184,8 +210,3 @@ app.use((req, res) => {
 });
 
 // Get port from environment variable with fallback
-const port = getServerPort();
-
-const server = createServer(app);
-server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port);
