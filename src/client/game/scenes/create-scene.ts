@@ -1,6 +1,23 @@
 import Phaser from 'phaser';
 import { createScrollControls } from '@/game/controls/camera-controls';
-import { GRID, CAMERA_CONFIG } from '@/constants/game-constants';
+import { GRID } from '@/constants/game-constants';
+
+import { createGrid, drawGrid } from './create-scene/grid';
+import { createAnimations } from './create-scene/animations';
+import {
+  setupKeyboardControls,
+  setupTouchControls,
+  handleKeyboardScroll,
+  calculateResponsiveZoom,
+  type CameraControls,
+} from './create-scene/controls';
+import {
+  placeEntity,
+  removeEntity,
+  clearAllEntities,
+  getAllEntities,
+  type EntityData,
+} from './create-scene/entities';
 
 const GRID_SIZE = GRID.SIZE;
 
@@ -15,17 +32,11 @@ export class CreateScene extends Phaser.Scene {
   private lastGridOffsetX: number = -1;
   private lastGridOffsetY: number = -1;
   private coordinateText?: Phaser.GameObjects.Text | undefined;
-  private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd?: {
-    W: Phaser.Input.Keyboard.Key;
-    A: Phaser.Input.Keyboard.Key;
-    S: Phaser.Input.Keyboard.Key;
-    D: Phaser.Input.Keyboard.Key;
-  };
-  private touchStartX: number = 0;
-  private touchStartY: number = 0;
-  private isSwiping: boolean = false;
+  private controls!: CameraControls;
   private isMobile: boolean = false;
+  private isDragging: boolean = false;
+  private lastDragGridX: number = -999;
+  private lastDragGridY: number = -999;
 
   constructor() {
     super({ key: 'CreateScene' });
@@ -42,34 +53,33 @@ export class CreateScene extends Phaser.Scene {
     this.load.image('grass-filler', `${base}grass-filler.png`);
     this.load.image('lava', `${base}lava.png`);
     this.load.image('door', `${base}door.png`);
+
     for (let i = 0; i <= 4; i++) {
       this.load.image(`player-idle-${i}`, `${base}idle/${i}.png`);
-    }
-
-    for (let i = 0; i <= 4; i++) {
       this.load.image(`player-jump-${i}`, `${base}jump/${i}.png`);
-    }
-
-    for (let i = 0; i <= 4; i++) {
       this.load.image(`coin-${i}`, `${base}coin/${i}.png`);
+      this.load.image(`enemy-${i}`, `${base}enemy/${i}.png`);
     }
 
-    // Enemy frames
-    for (let i = 0; i <= 4; i++) {
-      this.load.image(`enemy-${i}`, `${base}enemy/${i}.png`);
+    for (let i = 0; i <= 2; i++) {
+      this.load.image(`player-run-${i}`, `${base}run/${i}.png`);
     }
   }
 
   public create(): void {
-    this.drawGrid();
+    this.gridGraphics = createGrid(this);
+    this.drawGridInternal();
 
-    this.cameras.main.scrollY = -this.cameras.main.height;
-    const zoom = this.calculateResponsiveZoom();
+    // Position camera so gridY=0 (at pixelY≈-16) is visible near the bottom
+    // With scrollY = -(height - 2*GRID_SIZE), viewport shows Y from -(height-64) to 64
+    // This puts gridY=0 comfortably in view at the bottom portion
+    this.cameras.main.scrollX = 0;
+    this.cameras.main.scrollY = -(this.cameras.main.height - GRID.SIZE * 2);
+    const zoom = calculateResponsiveZoom(this.cameras.main);
     this.cameras.main.setZoom(zoom);
     this.cameras.main.roundPixels = true;
 
     this.input.mouse?.disableContextMenu();
-
     this.scale.on('resize', this.handleResize, this);
 
     this.isMobile =
@@ -78,107 +88,21 @@ export class CreateScene extends Phaser.Scene {
       ) ||
       ('ontouchstart' in window && navigator.maxTouchPoints > 0);
 
-    if (!this.isMobile && this.input.keyboard) {
-      this.cursors = this.input.keyboard.createCursorKeys();
-      this.wasd = {
-        W: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-        A: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-        S: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-        D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+    if (!this.isMobile) {
+      this.controls = setupKeyboardControls(this);
+    } else {
+      this.controls = {
+        touchStartX: 0,
+        touchStartY: 0,
+        isSwiping: false,
+        initialPinchDistance: 0,
+        initialZoom: 1,
       };
-    }
-
-    if (this.isMobile) {
-      this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-        if (!pointer.isDown) return;
-        const hitObjects = this.input.hitTestPointer(pointer);
-        const hitUI = hitObjects.some(
-          (obj: any) =>
-            obj.getData &&
-            (obj.getData('isScrollControl') || obj.getData('isUIElement'))
-        );
-        const hitEntity = hitObjects.some(
-          (obj: any) => obj.getData && obj.getData('entityId')
-        );
-
-        if (!hitUI && !hitEntity) {
-          this.touchStartX = pointer.x;
-          this.touchStartY = pointer.y;
-          this.isSwiping = true;
-        }
-      });
-
-      this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-        if (this.isSwiping && pointer.isDown) {
-          const deltaX = pointer.x - this.touchStartX;
-          const deltaY = pointer.y - this.touchStartY;
-
-          this.cameras.main.scrollX -= deltaX;
-          this.cameras.main.scrollY -= deltaY;
-
-          this.touchStartX = pointer.x;
-          this.touchStartY = pointer.y;
-        }
-      });
-
-      this.input.on('pointerup', () => {
-        this.isSwiping = false;
-      });
+      setupTouchControls(this, this.controls);
     }
 
     createScrollControls(this);
-
-    const coinFrames = [0, 1, 2, 3, 4]
-      .filter((i) => this.textures.exists(`coin-${i}`))
-      .map((i) => ({ key: `coin-${i}` }));
-
-    if (!this.anims.exists('coin-spin') && coinFrames.length > 0) {
-      this.anims.create({
-        key: 'coin-spin',
-        frames: coinFrames,
-        frameRate: 4,
-        repeat: -1,
-      });
-    }
-
-    const idleFrames = [0, 1, 2, 3, 4]
-      .filter((i) => this.textures.exists(`player-idle-${i}`))
-      .map((i) => ({ key: `player-idle-${i}` }));
-
-    if (!this.anims.exists('player-idle') && idleFrames.length > 0) {
-      this.anims.create({
-        key: 'player-idle',
-        frames: idleFrames,
-        frameRate: 8,
-        repeat: -1,
-      });
-    }
-
-    const jumpFrames = [0, 1, 2, 3, 4]
-      .filter((i) => this.textures.exists(`player-jump-${i}`))
-      .map((i) => ({ key: `player-jump-${i}` }));
-
-    if (!this.anims.exists('player-jump') && jumpFrames.length > 0) {
-      this.anims.create({
-        key: 'player-jump',
-        frames: jumpFrames,
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
-
-    // Enemy walk animation
-    const enemyFrames = [0, 1, 2, 3, 4]
-      .filter((i) => this.textures.exists(`enemy-${i}`))
-      .map((i) => ({ key: `enemy-${i}` }));
-    if (!this.anims.exists('enemy-walk') && enemyFrames.length > 0) {
-      this.anims.create({
-        key: 'enemy-walk',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `enemy-${i}` })),
-        frameRate: 6,
-        repeat: -1,
-      });
-    }
+    createAnimations(this);
 
     this.coordinateText = this.add.text(10, 70, '', {
       fontSize: '14px',
@@ -192,15 +116,7 @@ export class CreateScene extends Phaser.Scene {
     this.coordinateText.setData('isUIElement', true);
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      const wx = pointer.worldX;
-      const wy = pointer.worldY;
-      const gridX = Math.floor(wx / GRID_SIZE);
-
-      const gridY = -Math.floor(wy / GRID_SIZE) - 1;
-      if (this.coordinateText) {
-        this.coordinateText.setText(`Grid: (${gridX}, ${gridY})`);
-        this.coordinateText.setVisible(true);
-      }
+      this.handlePointerMove(pointer);
     });
 
     this.input.on('pointerout', () => {
@@ -210,59 +126,25 @@ export class CreateScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const hitObjects = this.input.hitTestPointer(pointer);
-      const hitUI = hitObjects.some(
-        (obj: any) =>
-          obj.getData &&
-          (obj.getData('isScrollControl') || obj.getData('isUIElement'))
-      );
-      const hitEntity = hitObjects.some(
-        (obj: any) => obj.getData && obj.getData('entityId')
-      );
+      this.handlePointerDown(pointer);
+    });
 
-      if (hitUI || this.isSwiping || hitEntity) return;
-
-      const wx = pointer.worldX;
-      const wy = pointer.worldY;
-      const gridX = Math.floor(wx / GRID_SIZE);
-
-      const gridY = -Math.floor(wy / GRID_SIZE) - 1;
-      this.placeAtGrid(gridX, gridY, 0);
+    this.input.on('pointerup', () => {
+      this.handlePointerUp();
     });
   }
 
-  private drawGrid(): void {
-    if (!this.cameras?.main) return;
+  private drawGridInternal(): void {
+    if (!this.gridGraphics || !this.cameras?.main) return;
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
     if (!width || !height || width <= 0 || height <= 0) return;
 
-    if (!this.gridGraphics || !this.gridGraphics.active) {
-      this.gridGraphics = this.add.graphics();
-      if (!this.gridGraphics) return;
-      this.gridGraphics.setScrollFactor(0);
-      this.gridGraphics.setDepth(-1);
-    }
-
-    this.gridGraphics.clear();
-    this.gridGraphics.lineStyle(1, 0xe5e7eb, 0.5);
-
-    const cam = this.cameras.main;
-    const scrollX = cam.scrollX;
-    const scrollY = cam.scrollY;
-    const offX = ((-scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
-    const offY = ((-scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
-    for (let x = offX; x <= width + GRID_SIZE; x += GRID_SIZE) {
-      this.gridGraphics.lineBetween(x, 0, x, height);
-    }
-    for (let y = offY; y <= height + GRID_SIZE; y += GRID_SIZE) {
-      this.gridGraphics.lineBetween(0, y, width, y);
-    }
-
+    const result = drawGrid(this.gridGraphics, this.cameras.main);
     this.currentWidth = width;
     this.currentHeight = height;
-    this.lastGridOffsetX = offX;
-    this.lastGridOffsetY = offY;
+    this.lastGridOffsetX = result.offsetX;
+    this.lastGridOffsetY = result.offsetY;
   }
 
   private handleResize(): void {
@@ -272,217 +154,125 @@ export class CreateScene extends Phaser.Scene {
     if (!newWidth || !newHeight || newWidth <= 0 || newHeight <= 0) return;
     if (newWidth === this.currentWidth && newHeight === this.currentHeight)
       return;
-    this.drawGrid();
-    // Recalculate zoom on resize
-    const zoom = this.calculateResponsiveZoom();
+    this.drawGridInternal();
+    const zoom = calculateResponsiveZoom(this.cameras.main);
     this.cameras.main.setZoom(zoom);
   }
 
-  private calculateResponsiveZoom(): number {
-    const viewportWidth = this.cameras.main.width;
-    
-    // For editor, use a responsive zoom based on viewport size
-    // Aim for comfortable editing experience
-    const baseZoom = CAMERA_CONFIG.ZOOM;
-    
-    // On mobile (smaller viewports), zoom out more
-    if (viewportWidth < 768) {
-      return Math.max(CAMERA_CONFIG.MIN_ZOOM, baseZoom * 0.6);
-    } else if (viewportWidth < 1024) {
-      return Math.max(CAMERA_CONFIG.MIN_ZOOM, baseZoom * 0.8);
+  private handlePointerMove(pointer: Phaser.Input.Pointer): void {
+    const wx = pointer.worldX;
+    const wy = pointer.worldY;
+    const gridX = Math.floor(wx / GRID_SIZE);
+    const gridY = -Math.floor(wy / GRID_SIZE) - 1;
+
+    if (this.coordinateText) {
+      this.coordinateText.setText(`Grid: (${gridX}, ${gridY})`);
+      this.coordinateText.setVisible(true);
     }
-    
-    return baseZoom;
+
+    // Handle drag-to-place/delete
+    if (this.isDragging && pointer.isDown) {
+      if (gridX !== this.lastDragGridX || gridY !== this.lastDragGridY) {
+        this.lastDragGridX = gridX;
+        this.lastDragGridY = gridY;
+        this.placeAtGrid(gridX, gridY);
+      }
+    }
   }
 
-  public placeEntity(data: any): void {
-    const pixelX = Math.round(data.gridX * GRID_SIZE + GRID_SIZE / 2);
+  private handlePointerDown(pointer: Phaser.Input.Pointer): void {
+    const hitObjects = this.input.hitTestPointer(pointer);
+    const hitUI = hitObjects.some(
+      (obj: any) =>
+        obj.getData &&
+        (obj.getData('isScrollControl') || obj.getData('isUIElement'))
+    );
+    const hitEntity = hitObjects.some(
+      (obj: any) => obj.getData && obj.getData('entityId')
+    );
 
-    const pixelY = Math.round(-(data.gridY + 1) * GRID_SIZE + GRID_SIZE / 2);
+    if (hitUI || this.controls.isSwiping) return;
 
-    const container = this.add.container(pixelX, pixelY);
+    const wx = pointer.worldX;
+    const wy = pointer.worldY;
+    const gridX = Math.floor(wx / GRID_SIZE);
+    const gridY = -Math.floor(wy / GRID_SIZE) - 1;
 
-    const t = String(data.type).toLowerCase().trim();
-
-    if (t === 'spike' && this.textures.exists('spike')) {
-      const sprite = this.add.image(0, 0, 'spike');
-      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      container.add(sprite);
-    } else if (t === 'coin' && this.textures.exists('coin-0')) {
-      const sprite = this.add.sprite(0, 0, 'coin-0');
-      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      try {
-        sprite.play('coin-spin');
-      } catch {}
-      container.add(sprite);
-
-      this.tweens.add({
-        targets: container,
-        y: pixelY - 3,
-        duration: 1200,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    } else if (t === 'spring' && this.textures.exists('spring')) {
-      const sprite = this.add.image(0, 0, 'spring');
-      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      container.add(sprite);
-    } else if (t === 'player' && this.textures.exists('player-idle-0')) {
-      const sprite = this.add.sprite(0, 0, 'player-idle-0');
-      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      try {
-        sprite.play('player-idle');
-      } catch {}
-      container.add(sprite);
-    } else if (t === 'enemy' && (this.textures.exists('enemy-1') || this.textures.exists('enemy-0'))) {
-      const startKey = this.textures.exists('enemy-1') ? 'enemy-1' : 'enemy-0';
-      const sprite = this.add.sprite(0, 0, startKey);
-      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
-      try {
-        sprite.play('enemy-walk');
-      } catch {}
-      container.add(sprite);
-    } else if (
-      (t === 'ground' || t === 'grass' || t === 'tile') &&
-      this.textures.exists('grass')
-    ) {
-      const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'grass');
-      sprite.setOrigin(0, 0);
-      sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
-      container.add(sprite);
-    } else if (
-      t === 'dirt' &&
-      (this.textures.exists('ground') || this.textures.exists('grass-filler'))
-    ) {
-      const key = this.textures.exists('ground') ? 'ground' : 'grass-filler';
-      const dirt = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, key);
-      dirt.setOrigin(0, 0);
-      dirt.setDisplaySize(GRID_SIZE, GRID_SIZE);
-      container.add(dirt);
-    } else if (t === 'lava' && this.textures.exists('lava')) {
-      const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'lava');
-      sprite.setOrigin(0, 0);
-      sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
-      container.add(sprite);
-    } else if (t === 'door' && this.textures.exists('door')) {
-      const sprite = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, 'door');
-      sprite.setOrigin(0, 0);
-      sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
-      container.add(sprite);
-    } else {
-      const colorValue =
-        parseInt(String(data.color).replace('#', ''), 16) || 0x64748b;
-      const rect = this.add.rectangle(
-        0,
-        0,
-        GRID_SIZE - 4,
-        GRID_SIZE - 4,
-        colorValue
-      );
-      const text = this.add.text(0, 0, String(data.icon ?? '?'), {
-        fontSize: '20px',
-        color: '#fff',
-      });
-      text.setOrigin(0.5, 0.5);
-      container.add([rect, text]);
+    // If clicking on an entity with eraser selected, delete it
+    if (hitEntity) {
+      const selectedType = this.registry.get('selectedEntityType') as string | null;
+      if (selectedType === 'eraser') {
+        const entityContainer = hitObjects.find(
+          (obj: any) => obj.getData && obj.getData('entityId')
+        ) as Phaser.GameObjects.Container;
+        if (entityContainer) {
+          const entityId = entityContainer.getData('entityId') as string;
+          this.removeEntity(entityId);
+          this.isDragging = true;
+          this.lastDragGridX = gridX;
+          this.lastDragGridY = gridY;
+        }
+      }
+      return;
     }
 
-    container.setSize(GRID_SIZE, GRID_SIZE);
-    container.setInteractive();
-    container.setData('isBaseline', !!data.isBaseline);
+    // Start drag placement/deletion
+    this.isDragging = true;
+    this.lastDragGridX = gridX;
+    this.lastDragGridY = gridY;
+    this.placeAtGrid(gridX, gridY);
+  }
 
-    container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      pointer.event?.preventDefault();
-      pointer.event?.stopPropagation();
+  private handlePointerUp(): void {
+    this.isDragging = false;
+    this.lastDragGridX = -999;
+    this.lastDragGridY = -999;
+  }
 
-      const entityId = container.getData('entityId') as string;
-      const gridX = container.getData('gridX') as number;
-      const gridY = container.getData('gridY') as number;
-      const currentEntityType = container.getData('entityType') as string;
-
-      const sel =
-        (this.registry.get('selectedEntityType') as string | null) ?? null;
-      const entityTypes = this.registry.get('entityTypes') as
-        | Record<string, { name: string; color: string; icon: string }>
-        | undefined;
-
-      const isRightClick = pointer.rightButtonDown() || pointer.button === 2;
-
-      if (isRightClick) {
-        if (sel && entityTypes) {
-          let key = sel;
-          if (!entityTypes[key]) {
-            const match = Object.keys(entityTypes).find(
-              (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
-            );
-            if (match) key = match;
-          }
-
-          const info = entityTypes[key];
-          if (info && key.toLowerCase() !== currentEntityType.toLowerCase()) {
-            this.removeEntity(entityId);
-            this.placeEntity({
-              type: key,
-              gridX,
-              gridY,
-              name: info.name,
-              color: info.color,
-              icon: info.icon,
-            });
-          }
-        } else {
-          this.removeEntity(entityId);
-        }
-        return;
-      }
-
-      if (!sel) {
-        this.removeEntity(entityId);
-      } else if (entityTypes) {
-        let key = sel;
-        if (!entityTypes[key]) {
-          const match = Object.keys(entityTypes).find(
-            (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
-          );
-          if (match) key = match;
-        }
-
-        const info = entityTypes[key];
-        if (info && key.toLowerCase() !== currentEntityType.toLowerCase()) {
-          this.removeEntity(entityId);
-          this.placeEntity({
-            type: key,
-            gridX,
-            gridY,
-            name: info.name,
-            color: info.color,
-            icon: info.icon,
-          });
-        }
-      }
-    });
-
-    const entityId = `${data.type}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-    container.setData('entityId', entityId);
-    container.setData('gridX', data.gridX);
-    container.setData('gridY', data.gridY);
-    container.setData('entityType', data.type);
-
-    this.placedEntities.set(entityId, container);
-    this.occupiedCells.add(`${data.gridX},${data.gridY}`);
-    this.events.emit('entity-placed');
+  public placeEntity(data: EntityData): void {
+    placeEntity(
+      this,
+      data,
+      this.placedEntities,
+      this.occupiedCells,
+      () => this.events.emit('entity-placed'),
+      (entityId) => this.removeEntity(entityId),
+      (gridX, gridY, newType) => this.replaceEntity(gridX, gridY, newType)
+    );
   }
 
   private removeEntity(entityId: string): void {
-    const container = this.placedEntities.get(entityId);
-    if (!container) return;
-    const gridX = container.getData('gridX');
-    const gridY = container.getData('gridY');
-    this.occupiedCells.delete(`${gridX},${gridY}`);
-    this.placedEntities.delete(entityId);
-    container.destroy();
-    this.events.emit('entity-removed');
+    removeEntity(entityId, this.placedEntities, this.occupiedCells, () =>
+      this.events.emit('entity-removed')
+    );
+  }
+
+  private replaceEntity(gridX: number, gridY: number, newType: string): void {
+    const entityTypes = this.registry.get('entityTypes') as
+      | Record<string, { name: string; color: string; icon: string }>
+      | undefined;
+
+    if (!entityTypes) return;
+
+    let key = newType;
+    if (!entityTypes[key]) {
+      const match = Object.keys(entityTypes).find(
+        (k) => k.toLowerCase().trim() === key.toLowerCase().trim()
+      );
+      if (match) key = match;
+    }
+
+    const info = entityTypes[key];
+    if (info) {
+      this.placeEntity({
+        type: key,
+        gridX,
+        gridY,
+        name: info.name,
+        color: info.color,
+        icon: info.icon,
+      });
+    }
   }
 
   public setSelectedEntityType(type: string | null): void {
@@ -491,38 +281,16 @@ export class CreateScene extends Phaser.Scene {
   }
 
   public clearAllEntities(): void {
-    this.placedEntities.forEach((c) => {
-      if (c && c.active) c.destroy();
-    });
-
-    this.children.list.forEach((child) => {
-      const c = child as Phaser.GameObjects.Container;
-      if (c?.getData && c.getData('entityId')) {
-        if (c.active) c.destroy();
-      }
-    });
-
-    this.placedEntities.clear();
-    this.occupiedCells.clear();
-    this.events.emit('entities-cleared');
+    clearAllEntities(this, this.placedEntities, this.occupiedCells, () =>
+      this.events.emit('entities-cleared')
+    );
   }
 
-  public getAllEntities(): any[] {
-    const entities: any[] = [];
-    this.placedEntities.forEach((c) => {
-      entities.push({
-        type: c.getData('entityType'),
-        gridX: c.getData('gridX'),
-        gridY: c.getData('gridY'),
-      });
-    });
-    return entities;
+  public getAllEntities(): EntityData[] {
+    return getAllEntities(this.placedEntities);
   }
 
-  /** Restore a snapshot captured via getAllEntities() */
-  public restoreSnapshot(
-    snapshot: Array<{ type: string; gridX: number; gridY: number }>
-  ): void {
+  public restoreSnapshot(snapshot: EntityData[]): void {
     if (!Array.isArray(snapshot)) return;
 
     this.clearAllEntities();
@@ -543,14 +311,15 @@ export class CreateScene extends Phaser.Scene {
         if (match) matchedKey = match;
       }
       const info = entityTypes ? entityTypes[matchedKey] : undefined;
-      this.placeEntity({
+      const entityData: EntityData = {
         type: matchedKey,
         gridX: e.gridX,
         gridY: e.gridY,
-        name: info?.name,
-        color: info?.color,
-        icon: info?.icon,
-      });
+      };
+      if (info?.name) entityData.name = info.name;
+      if (info?.color) entityData.color = info.color;
+      if (info?.icon) entityData.icon = info.icon;
+      this.placeEntity(entityData);
     }
   }
 
@@ -568,21 +337,7 @@ export class CreateScene extends Phaser.Scene {
   public override update(_time: number, delta: number): void {
     if (this.cameras?.main) {
       if (!this.isMobile) {
-        const keyboardSpeed = 5;
-        if (this.cursors || this.wasd) {
-          if (this.cursors?.left.isDown || this.wasd?.A.isDown) {
-            this.cameras.main.scrollX -= keyboardSpeed * (delta / 16);
-          }
-          if (this.cursors?.right.isDown || this.wasd?.D.isDown) {
-            this.cameras.main.scrollX += keyboardSpeed * (delta / 16);
-          }
-          if (this.cursors?.up.isDown || this.wasd?.W.isDown) {
-            this.cameras.main.scrollY -= keyboardSpeed * (delta / 16);
-          }
-          if (this.cursors?.down.isDown || this.wasd?.S.isDown) {
-            this.cameras.main.scrollY += keyboardSpeed * (delta / 16);
-          }
-        }
+        handleKeyboardScroll(this.cameras.main, this.controls, delta);
       }
 
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
@@ -596,13 +351,35 @@ export class CreateScene extends Phaser.Scene {
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
       const offY = ((-cam.scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
       if (offX !== this.lastGridOffsetX || offY !== this.lastGridOffsetY) {
-        this.drawGrid();
+        this.drawGridInternal();
       }
     }
   }
 
-  private placeAtGrid(gridX: number, gridY: number, _attempt: number): void {
+  private placeAtGrid(gridX: number, gridY: number): void {
     if (gridX < 0) return;
+
+    const sel =
+      (this.registry.get('selectedEntityType') as string | null) ?? null;
+    if (!sel) return;
+
+    // Handle eraser mode - delete entity at this grid position
+    if (sel === 'eraser') {
+      const cellKey = `${gridX},${gridY}`;
+      if (this.occupiedCells.has(cellKey)) {
+        // Find the entity at this position
+        const entityToDelete = Array.from(this.placedEntities.values()).find(
+          (container) =>
+            container.getData('gridX') === gridX &&
+            container.getData('gridY') === gridY
+        );
+        if (entityToDelete) {
+          const entityId = entityToDelete.getData('entityId') as string;
+          this.removeEntity(entityId);
+        }
+      }
+      return;
+    }
 
     const cellKey = `${gridX},${gridY}`;
     if (this.occupiedCells.has(cellKey)) return;
@@ -610,9 +387,7 @@ export class CreateScene extends Phaser.Scene {
     const entityTypes = this.registry.get('entityTypes') as
       | Record<string, { name: string; color: string; icon: string }>
       | undefined;
-    const sel =
-      (this.registry.get('selectedEntityType') as string | null) ?? null;
-    if (!entityTypes || !sel) return;
+    if (!entityTypes) return;
 
     let key = sel;
     if (!entityTypes[key]) {

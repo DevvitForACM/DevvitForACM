@@ -1,0 +1,113 @@
+/* Ensure sliders are interactive */
+.slider-bgm,
+.slider-sfx {
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  border-radius: 6px;
+  position: relative;
+}
+
+/* Ensure slider track is always visible in WebKit */
+.slider-bgm::-webkit-slider-runnable-track,
+.slider-sfx::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 12px;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 6px;
+}
+
+/* Ensure slider track is always visible in Firefox */
+.slider-bgm::-moz-range-track,
+.slider-sfx::-moz-range-track {
+  width: 100%;
+  height: 12px;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 6px;
+}
+
+/* Slider thumb styling for Webkit browsers (Chrome, Safari, Edge) */
+.slider-bgm::-webkit-slider-thumb,
+.slider-sfx::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  cursor: grab;
+  border-radius: 50%;
+  border: 3px solid #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
+}
+
+.slider-bgm::-webkit-slider-thumb:active,
+.slider-sfx::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.slider-bgm::-webkit-slider-thumb:hover,
+.slider-sfx::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.7);
+}
+
+.slider-bgm::-webkit-slider-thumb:active,
+.slider-sfx::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+  background: #f0f0f0;
+}
+
+/* Slider thumb styling for Firefox */
+.slider-bgm::-moz-range-thumb,
+.slider-sfx::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  cursor: grab;
+  border-radius: 50%;
+  border: 3px solid #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
+}
+
+.slider-bgm::-moz-range-thumb:active,
+.slider-sfx::-moz-range-thumb:active {
+  cursor: grabbing;
+}
+
+.slider-bgm::-moz-range-thumb:hover,
+.slider-sfx::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.7);
+}
+
+.slider-bgm::-moz-range-thumb:active,
+.slider-sfx::-moz-range-thumb:active {
+  transform: scale(1.1);
+  background: #f0f0f0;
+}
+
+
+/* Add specific color highlights for active thumbs */
+.slider-bgm::-webkit-slider-thumb {
+  border-color: #4CAF50;
+}
+
+.slider-sfx::-webkit-slider-thumb {
+  border-color: #FF9800;
+}
+
+.slider-bgm::-moz-range-thumb {
+  border-color: #4CAF50;
+}
+
+.slider-sfx::-moz-range-thumb {
+  border-color: #FF9800;
+}
+

@@ -1,0 +1,332 @@
+# Project Context - AI Understanding of DevvitForACM
+
+project:
+  name: DevvitForACM
+  type: 2D Platformer Game
+  platform: Reddit Devvit
+  status: In Development
+  repository: https://github.com/[username]/DevvitForACM
+
+# Technology Stack
+tech_stack:
+  frontend:
+    framework: React 18
+    game_engine: Phaser 3
+    language: TypeScript
+    build_tool: Vite
+    styling: Tailwind CSS (inferred from className usage)
+    state: React Context + Local State
+    
+  backend:
+    runtime: Node.js
+    framework: Express/Fastify (to be confirmed)
+    language: TypeScript
+    database: Redis
+    authentication: JWT
+    
+  development:
+    package_manager: npm
+    linter: ESLint
+    formatter: Prettier (to be confirmed)
+    type_checking: TypeScript strict mode
+    
+  deployment:
+    platform: Reddit Devvit
+    hosting: Devvit serverless
+
+# Project Structure Understanding
+architecture:
+  client:
+    location: src/client/
+    description: React frontend and Phaser game code
+    key_directories:
+      - pages/: Route-based page components (home, play, create)
+      - components/: Reusable React components
+      - game/: Phaser game code
+        - scenes/: Game scenes (PlayScene, CreateScene)
+        - entities/: Game entity classes
+        - level/: Level data structures and parsing
+      - services/: External integrations (auth, audio)
+      - hooks/: Custom React hooks
+      - config/: Configuration files
+      
+  server:
+    location: src/server/
+    description: Backend API and business logic
+    key_directories:
+      - controllers/: HTTP request handlers
+      - services/: Business logic layer
+      - models/: Data structures
+      - routes/: API route definitions
+      - middlewares/: Request processing middleware
+      
+  shared:
+    location: src/shared/
+    description: Code shared between client and server
+    contains:
+      - types/: TypeScript type definitions
+      
+  assets:
+    location: assets/
+    description: Game assets (sprites, audio, levels)
+    subdirectories:
+      - audio/: Sound effects and music
+      - levels/: Level JSON files
+      - backgrounds/: Background images
+      - [entity]/: Sprite frames for each entity type
+
+# Domain Knowledge
+game_mechanics:
+  grid_system:
+    cell_size: 60x60 pixels
+    coordinate_system: "Standard cartesian (0,0 at bottom-left)"
+    usage: Level editor uses grid for precise entity placement
+    
+  player:
+    size: "60x100 pixels (1x1.67 grid cells)"
+    controls:
+      desktop: "Arrow keys, WASD, Space to jump"
+      mobile: "Virtual joystick + jump button"
+    physics:
+      gravity: 800
+      move_speed: 200
+      jump_velocity: "~1.8 tile height"
+      collision_body: "60x100px (narrower than sprite for better feel)"
+    animations:
+      - idle: 5 frames at 8fps
+      - run: 3 frames at 10fps
+      - jump: 5 frames (launch, air, land)
+      
+  entities:
+    platform:
+      types: [grass, ground/dirt, grass-filler]
+      physics: Static (no velocity)
+      collision: Player can stand on them
+      
+    spike:
+      size: 60x60 pixels
+      collision_body: "90% width, 70% height (offset to top)"
+      behavior: Instant death on contact
+      
+    lava:
+      size: 60x60 pixels
+      behavior: Instant death on contact
+      visual: Tiling texture
+      
+    spring:
+      size: 60x60 pixels
+      collision_body: "110% height (extended upward)"
+      behavior: "Bounces player ~3 tiles high"
+      cooldown: 250ms to prevent spam
+      
+    coin:
+      size: 60x60 pixels
+      animation: 5 frames at 4fps (spin)
+      behavior: Collected on touch, plays sound, disappears
+      bonus: Idle floating animation
+      
+    door:
+      size: 60x60 pixels
+      behavior: Level exit, triggers level complete
+      
+    enemy:
+      size: 60x60 pixels
+      animation: 5 frames at 6fps (walk)
+      behavior: Patrols between two points, turns at edges
+      ai: Only walks on dirt/grass, ignores other platforms
+      collision: Damages player on contact
+      properties:
+        - patrolLeft: Left boundary
+        - patrolRight: Right boundary
+        - patrolSpeed: Movement speed (default 30)
+
+# Common Patterns
+patterns:
+  scene_lifecycle:
+    phaser_scenes:
+      - preload(): Load assets
+      - init(data): Initialize scene data/state
+      - create(): Set up game objects
+      - update(time, delta): Game loop (60fps)
+      - shutdown(): Clean up resources
+      
+  modular_scenes:
+    description: "Scenes split into functional modules"
+    example: |
+      PlayScene structure:
+        - play-scene.ts: Main scene class
+        - play-scene/setup.ts: Asset loading, animations
+        - play-scene/camera.ts: Camera logic
+        - play-scene/controls.ts: Input handling
+        - play-scene/collisions.ts: Physics collisions
+        - play-scene/ui.ts: UI overlays
+        - play-scene/enemies.ts: Enemy AI
+        
+  react_phaser_integration:
+    description: "React components wrap Phaser game"
+    pattern: |
+      1. React component creates Phaser.Game instance
+      2. Pass config to Phaser
+      3. Expose scene methods for React to call
+      4. Use refs to access game instance
+      5. Clean up on unmount
+      
+  level_data_flow:
+    save: "React UI → Phaser Scene → API → Redis"
+    load: "Redis → API → Phaser Scene → Game Objects"
+    format: JSON with Zod validation
+    
+  mobile_detection:
+    method: "navigator.userAgent + maxTouchPoints"
+    usage: "Conditional rendering of touch controls"
+
+# Key Files Reference
+important_files:
+  - path: src/client/game/scenes/play-scene.ts
+    purpose: Main gameplay scene
+    key_features: [player control, collision detection, game over]
+    
+  - path: src/client/game/scenes/create-scene.ts
+    purpose: Level editor scene
+    key_features: [grid rendering, entity placement, save/load]
+    
+  - path: src/client/game/level/json-conversion.ts
+    purpose: Convert between JSON level data and Phaser objects
+    key_features: [entity factory, physics body setup]
+    
+  - path: src/client/components/virtual-joystick.tsx
+    purpose: Mobile touch control component
+    key_features: [analog joystick, jump button]
+    
+  - path: src/client/constants/game-constants.ts
+    purpose: Game configuration and constants
+    key_features: [physics values, grid size, entity sizes]
+    
+  - path: src/server/services/redis.service.ts
+    purpose: Redis database interface
+    key_features: [CRUD operations for levels/sessions]
+
+# Common Issues and Solutions
+known_issues:
+  typescript_strict_mode:
+    issue: "exactOptionalPropertyTypes causes issues with optional properties"
+    solution: "Use 'delete obj.prop' instead of 'obj.prop = undefined'"
+    
+  collision_precision:
+    issue: "Default collision boxes too large/inaccurate"
+    solution: "Use setSize() and setOffset() for custom hitboxes"
+    
+  mobile_gestures:
+    issue: "Gesture conflicts (pan vs place, zoom vs drag)"
+    solution: "Track pointer count, disable conflicting actions"
+    
+  spring_spam:
+    issue: "Rapid re-triggers of spring bounce"
+    solution: "Implement cooldown timer (250ms)"
+    
+  camera_zoom:
+    issue: "Fixed zoom doesn't work well on all screen sizes"
+    solution: "Calculate responsive zoom based on viewport and level size"
+
+# Development Workflow
+workflow:
+  setup:
+    - npm install
+    - Ensure Redis is running
+    - Configure environment variables
+    - npm run dev
+    
+  testing:
+    levels: Use test-* level files in assets/levels/
+    scenarios: Each test level focuses on specific mechanic
+    
+  debugging:
+    phaser: Use scene.registry and getData() for debugging
+    react: React DevTools
+    network: Browser DevTools Network tab
+    
+  deployment:
+    - Build client: npm run build
+    - Build server: npm run build:server
+    - Deploy to Devvit platform
+
+# Conventions
+conventions:
+  entity_data:
+    description: "Entities store custom data with getData/setData"
+    common_keys:
+      - entityId: Unique identifier
+      - entityType: Type string (player, enemy, spike, etc.)
+      - gridX, gridY: Grid coordinates
+      - patrolLeft, patrolRight, patrolSpeed: Enemy patrol data
+      - isPlatform, isSpike, isSpring, etc.: Type flags
+      
+  scene_registry:
+    description: "Shared state across scenes"
+    usage: "scene.registry.set/get"
+    common_keys:
+      - selectedEntityType: Currently selected entity in editor
+      - entityTypes: Entity metadata (name, color, icon)
+      
+  safe_positions:
+    description: "Track player's last safe position for respawn"
+    storage: localStorage + scene state
+    update_condition: "Only on stable ground (blocked.down)"
+    
+  collision_layers:
+    platforms: Colliders (solid)
+    hazards: Overlaps (no physical collision)
+    items: Overlaps (collectibles)
+
+# AI Assistance Guidelines
+ai_guidelines:
+  when_writing_game_logic:
+    - Consider both desktop and mobile input
+    - Always clean up physics bodies and event listeners
+    - Use getData/setData for entity properties
+    - Check for null/undefined before accessing Phaser objects
+    
+  when_writing_react:
+    - Use TypeScript interfaces for props
+    - Consider mobile responsiveness
+    - Handle loading and error states
+    - Clean up in useEffect return
+    
+  when_writing_api:
+    - Validate input with Zod schemas
+    - Authenticate protected routes
+    - Handle Redis connection errors
+    - Return consistent error format
+    
+  when_refactoring:
+    - Maintain existing public API
+    - Update related tests
+    - Keep related code together
+    - Don't break Phaser scene lifecycle
+    
+  when_debugging:
+    - Check browser console for Phaser errors
+    - Verify asset paths are correct
+    - Confirm physics bodies are created
+    - Test on both desktop and mobile
+
+# Future Roadmap
+roadmap:
+  short_term:
+    - Complete backend API integration
+    - Implement leaderboard system
+    - Add authentication
+    - Polish mobile experience
+    
+  medium_term:
+    - Multiplayer support
+    - Level sharing
+    - User profiles
+    - Advanced editor features
+    
+  long_term:
+    - Custom entity system
+    - Modding support
+    - Tournament mode
+    - Mobile app version
+

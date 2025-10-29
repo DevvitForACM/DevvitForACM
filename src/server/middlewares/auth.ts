@@ -12,17 +12,11 @@ export interface AuthedRequest extends Request {
 }
 
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
-  console.log('[requireAuth] Starting auth check...');
-
   // 1) Prefer Devvit context
   if (devvitContext && devvitContext.userId) {
-    console.log('[requireAuth] Using Devvit context auth', {
-      userId: devvitContext.userId,
-      username: devvitContext.username,
-    });
     req.user = {
       uid: devvitContext.userId,
-      username: devvitContext.username || 'anonymous',
+      username: (devvitContext as any).username || 'anonymous',
     };
     return next();
   }
@@ -32,7 +26,6 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
     if (devvitReddit && typeof devvitReddit.getCurrentUsername === 'function') {
       const username = await devvitReddit.getCurrentUsername();
       if (username) {
-        console.log('[requireAuth] Using reddit.getCurrentUsername() auth', { username });
         req.user = { uid: `reddit:${username}`, username };
         return next();
       }
@@ -50,10 +43,8 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
   }
 
   // 4) JWT Bearer token fallback
-  console.log('[requireAuth] Falling back to JWT auth');
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) {
-    console.log('[requireAuth] No authorization header found');
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

@@ -15,25 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware for plain text body parsing
 app.use(express.text());
 
-// Debug middleware to log all requests and current user
-app.use(async (req, _res, next) => {
-  console.log(`🔍 SERVER: ${req.method} ${req.path} - ${new Date().toISOString()}`);
-
-  // Get current Reddit user from Devvit context
-  try {
-    const currentUser = await reddit.getCurrentUsername();
-    console.log(`👤 SERVER: Current Reddit user: ${currentUser || 'anonymous'}`);
-  } catch (error) {
-    console.log(`👤 SERVER: Could not get current user: ${error}`);
-  }
-
-  console.log(`🔍 SERVER: Query params:`, req.query);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('📦 SERVER: Body:', JSON.stringify(req.body, null, 2));
-  }
-  next();
-});
-
 const router = express.Router();
 
 router.get<{ postId: string }, InitResponse | { status: string; message: string }>(
@@ -158,7 +139,6 @@ app.use('/api/leaderboard', leaderboardRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
-  console.log('🏥 SERVER: Health check endpoint accessed');
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -169,7 +149,6 @@ app.get('/health', (_req, res) => {
 
 // Catch-all route for debugging
 app.use((req, res) => {
-  console.log(`❓ SERVER: Unhandled route accessed: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     error: 'Route not found',
     method: req.method,
@@ -195,4 +174,4 @@ const port = getServerPort();
 // Create and start the server
 const server = createServer(app);
 server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port, () => console.log(`http://localhost:${port}`));
+server.listen(port);

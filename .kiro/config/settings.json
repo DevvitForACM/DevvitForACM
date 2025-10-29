@@ -1,0 +1,229 @@
+{
+  "$schema": "https://kiro.help/schemas/settings.json",
+  "project": {
+    "name": "DevvitForACM",
+    "version": "0.1.0",
+    "description": "2D Platformer Game for Reddit Devvit",
+    "license": "MIT"
+  },
+  "kiro": {
+    "version": "1.0.0",
+    "enabled": true,
+    "features": {
+      "spec_driven_development": true,
+      "agent_hooks": true,
+      "steering_rules": true,
+      "auto_documentation": true,
+      "intelligent_code_gen": true
+    }
+  },
+  "specs": {
+    "auto_update": true,
+    "sync_with_codebase": true,
+    "validation": {
+      "on_save": true,
+      "on_commit": true
+    },
+    "formats": {
+      "requirements": "markdown",
+      "design": "markdown",
+      "tasks": "markdown"
+    }
+  },
+  "hooks": {
+    "enabled": true,
+    "concurrent_limit": 3,
+    "timeout": 120000,
+    "retry": {
+      "max_attempts": 2,
+      "delay": 1000
+    },
+    "hooks_directory": ".kiro/hooks",
+    "custom_hooks": [
+      "pre-commit.json",
+      "post-save.json",
+      "on-error.json"
+    ]
+  },
+  "steering": {
+    "enabled": true,
+    "rules_directory": ".kiro/steering",
+    "active_rules": [
+      "coding-standards.yaml",
+      "project-context.yaml"
+    ],
+    "enforcement_level": "strict",
+    "auto_suggest_improvements": true
+  },
+  "ai": {
+    "model": "gpt-4",
+    "temperature": 0.7,
+    "max_tokens": 4096,
+    "prompts_directory": ".kiro/config/ai-prompts.yaml",
+    "context": {
+      "include_specs": true,
+      "include_recent_commits": 10,
+      "include_open_files": true,
+      "include_linter_errors": true
+    },
+    "code_generation": {
+      "style": "project-specific",
+      "include_tests": true,
+      "include_docs": true,
+      "follow_patterns": true
+    }
+  },
+  "documentation": {
+    "auto_generate": {
+      "api_docs": true,
+      "component_docs": true,
+      "type_docs": true
+    },
+    "formats": ["markdown", "html"],
+    "output_directory": "docs/generated"
+  },
+  "testing": {
+    "framework": "jest",
+    "coverage": {
+      "threshold": 80,
+      "reports": ["html", "lcov", "text-summary"]
+    },
+    "auto_generate_tests": true,
+    "run_on_save": false,
+    "run_on_commit": true
+  },
+  "linting": {
+    "enabled": true,
+    "fix_on_save": true,
+    "tools": ["eslint", "prettier"],
+    "rules": "project",
+    "ignore_patterns": ["node_modules", "dist", "build", "coverage"]
+  },
+  "formatting": {
+    "enabled": true,
+    "tool": "prettier",
+    "format_on_save": true,
+    "config": {
+      "semi": true,
+      "singleQuote": true,
+      "trailingComma": "es5",
+      "printWidth": 100,
+      "tabWidth": 2
+    }
+  },
+  "git": {
+    "commit_template": ".kiro/templates/commit-template.txt",
+    "branch_naming": {
+      "enforce": true,
+      "pattern": "<type>/<description>"
+    },
+    "hooks": {
+      "pre_commit": true,
+      "pre_push": true,
+      "commit_msg": true
+    }
+  },
+  "notifications": {
+    "enabled": true,
+    "channels": ["console", "desktop"],
+    "levels": ["error", "warning", "info"],
+    "on_events": [
+      "hook_failure",
+      "build_error",
+      "test_failure",
+      "deployment_complete"
+    ]
+  },
+  "integrations": {
+    "github": {
+      "enabled": false,
+      "auto_link_issues": true,
+      "pr_templates": true
+    },
+    "vscode": {
+      "enabled": true,
+      "extensions": [
+        "kiro.kiro-vscode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    },
+    "discord": {
+      "enabled": false,
+      "webhook_url": "${DISCORD_WEBHOOK_URL}"
+    }
+  },
+  "security": {
+    "scan_dependencies": true,
+    "scan_code": true,
+    "check_secrets": true,
+    "allowed_licenses": ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"]
+  },
+  "performance": {
+    "monitor": true,
+    "profiling": {
+      "enabled": false,
+      "sample_rate": 0.1
+    },
+    "bundle_analysis": true,
+    "lighthouse": {
+      "enabled": true,
+      "thresholds": {
+        "performance": 90,
+        "accessibility": 90,
+        "best-practices": 90,
+        "seo": 90
+      }
+    }
+  },
+  "debugging": {
+    "source_maps": true,
+    "verbose_logging": false,
+    "capture_errors": true,
+    "error_reporting": {
+      "service": "sentry",
+      "dsn": "${SENTRY_DSN}"
+    }
+  },
+  "workflows": {
+    "new_feature": [
+      "create_spec",
+      "generate_scaffold",
+      "implement_code",
+      "write_tests",
+      "update_docs",
+      "create_pr"
+    ],
+    "bug_fix": [
+      "create_test_case",
+      "implement_fix",
+      "verify_tests",
+      "update_changelog",
+      "create_pr"
+    ],
+    "refactor": [
+      "analyze_code",
+      "plan_refactor",
+      "implement_changes",
+      "verify_tests",
+      "update_docs"
+    ]
+  },
+  "custom": {
+    "game_constants_path": "src/client/constants/game-constants.ts",
+    "level_schema_path": "src/client/game/level/level-schema.ts",
+    "entity_types": [
+      "player",
+      "platform",
+      "spike",
+      "spring",
+      "coin",
+      "door",
+      "enemy",
+      "lava"
+    ],
+    "supported_platforms": ["desktop", "mobile"],
+    "target_fps": 60
+  }
+}
+

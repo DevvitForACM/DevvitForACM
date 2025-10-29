@@ -1,0 +1,53 @@
+{
+  "$schema": "https://kiro.help/schemas/hook.json",
+  "name": "pre-commit",
+  "description": "Runs before each commit to ensure code quality and prevent breaking changes",
+  "trigger": "git.pre-commit",
+  "enabled": true,
+  "actions": [
+    {
+      "name": "lint",
+      "description": "Run ESLint on staged files",
+      "command": "npx eslint --fix --max-warnings=0 {staged_files}",
+      "continueOnError": false,
+      "filePatterns": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "timeout": 30000
+    },
+    {
+      "name": "type-check",
+      "description": "Run TypeScript type checking",
+      "command": "npm run type-check",
+      "continueOnError": false,
+      "timeout": 60000
+    },
+    {
+      "name": "format",
+      "description": "Run Prettier on staged files",
+      "command": "npx prettier --write {staged_files}",
+      "continueOnError": false,
+      "filePatterns": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.json", "*.md"],
+      "timeout": 15000
+    },
+    {
+      "name": "test-affected",
+      "description": "Run tests for affected files",
+      "command": "npm run test -- --findRelatedTests {staged_files}",
+      "continueOnError": true,
+      "filePatterns": ["*.ts", "*.tsx"],
+      "timeout": 120000
+    }
+  ],
+  "notifications": [
+    {
+      "on": "failure",
+      "message": "⚠️ Pre-commit checks failed. Please fix errors before committing.",
+      "type": "error"
+    },
+    {
+      "on": "success",
+      "message": "✅ All pre-commit checks passed!",
+      "type": "success"
+    }
+  ]
+}
+

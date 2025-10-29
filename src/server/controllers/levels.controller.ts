@@ -2,7 +2,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Request, Response } from 'express';
 import { LevelsServiceRedis } from '../services/levels.service.redis';
-import { redis, context } from '@devvit/web/server';
+import { redis } from '@devvit/web/server';
 import { LevelData } from '../models/level';
 import { AuthedRequest } from '../middlewares/auth';
 import { LevelDataSchema } from '../services/validates';
@@ -56,15 +56,11 @@ export const LevelController = {
   async createLevel(req: AuthedRequest, res: Response) {
     const user = req.user;
 
-    console.log('[createLevel] User:', user);
-    console.log('[createLevel] Request body:', JSON.stringify(req.body).substring(0, 200));
-
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
-      console.log('[createLevel] Starting validation...');
       const validationResult = LevelDataSchema.safeParse(req.body);
 
       if (!validationResult.success) {
@@ -75,7 +71,6 @@ export const LevelController = {
         });
       }
 
-      console.log('[createLevel] Validation passed');
       const levelData = validationResult.data;
       const levelId = uuidv4();
       const now = new Date().toISOString();
@@ -99,9 +94,6 @@ export const LevelController = {
         },
       };
 
-      console.log('[createLevel] Creating Redis services...');
-      console.log('[createLevel] Context:', { hasContext: !!context, hasRedis: !!redis });
-
       if (!redis) {
         console.error('[createLevel] Redis client is undefined!');
         return res.status(500).json({ error: 'Redis service unavailable' });
@@ -109,9 +101,7 @@ export const LevelController = {
 
       const db = new LevelsServiceRedis(redis);
 
-      console.log('[createLevel] Saving to Redis...');
       await db.set(`levels/${levelId}`, level);
-      console.log('[createLevel] Saved successfully');
 
       return res.status(201).json({
         message: 'Level created successfully',

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { audioManager, type AudioSettings } from '@/services/audio-manager';
+import './settings.css';
 
 export default function Settings() {
   const [open, setOpen] = useState(false);
@@ -14,16 +15,21 @@ export default function Settings() {
     return () => audioManager.offSettingsChange(handleSettingsChange);
   }, []);
 
+  // When settings panel opens, ensure BGM is playing so user can hear volume changes
+  useEffect(() => {
+    if (open) {
+      audioManager.playBGM();
+    }
+  }, [open]);
+
   const handleBGMChange = (value: number) => {
+    console.log('[Settings] BGM volume changed to:', value);
     audioManager.setBGMVolume(value);
   };
 
   const handleSFXChange = (value: number) => {
+    console.log('[Settings] SFX volume changed to:', value);
     audioManager.setSFXVolume(value);
-  };
-
-  const testSFX = () => {
-    audioManager.playCoin();
   };
 
   return (
@@ -53,7 +59,12 @@ export default function Settings() {
       {open && (
         <div
           className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/85"
-          onClick={() => setOpen(false)}
+          onClick={(e) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              setOpen(false);
+            }
+          }}
         >
           <div
             className="relative text-white p-4 sm:p-6 md:p-8 max-w-md w-full mx-2 sm:mx-4 bg-[#2A2A2A] font-mono max-h-[90vh] overflow-y-auto"
@@ -61,7 +72,6 @@ export default function Settings() {
               boxShadow: 'inset 4px 4px 0 #444, inset -4px -4px 0 #111, 6px 6px 0 #000',
               imageRendering: 'pixelated',
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Title */}
             <div className="text-center mb-6">
@@ -92,9 +102,11 @@ export default function Settings() {
                   type="range"
                   min="0"
                   max="100"
+                  step="1"
                   value={settings.bgmVolume}
                   onChange={(e) => handleBGMChange(Number(e.target.value))}
-                  className="w-full h-3 rounded appearance-none cursor-pointer"
+                  onInput={(e) => handleBGMChange(Number((e.target as HTMLInputElement).value))}
+                  className="w-full h-3 rounded appearance-none cursor-pointer slider-bgm"
                   style={{
                     background: `linear-gradient(to right, #4CAF50 0%, #4CAF50 ${settings.bgmVolume}%, #444 ${settings.bgmVolume}%, #444 100%)`,
                   }}
@@ -118,26 +130,16 @@ export default function Settings() {
                   type="range"
                   min="0"
                   max="100"
+                  step="1"
                   value={settings.sfxVolume}
                   onChange={(e) => handleSFXChange(Number(e.target.value))}
-                  className="w-full h-3 rounded appearance-none cursor-pointer"
+                  onInput={(e) => handleSFXChange(Number((e.target as HTMLInputElement).value))}
+                  className="w-full h-3 rounded appearance-none cursor-pointer slider-sfx"
                   style={{
                     background: `linear-gradient(to right, #FF9800 0%, #FF9800 ${settings.sfxVolume}%, #444 ${settings.sfxVolume}%, #444 100%)`,
                   }}
                 />
               </label>
-              
-              {/* Test SFX Button */}
-              <button
-                onClick={testSFX}
-                className="w-full mt-2 px-4 py-2 text-white font-bold text-sm transition-transform hover:scale-105 active:translate-y-1 bg-[#FF9800]"
-                style={{
-                  boxShadow: 'inset 2px 2px 0 #FFB74D, inset -2px -2px 0 #E65100, 2px 2px 0 #BF360C',
-                  textShadow: '2px 2px 0 #BF360C',
-                }}
-              >
-                🎧 TEST SOUND
-              </button>
             </div>
 
             {/* Close Button */}

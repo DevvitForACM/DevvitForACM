@@ -7,12 +7,28 @@ export default function Home() {
   const { navigate } = useRouting();
 
   useEffect(() => {
-    console.log('🎵 Home page loaded, playing BGM...');
+    // Try to start BGM immediately
     audioManager.playBGM();
+    
+    // Also ensure it plays on any user interaction
+    const handleInteraction = () => {
+      audioManager.playBGM();
+    };
+    
+    // Add listeners for various interaction types
+    window.addEventListener('click', handleInteraction, { once: true });
+    window.addEventListener('keydown', handleInteraction, { once: true });
+    window.addEventListener('touchstart', handleInteraction, { once: true });
+    
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
   }, []);
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
+      className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8"
       style={{
         backgroundImage: 'url(/backgrounds/home-background.jpg)',
         backgroundSize: 'cover',

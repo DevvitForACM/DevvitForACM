@@ -4,7 +4,7 @@ import { RedisService } from '../services/redis.service';
 import { redis } from '@devvit/web/server';
 
 export async function redditCallback(req: Request, res: Response) {
-  const { code, state } = req.query;
+  const { code } = req.query;
 
   if (!code || typeof code !== 'string') {
     return res.status(400).json({
@@ -14,13 +14,10 @@ export async function redditCallback(req: Request, res: Response) {
     });
   }
 
-  console.log(`🔍 Reddit callback received - Code: ${code.substring(0, 10)}..., State: ${state}`);
-
   try {
     // Initialize Redis service
     const redisService = new RedisService(redis);
     const result = await createOrGetUserFromReddit(code, redisService);
-    console.log('Reddit authentication successful for user:', result.userId);
     // Return JWT to frontend. For web flow, you might redirect with token in query or set a cookie.
     return res.json({
       success: true,

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { getPhaserConfigWithLevelName } from '@/config/game-config';
 import { useRouting } from '@/components/routing';
+import { VirtualJoystick } from '@/components/virtual-joystick';
+import { SCENE_KEYS } from '@/constants/game-constants';
 
 interface PublicLevelItem {
   id: string;
@@ -17,8 +19,18 @@ export default function Play() {
   const [levels, setLevels] = useState<PublicLevelItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
+    // Detect mobile
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+      setIsMobile(mobile);
+    };
+    checkMobile();
+
     const load = async () => {
       try {
         setLoading(true);
@@ -48,9 +60,37 @@ export default function Play() {
 
   if (selectedLevel) {
     const config = getPhaserConfigWithLevelName(selectedLevel);
+    
+    const handleJoystickMove = (x: number, y: number) => {
+      const game = (window as any).game;
+      if (game) {
+        const scene = game.scene.getScene(SCENE_KEYS.PLAY);
+        if (scene && typeof scene.setMobileJoystick === 'function') {
+          scene.setMobileJoystick(x, y);
+        }
+      }
+    };
+
+    const handleJump = () => {
+      const game = (window as any).game;
+      if (game) {
+        const scene = game.scene.getScene(SCENE_KEYS.PLAY);
+        if (scene && typeof scene.setMobileJump === 'function') {
+          scene.setMobileJump(true);
+        }
+      }
+    };
+
     return (
-      <main className="w-screen h-screen overflow-hidden">
+      <main className="w-screen h-screen overflow-hidden relative">
         <PhaserContainer config={config} />
+        {isMobile && (
+          <VirtualJoystick 
+            onMove={handleJoystickMove} 
+            onJump={handleJump}
+            size={120}
+          />
+        )}
       </main>
     );
   }

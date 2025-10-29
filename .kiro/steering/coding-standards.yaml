@@ -1,0 +1,449 @@
+# Coding Standards - Steering Rules for AI Code Generation
+
+project_name: DevvitForACM
+language: TypeScript
+frameworks: [React, Phaser, Node.js]
+
+# General Coding Principles
+principles:
+  - name: DRY (Don't Repeat Yourself)
+    description: Avoid code duplication; extract reusable functions/components
+    severity: high
+    
+  - name: SOLID Principles
+    description: Follow Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+    severity: high
+    
+  - name: KISS (Keep It Simple, Stupid)
+    description: Prefer simple, readable solutions over clever, complex ones
+    severity: medium
+    
+  - name: YAGNI (You Aren't Gonna Need It)
+    description: Don't implement features until they're needed
+    severity: medium
+
+# TypeScript Rules
+typescript:
+  strict_mode: true
+  
+  rules:
+    - rule: Always use explicit types for function parameters
+      example: |
+        // ✅ Good
+        function calculateDamage(health: number, damage: number): number {
+          return health - damage;
+        }
+        
+        // ❌ Bad
+        function calculateDamage(health, damage) {
+          return health - damage;
+        }
+    
+    - rule: Use interfaces for object shapes, types for unions/primitives
+      example: |
+        // ✅ Good
+        interface Player {
+          x: number;
+          y: number;
+          health: number;
+        }
+        type Direction = 'left' | 'right' | 'up' | 'down';
+        
+        // ❌ Bad
+        type Player = {
+          x: number;
+          y: number;
+          health: number;
+        }
+    
+    - rule: Avoid 'any' type unless absolutely necessary
+      severity: high
+      exception: External library types that don't have definitions
+      
+    - rule: Use optional chaining and nullish coalescing
+      example: |
+        // ✅ Good
+        const playerName = user?.profile?.name ?? 'Guest';
+        
+        // ❌ Bad
+        const playerName = user && user.profile && user.profile.name || 'Guest';
+    
+    - rule: Use const assertions for literal types
+      example: |
+        // ✅ Good
+        const ENTITY_TYPES = {
+          PLAYER: 'player',
+          ENEMY: 'enemy',
+        } as const;
+        
+    - rule: Export types alongside implementation
+      example: |
+        // entity.ts
+        export interface Entity {
+          id: string;
+          x: number;
+          y: number;
+        }
+        
+        export function createEntity(data: Entity): Entity {
+          return { ...data };
+        }
+
+# React Rules
+react:
+  version: 18
+  
+  rules:
+    - rule: Use functional components with hooks
+      severity: high
+      
+    - rule: Name components with PascalCase
+      example: |
+        // ✅ Good
+        export function VirtualJoystick() {}
+        
+        // ❌ Bad
+        export function virtualJoystick() {}
+    
+    - rule: Use destructuring for props
+      example: |
+        // ✅ Good
+        export function Button({ onClick, label }: ButtonProps) {
+          return <button onClick={onClick}>{label}</button>;
+        }
+        
+        // ❌ Bad
+        export function Button(props: ButtonProps) {
+          return <button onClick={props.onClick}>{props.label}</button>;
+        }
+    
+    - rule: Always type props interfaces
+      example: |
+        interface VirtualJoystickProps {
+          onMove: (x: number, y: number) => void;
+          onJump: () => void;
+          size?: number;
+        }
+    
+    - rule: Use useCallback for event handlers passed to children
+      example: |
+        const handleMove = useCallback((x: number, y: number) => {
+          scene.setMobileJoystick(x, y);
+        }, [scene]);
+    
+    - rule: Use useMemo for expensive computations
+      
+    - rule: Extract complex JSX into separate components
+      threshold: More than 50 lines
+      
+    - rule: Use optional chaining for conditional rendering
+      example: |
+        // ✅ Good
+        {user?.isAdmin && <AdminPanel />}
+        
+        // ❌ Bad
+        {user && user.isAdmin && <AdminPanel />}
+
+# Phaser Rules
+phaser:
+  version: 3
+  
+  rules:
+    - rule: Always type Phaser objects explicitly
+      example: |
+        // ✅ Good
+        private player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+        
+        // ❌ Bad
+        private player: any;
+    
+    - rule: Clean up resources in scene shutdown
+      example: |
+        shutdown(): void {
+          this.events.removeAllListeners();
+          this.time.removeAllEvents();
+          if (this.player) {
+            this.player.destroy();
+          }
+        }
+    
+    - rule: Use getData/setData for custom object properties
+      example: |
+        sprite.setData('entityType', 'enemy');
+        sprite.setData('patrolSpeed', 30);
+        const type = sprite.getData('entityType');
+    
+    - rule: Prefer groups for managing similar entities
+      
+    - rule: Use physics bodies only when needed (static vs dynamic)
+      
+    - rule: Set object depths explicitly to avoid z-fighting
+      example: |
+        background.setDepth(0);
+        platforms.setDepth(10);
+        player.setDepth(20);
+        ui.setDepth(1000);
+
+# File Organization
+file_structure:
+  rules:
+    - rule: One component/class per file
+      exceptions: [Small utility functions, Type-only files]
+      
+    - rule: Group related files in directories
+      example: |
+        game/
+          scenes/
+            play-scene.ts          # Main scene
+            play-scene/            # Scene modules
+              setup.ts
+              camera.ts
+              controls.ts
+              collisions.ts
+              
+    - rule: Use barrel exports (index.ts) for public APIs
+      example: |
+        // entities/index.ts
+        export { BaseEntity } from './base-entity';
+        export { Player } from './player';
+        export { Enemy } from './enemy';
+        
+    - rule: Name files with kebab-case
+      example: |
+        // ✅ Good
+        virtual-joystick.tsx
+        player-controls.ts
+        
+        // ❌ Bad
+        VirtualJoystick.tsx
+        PlayerControls.ts
+        
+    - rule: Test files next to source files
+      example: |
+        player.ts
+        player.test.ts
+
+# Naming Conventions
+naming:
+  rules:
+    - rule: Use camelCase for variables and functions
+      example: |
+        const playerHealth = 100;
+        function calculateDamage() {}
+        
+    - rule: Use PascalCase for classes, interfaces, types, React components
+      example: |
+        class EntityController {}
+        interface PlayerData {}
+        type Direction = 'left' | 'right';
+        
+    - rule: Use SCREAMING_SNAKE_CASE for constants
+      example: |
+        const MAX_HEALTH = 100;
+        const DEFAULT_SPEED = 200;
+        
+    - rule: Prefix interfaces with 'I' only if it adds clarity
+      preference: No prefix unless disambiguating from class
+      
+    - rule: Use descriptive names (avoid abbreviations)
+      example: |
+        // ✅ Good
+        const playerVelocityX = 200;
+        
+        // ❌ Bad
+        const plyrVelX = 200;
+        
+    - rule: Boolean variables start with is/has/can/should
+      example: |
+        const isGameOver = false;
+        const hasCollided = true;
+        const canJump = playerBody.blocked.down;
+
+# Comments and Documentation
+documentation:
+  rules:
+    - rule: Write JSDoc for exported functions
+      example: |
+        /**
+         * Calculates responsive zoom based on viewport size
+         * @param camera - Phaser camera instance
+         * @param levelData - Level configuration data
+         * @returns Calculated zoom value
+         */
+        export function calculateResponsiveZoom(
+          camera: Phaser.Cameras.Scene2D.Camera,
+          levelData: LevelData | null
+        ): number {
+          // implementation
+        }
+        
+    - rule: Explain "why" not "what" in inline comments
+      example: |
+        // ✅ Good
+        // Reduce zoom on mobile for better overview
+        if (viewportWidth < 768) {
+          calculatedZoom *= 0.85;
+        }
+        
+        // ❌ Bad
+        // Multiply zoom by 0.85
+        if (viewportWidth < 768) {
+          calculatedZoom *= 0.85;
+        }
+        
+    - rule: Use TODO comments for future work
+      format: "// TODO: [Description]"
+      
+    - rule: Avoid commented-out code (use git history)
+      
+    - rule: Document complex algorithms with step-by-step comments
+
+# Error Handling
+error_handling:
+  rules:
+    - rule: Always handle promise rejections
+      example: |
+        // ✅ Good
+        try {
+          const data = await fetchLevel(name);
+        } catch (error) {
+          console.error('Failed to fetch level:', error);
+          showErrorMessage('Level not found');
+        }
+        
+    - rule: Use typed errors for specific error cases
+      example: |
+        class LevelNotFoundError extends Error {
+          constructor(levelName: string) {
+            super(`Level "${levelName}" not found`);
+            this.name = 'LevelNotFoundError';
+          }
+        }
+        
+    - rule: Log errors with context
+      example: |
+        console.error('[PlayScene] Failed to create player:', error, { levelName });
+        
+    - rule: Fail fast - validate inputs early
+      
+    - rule: Return null/undefined for expected "not found" cases, throw for errors
+
+# Performance
+performance:
+  rules:
+    - rule: Avoid operations in render loops (React render, Phaser update)
+      example: |
+        // ✅ Good - computed once
+        const config = useMemo(() => getPhaserConfig(), []);
+        
+        // ❌ Bad - recomputed every frame
+        function update() {
+          const config = getPhaserConfig(); // Don't do this
+        }
+        
+    - rule: Use object pooling for frequently created/destroyed objects
+      
+    - rule: Debounce expensive operations (resize, scroll)
+      
+    - rule: Lazy load large assets
+      
+    - rule: Use texture atlases instead of individual images
+      
+    - rule: Profile before optimizing (don't premature optimize)
+
+# Security
+security:
+  rules:
+    - rule: Validate all user input
+      example: |
+        // ✅ Good
+        const schema = z.object({
+          levelName: z.string().min(1).max(50),
+          levelData: levelDataSchema,
+        });
+        const validated = schema.parse(input);
+        
+    - rule: Sanitize strings before displaying
+      
+    - rule: Never trust client-side validation alone
+      
+    - rule: Use environment variables for secrets
+      
+    - rule: Implement rate limiting on API endpoints
+
+# Testing
+testing:
+  rules:
+    - rule: Write tests for business logic and utilities
+      
+    - rule: Use descriptive test names
+      format: "it should [expected behavior] when [condition]"
+      example: |
+        it('should return game over when player collides with spike', () => {
+          // test
+        });
+        
+    - rule: Follow AAA pattern (Arrange, Act, Assert)
+      
+    - rule: Mock external dependencies
+      
+    - rule: Test edge cases and error paths
+      
+    - rule: Aim for 80%+ coverage on critical paths
+
+# Git Commit Messages
+git:
+  commit_format:
+    pattern: "<type>(<scope>): <subject>"
+    types:
+      - feat: New feature
+      - fix: Bug fix
+      - docs: Documentation changes
+      - style: Code style changes (formatting)
+      - refactor: Code refactoring
+      - perf: Performance improvements
+      - test: Test changes
+      - chore: Build/tooling changes
+    
+    examples:
+      - "feat(controls): add mobile virtual joystick"
+      - "fix(collision): correct spike hitbox offset"
+      - "refactor(play-scene): split into modular files"
+      - "docs(readme): add installation instructions"
+      
+  branch_naming:
+    pattern: "<type>/<short-description>"
+    examples:
+      - "feature/leaderboard-system"
+      - "fix/spring-cooldown-bug"
+      - "refactor/scene-modules"
+
+# AI-Specific Guidelines
+ai_behavior:
+  preferences:
+    - Prefer explicit over implicit
+    - Prioritize readability over cleverness
+    - Write self-documenting code
+    - Extract magic numbers to named constants
+    - Use early returns to reduce nesting
+    
+  code_generation:
+    - Always include TypeScript types
+    - Add JSDoc for exported functions
+    - Include error handling
+    - Consider edge cases
+    - Add inline comments for complex logic
+    
+  refactoring:
+    - Break large functions into smaller ones (max 50 lines)
+    - Extract repeated logic into utilities
+    - Remove dead code
+    - Simplify conditional logic
+    - Use modern ES6+ features
+    
+  when_unsure:
+    - Ask for clarification
+    - Provide multiple options with trade-offs
+    - Reference existing patterns in codebase
+    - Suggest tests to verify behavior
+

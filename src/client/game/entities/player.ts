@@ -44,6 +44,20 @@ export class Player extends BaseEntity {
       });
     }
 
+    // Check if run textures exist
+    const runFrames = [0, 1, 2]
+      .filter((i) => this.scene.textures.exists(`player-run-${i}`))
+      .map((i) => ({ key: `player-run-${i}` }));
+    
+    if (!this.scene.anims.exists('player-run') && runFrames.length > 0) {
+      this.scene.anims.create({
+        key: 'player-run',
+        frames: runFrames,
+        frameRate: 10,
+        repeat: -1,
+      });
+    }
+
     // Check if jump textures exist, fallback to idle if not
     const jumpFrames = [0, 1, 2, 3, 4]
       .filter((i) => this.scene.textures.exists(`player-jump-${i}`))
@@ -66,6 +80,12 @@ export class Player extends BaseEntity {
   public playIdleAnimation(): void {
     if (this.sprite && this.sprite.anims) {
       this.sprite.play('player-idle', true);
+    }
+  }
+
+  public playRunAnimation(): void {
+    if (this.sprite && this.sprite.anims) {
+      this.sprite.play('player-run', true);
     }
   }
 

@@ -180,8 +180,6 @@ export class LeaderboardServiceRedis {
 
     // Remove user hash
     await this.redisService.del(`${USER_PREFIX}${userId}`);
-
-    console.log(`Removed user ${userId} from leaderboard`);
   }
 
   /**
@@ -202,8 +200,6 @@ export class LeaderboardServiceRedis {
       // Delete the sorted set
       await this.redisService.del(LEADERBOARD_KEY);
     }
-
-    console.log('Cleared leaderboard');
   }
 
   /**
@@ -251,7 +247,5 @@ export class LeaderboardServiceRedis {
         score: entry.score,
       });
     }
-
-    console.log(`Batch updated ${entries.length} leaderboard entries`);
   }
 }

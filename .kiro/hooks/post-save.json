@@ -1,0 +1,51 @@
+{
+  "$schema": "https://kiro.help/schemas/hook.json",
+  "name": "post-save",
+  "description": "Automation triggered after saving files",
+  "trigger": "file.save",
+  "enabled": true,
+  "actions": [
+    {
+      "name": "auto-import-sort",
+      "description": "Sort imports in TypeScript files",
+      "command": "npx organize-imports-cli {file}",
+      "continueOnError": true,
+      "filePatterns": ["*.ts", "*.tsx"],
+      "debounce": 500
+    },
+    {
+      "name": "generate-test",
+      "description": "Generate test file if it doesn't exist",
+      "command": "node .kiro/scripts/generate-test.js {file}",
+      "continueOnError": true,
+      "filePatterns": [
+        "src/client/game/**/*.ts",
+        "src/server/**/*.ts",
+        "!*.test.ts",
+        "!*.spec.ts"
+      ],
+      "conditions": [
+        {
+          "type": "file-not-exists",
+          "pattern": "{file_dir}/{file_name}.test.ts"
+        }
+      ]
+    },
+    {
+      "name": "update-barrel-exports",
+      "description": "Update index.ts barrel exports",
+      "command": "node .kiro/scripts/update-barrel.js {file_dir}",
+      "continueOnError": true,
+      "filePatterns": ["src/client/game/entities/*.ts", "src/server/controllers/*.ts"],
+      "debounce": 1000
+    },
+    {
+      "name": "validate-level-schema",
+      "description": "Validate level JSON files",
+      "command": "node .kiro/scripts/validate-level.js {file}",
+      "continueOnError": true,
+      "filePatterns": ["assets/levels/*.json"]
+    }
+  ]
+}
+

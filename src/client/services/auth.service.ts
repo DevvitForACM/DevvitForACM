@@ -16,8 +16,6 @@ class AuthService {
 
   public async checkAuthStatus(): Promise<UserProfile | null> {
     try {
-      console.log('🔐 AUTH CLIENT: Checking authentication status...');
-
       const response = await fetch('/api/auth/me', {
         method: 'GET',
         credentials: 'include',
@@ -33,16 +31,11 @@ class AuthService {
             isAuthenticated: true,
             createdAt: data.user.createdAt || new Date().toISOString(),
           };
-          console.log(
-            '✅ AUTH CLIENT: User is authenticated:',
-            this.currentUser.username
-          );
           this.notifyListeners();
           return this.currentUser;
         }
       }
 
-      console.log('ℹ️  AUTH CLIENT: User is not authenticated');
       this.currentUser = null;
       this.notifyListeners();
       return null;
@@ -56,8 +49,6 @@ class AuthService {
 
   public async startAuthentication(): Promise<void> {
     try {
-      console.log('🔐 AUTH CLIENT: Starting Reddit authentication...');
-
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         credentials: 'include',
@@ -73,10 +64,6 @@ class AuthService {
             isAuthenticated: true,
             createdAt: data.user.createdAt || new Date().toISOString(),
           };
-          console.log(
-            '✅ AUTH CLIENT: Authentication successful:',
-            this.currentUser.username
-          );
           this.notifyListeners();
         } else {
           throw new Error(data.message || 'Authentication failed');
@@ -92,8 +79,6 @@ class AuthService {
 
   public async logout(): Promise<void> {
     try {
-      console.log('🔐 AUTH CLIENT: Logging out...');
-
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
@@ -101,7 +86,6 @@ class AuthService {
 
       this.currentUser = null;
       this.notifyListeners();
-      console.log('✅ AUTH CLIENT: Logged out successfully');
     } catch (error) {
       console.error('❌ AUTH CLIENT: Logout error:', error);
 

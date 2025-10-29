@@ -1,0 +1,41 @@
+{
+  "$schema": "https://kiro.help/schemas/hook.json",
+  "name": "on-error",
+  "description": "Automated error handling and recovery",
+  "trigger": "runtime.error",
+  "enabled": true,
+  "actions": [
+    {
+      "name": "log-error",
+      "description": "Log error details to file",
+      "command": "node .kiro/scripts/log-error.js {error}",
+      "continueOnError": true
+    },
+    {
+      "name": "suggest-fix",
+      "description": "AI suggests potential fixes for common errors",
+      "command": "kiro suggest-fix --error '{error.message}' --stack '{error.stack}'",
+      "continueOnError": true,
+      "conditions": [
+        {
+          "type": "error-type",
+          "values": ["TypeError", "ReferenceError", "SyntaxError"]
+        }
+      ]
+    },
+    {
+      "name": "check-similar-issues",
+      "description": "Search for similar errors in issue tracker",
+      "command": "node .kiro/scripts/search-issues.js '{error.message}'",
+      "continueOnError": true
+    }
+  ],
+  "notifications": [
+    {
+      "on": "trigger",
+      "message": "🔴 Runtime error detected: {error.message}",
+      "type": "error"
+    }
+  ]
+}
+

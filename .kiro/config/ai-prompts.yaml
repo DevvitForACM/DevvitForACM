@@ -1,0 +1,409 @@
+# AI Prompt Templates for Common Tasks
+
+templates:
+  # Code Generation Prompts
+  
+  create_component:
+    prompt: |
+      Create a React component named {component_name} with the following requirements:
+      - TypeScript with proper interfaces
+      - Props: {props_list}
+      - Features: {features}
+      - Responsive design
+      - Accessibility (ARIA labels)
+      - Error boundary handling
+      
+      Follow project coding standards in .kiro/steering/coding-standards.yaml
+      
+    example_usage: "Create a component for level card display in home page"
+    
+  create_phaser_entity:
+    prompt: |
+      Create a Phaser entity class named {entity_name} that extends BaseEntity:
+      - Entity type: {type}
+      - Size: {width}x{height} pixels
+      - Physics: {static|dynamic}
+      - Behavior: {behavior_description}
+      - Custom properties: {properties}
+      - Collision handling: {collision_rules}
+      
+      Include:
+      - Constructor with proper type annotations
+      - update() method for behavior
+      - destroy() cleanup method
+      - getData/setData for custom properties
+      
+    example_usage: "Create a moving platform entity that oscillates between two points"
+    
+  create_api_endpoint:
+    prompt: |
+      Create a RESTful API endpoint:
+      - Method: {GET|POST|PUT|DELETE}
+      - Path: {endpoint_path}
+      - Purpose: {description}
+      - Request body: {request_schema}
+      - Response: {response_schema}
+      - Authentication: {required|optional|none}
+      - Rate limit: {requests_per_minute}
+      
+      Include:
+      - Controller function
+      - Service function with business logic
+      - Input validation with Zod
+      - Error handling
+      - TypeScript types
+      - JSDoc documentation
+      
+    example_usage: "Create endpoint to fetch level by name with caching"
+    
+  refactor_code:
+    prompt: |
+      Refactor the following code to improve {aspect}:
+      {code_snippet}
+      
+      Requirements:
+      - Maintain existing functionality
+      - Follow project coding standards
+      - Improve readability and maintainability
+      - Add type annotations if missing
+      - Extract reusable logic
+      - Add comments for complex parts
+      
+      Explain what changed and why.
+      
+    aspects: [readability, performance, type_safety, modularity, error_handling]
+    
+  write_tests:
+    prompt: |
+      Write comprehensive tests for {file_path}:
+      
+      Test coverage should include:
+      - Happy path scenarios
+      - Edge cases: {edge_cases}
+      - Error conditions: {error_cases}
+      - Integration points: {dependencies}
+      
+      Use:
+      - Jest/Vitest framework
+      - Proper mocking for external dependencies
+      - AAA pattern (Arrange, Act, Assert)
+      - Descriptive test names
+      - Type-safe assertions
+      
+    example_usage: "Write tests for collision detection logic"
+    
+  debug_issue:
+    prompt: |
+      Debug the following issue:
+      
+      Error: {error_message}
+      Stack trace: {stack_trace}
+      Context: {context_info}
+      Steps to reproduce: {steps}
+      Expected: {expected_behavior}
+      Actual: {actual_behavior}
+      
+      Provide:
+      1. Root cause analysis
+      2. Potential solutions (ranked)
+      3. Code fix with explanation
+      4. Prevention strategies
+      5. Related issues to check
+      
+    example_usage: "Debug spring cooldown not working consistently"
+    
+  optimize_performance:
+    prompt: |
+      Optimize performance of {component|function|scene}:
+      
+      Current metrics:
+      - FPS: {current_fps}
+      - Memory usage: {memory_usage}
+      - Load time: {load_time}
+      
+      Bottlenecks identified:
+      {bottleneck_list}
+      
+      Provide:
+      - Specific optimizations with code examples
+      - Expected impact on metrics
+      - Trade-offs to consider
+      - Testing strategy to verify improvements
+      
+    example_usage: "Optimize PlayScene update loop for 60fps on mobile"
+
+  # Documentation Prompts
+  
+  document_api:
+    prompt: |
+      Generate OpenAPI/Swagger documentation for:
+      {endpoint_list}
+      
+      Include:
+      - Request/response schemas
+      - Authentication requirements
+      - Error responses
+      - Code examples (curl, JavaScript)
+      - Rate limiting info
+      
+  document_component:
+    prompt: |
+      Generate Storybook stories for {component_name}:
+      
+      Include:
+      - Default story
+      - All prop variations
+      - Interactive controls
+      - Accessibility notes
+      - Usage examples
+      
+  generate_readme:
+    prompt: |
+      Generate/update README.md section for {section}:
+      
+      Include:
+      - Clear description
+      - Installation/setup steps
+      - Usage examples with code
+      - Configuration options
+      - Troubleshooting tips
+      - Links to related docs
+
+# Contextual Prompts for Project Stages
+
+project_stages:
+  planning:
+    prompts:
+      - "Break down {feature_name} into implementation tasks"
+      - "Identify dependencies for {feature_name}"
+      - "Estimate time and complexity for {task_name}"
+      - "Design API contract for {feature_name}"
+      - "Create user stories for {feature_name}"
+      
+  implementation:
+    prompts:
+      - "Implement {feature_name} following specs in .kiro/specs/"
+      - "Add error handling for {scenario}"
+      - "Integrate {feature_name} with existing {system}"
+      - "Ensure {feature_name} works on mobile"
+      
+  testing:
+    prompts:
+      - "Write tests for {component|function|endpoint}"
+      - "Generate test data for {scenario}"
+      - "Create e2e test for {user_flow}"
+      - "Add edge case tests for {feature}"
+      
+  debugging:
+    prompts:
+      - "Explain why {error} is occurring"
+      - "Suggest fixes for {issue}"
+      - "Find performance bottleneck in {code}"
+      - "Trace execution path for {behavior}"
+      
+  refactoring:
+    prompts:
+      - "Refactor {file} to improve {quality_aspect}"
+      - "Extract reusable logic from {component}"
+      - "Simplify complex conditional in {function}"
+      - "Split large {file} into modules"
+      
+  documentation:
+    prompts:
+      - "Document {code_block} with JSDoc"
+      - "Explain architecture of {system}"
+      - "Create tutorial for {feature}"
+      - "Generate API reference for {module}"
+
+# Code Review Prompts
+
+code_review:
+  general:
+    prompt: |
+      Review the following code:
+      {code_snippet}
+      
+      Check for:
+      - Code quality and readability
+      - TypeScript type safety
+      - Error handling
+      - Performance issues
+      - Security vulnerabilities
+      - Test coverage
+      - Documentation
+      - Adherence to project standards
+      
+      Provide:
+      - Issues found (with severity)
+      - Suggestions for improvement
+      - Positive aspects (what's done well)
+      
+  security:
+    prompt: |
+      Perform security review of {file_path}:
+      
+      Check for:
+      - Input validation
+      - SQL injection (if applicable)
+      - XSS vulnerabilities
+      - CSRF protection
+      - Authentication/authorization
+      - Sensitive data exposure
+      - Rate limiting
+      
+  performance:
+    prompt: |
+      Review performance of {code_path}:
+      
+      Check for:
+      - Unnecessary re-renders (React)
+      - Expensive operations in loops
+      - Memory leaks
+      - Inefficient algorithms
+      - Missing memoization
+      - Large bundle size
+      
+  accessibility:
+    prompt: |
+      Review accessibility of {component_name}:
+      
+      Check for:
+      - ARIA labels
+      - Keyboard navigation
+      - Focus management
+      - Color contrast
+      - Screen reader support
+      - Semantic HTML
+
+# Interactive Prompts
+
+interactive:
+  explain_code:
+    prompt: |
+      Explain how {file|function|component} works:
+      - High-level purpose
+      - Step-by-step breakdown
+      - Key algorithms/patterns used
+      - Dependencies and interactions
+      - Edge cases handled
+      - Potential improvements
+      
+  compare_approaches:
+    prompt: |
+      Compare the following approaches for {task}:
+      
+      Approach 1: {description_1}
+      Approach 2: {description_2}
+      
+      Evaluate:
+      - Performance
+      - Maintainability
+      - Scalability
+      - Complexity
+      - Testing ease
+      
+      Recommend the best option with reasoning.
+      
+  generate_alternatives:
+    prompt: |
+      Suggest alternative implementations for:
+      {current_implementation}
+      
+      Consider:
+      - Different design patterns
+      - Library/framework alternatives
+      - Architecture variations
+      
+      For each alternative, explain:
+      - Benefits
+      - Drawbacks
+      - Migration effort
+      
+  brainstorm_solutions:
+    prompt: |
+      Brainstorm solutions for {problem_statement}:
+      
+      Constraints:
+      {constraints_list}
+      
+      Requirements:
+      {requirements_list}
+      
+      Generate 3-5 creative solutions with:
+      - Implementation approach
+      - Pros and cons
+      - Estimated effort
+      - Risk factors
+
+# Utility Prompts
+
+utilities:
+  generate_types:
+    prompt: |
+      Generate TypeScript types from {source}:
+      - Infer types from code
+      - Create interfaces for data structures
+      - Add union types where applicable
+      - Include JSDoc comments
+      
+  convert_code:
+    prompt: |
+      Convert {source_language} code to {target_language}:
+      {code_snippet}
+      
+      Ensure:
+      - Idiomatic target language style
+      - Proper type annotations
+      - Equivalent functionality
+      - Comments explaining differences
+      
+  generate_mock_data:
+    prompt: |
+      Generate realistic mock data for {data_type}:
+      - Quantity: {count} items
+      - Fields: {field_list}
+      - Constraints: {constraints}
+      - Format: {JSON|TypeScript|CSV}
+      
+  create_migration:
+    prompt: |
+      Create data migration for {change_description}:
+      - Source schema: {old_schema}
+      - Target schema: {new_schema}
+      - Migration strategy: {strategy}
+      - Rollback plan: {rollback}
+
+# Custom Project Prompts
+
+project_specific:
+  create_level:
+    prompt: |
+      Generate a playable level with:
+      - Theme: {theme}
+      - Difficulty: {easy|medium|hard|expert}
+      - Length: {short|medium|long}
+      - Features: {features_list}
+      - Entity count: {approximate_count}
+      
+      Output LevelData JSON conforming to level-schema.ts
+      
+  balance_gameplay:
+    prompt: |
+      Review gameplay balance for:
+      - Jump height vs platform spacing
+      - Enemy patrol speed vs player speed
+      - Hazard density
+      - Coin placement
+      
+      Suggest adjustments to game constants for better feel.
+      
+  create_entity_variant:
+    prompt: |
+      Create a variant of {base_entity}:
+      - Variant name: {name}
+      - Behavior difference: {difference}
+      - Visual difference: {appearance}
+      - Balance considerations: {balance}
+      
+      Include implementation and asset requirements.
+

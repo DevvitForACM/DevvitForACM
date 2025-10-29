@@ -128,9 +128,7 @@ export async function createOrGetUserFromReddit(
   // Check if user exists in Redis
   const existingUser = await redisService.hGetAll(`users:${userId}`);
 
-  if (existingUser) {
-    console.log('Found existing user in Redis:', userId);
-  } else {
+  if (!existingUser) {
     // Create new user profile
     const createdAt = new Date().toLocaleString('en-GB', {
       timeZone: 'Asia/Kolkata',
@@ -163,8 +161,6 @@ export async function createOrGetUserFromReddit(
         },
         30 * 24 * 60 * 60 // 30 days in seconds
       );
-
-      console.log('Created new user in Redis:', userId);
     } catch (dbErr) {
       console.error('Could not store user profile in Redis:', (dbErr as Error).message);
       throw dbErr;
@@ -245,8 +241,6 @@ export async function updateUserProfile(
   for (const [field, value] of Object.entries(stringUpdates)) {
     await redisService.hSet(key, field, value);
   }
-
-  console.log(`Updated user profile for ${userId}`);
 }
 
 /**
@@ -257,7 +251,6 @@ export async function deleteUser(
   redisService: RedisService
 ): Promise<void> {
   await redisService.del(`users:${userId}`);
-  console.log(`Deleted user ${userId} from Redis`);
 }
 
 /**

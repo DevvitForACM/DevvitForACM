@@ -24,6 +24,11 @@ export const ASSETS = {
   'Jump/3': new URL('../../assets/Jump/3.png', import.meta.url).href,
   'Jump/4': new URL('../../assets/Jump/4.png', import.meta.url).href,
 
+  // Player Run
+  'Run/0': new URL('../../assets/run/0.png', import.meta.url).href,
+  'Run/1': new URL('../../assets/run/1.png', import.meta.url).href,
+  'Run/2': new URL('../../assets/run/2.png', import.meta.url).href,
+
   // Coins
   'Coin/0': new URL('../../assets/Coin/0.png', import.meta.url).href,
   'Coin/1': new URL('../../assets/Coin/1.png', import.meta.url).href,

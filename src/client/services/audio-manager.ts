@@ -23,7 +23,6 @@ class AudioManager {
   
   // BGM
   private bgmAudio: HTMLAudioElement | null = null;
-  private bgmLoaded = false;
   
   // SFX pool - create multiple instances for overlapping sounds
   private sfxCache: Map<string, HTMLAudioElement[]> = new Map();
@@ -68,6 +67,14 @@ class AudioManager {
 
   public setSFXVolume(volume: number): void {
     this.settings.sfxVolume = Math.max(0, Math.min(100, volume));
+    
+    // Update volume for all existing SFX in the cache
+    this.sfxCache.forEach((pool) => {
+      pool.forEach((audio) => {
+        audio.volume = this.settings.sfxVolume / 100;
+      });
+    });
+    
     this.saveSettings();
   }
 
@@ -94,15 +101,12 @@ class AudioManager {
 
   private initializeBGM(): void {
     try {
-      const bgmUrl = new URL('../../assets/audio/bgmdummy.mp3', import.meta.url).href;
+      // Reference audio files from the public directory
+      const bgmUrl = '/audio/bgmdummy.mp3';
       this.bgmAudio = new Audio(bgmUrl);
       this.bgmAudio.loop = true;
       this.bgmAudio.volume = this.settings.bgmVolume / 100;
       this.bgmAudio.preload = 'auto';
-
-      this.bgmAudio.addEventListener('canplaythrough', () => {
-        this.bgmLoaded = true;
-      });
 
       this.bgmAudio.addEventListener('error', (e) => {
         console.error('[AudioManager] BGM load error:', e);
@@ -129,11 +133,12 @@ class AudioManager {
   }
 
   public playBGM(): void {
-    if (this.bgmAudio && this.bgmLoaded) {
-      this.bgmAudio.play().catch(() => {
-        // Silently handle autoplay restrictions
-      });
-    }
+    if (!this.bgmAudio) return;
+    
+    // Try to play even if not fully loaded - browser will buffer
+    this.bgmAudio.play().catch(() => {
+      // Silently handle autoplay restrictions
+    });
   }
 
   public pauseBGM(): void {
@@ -154,7 +159,8 @@ class AudioManager {
    */
   private registerSFX(name: SFXName, filename: string): void {
     try {
-      const url = new URL(`../../assets/audio/${filename}`, import.meta.url).href;
+      // Reference audio files from the public directory
+      const url = `/audio/${filename}`;
       const pool: HTMLAudioElement[] = [];
       
       for (let i = 0; i < this.SFX_POOL_SIZE; i++) {

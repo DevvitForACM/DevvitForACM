@@ -25,10 +25,8 @@ function gridToPixel(
   const pixelX = gridX * GRID.SIZE + GRID.SIZE / 2;
   let pixelY: number;
   if (useBaseY) {
-    // For platforms: position at the center of the grid cell
     pixelY = worldHeight - (gridY * GRID.SIZE + GRID.SIZE / 2);
   } else {
-    // For other objects: position at the center of the grid cell
     pixelY = worldHeight - (gridY * GRID.SIZE + GRID.SIZE / 2);
   }
   return { x: pixelX, y: pixelY };
@@ -68,13 +66,6 @@ export function loadLevel(
     ? level.objects
     : Object.values(level.objects).flat();
 
-  console.log(
-    '[loadLevel] Loading level:',
-    level.name,
-    'with',
-    objectsArray.length,
-    'objects'
-  );
   validateLevel(level);
   applySettings(scene, level.settings);
 
@@ -88,22 +79,14 @@ export function loadLevel(
 
   objectsArray.forEach((obj: LevelObject) => {
     const normalizedObj = normalizeObjectPosition(obj, worldHeight);
-    console.log(
-      '[loadLevel] Creating object:',
-      normalizedObj.type,
-      'at',
-      normalizedObj.position
-    );
     const gameObject = createGameObject(scene, normalizedObj);
     if (gameObject) {
       createdObjects.push(gameObject);
-      console.log('[loadLevel] Created:', normalizedObj.id, normalizedObj.type);
     } else {
       console.warn('[loadLevel] Failed to create:', normalizedObj.type);
     }
   });
 
-  console.log('[loadLevel] Total objects created:', createdObjects.length);
   return createdObjects;
 }
 
@@ -290,7 +273,7 @@ function createPlatform(
   const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
-  // obj.position.y is the CENTER of where the block should be rendered
+
   const y = obj.position.y;
 
   const requested = obj.visual?.texture?.toLowerCase();
@@ -302,21 +285,18 @@ function createPlatform(
     texKey = 'grass';
   }
 
-  console.log(
-    `[createPlatform] Creating ${obj.id} (${texKey}) at x=${x}, y=${y}, w=${width}, h=${height}`
-  );
-
   if ((scene as any).physics?.world) {
     let node: Phaser.GameObjects.GameObject;
     if (scene.textures.exists(texKey)) {
       const sprite = scene.add.sprite(x, y, texKey);
+      sprite.setOrigin(0.5, 0.5);
       sprite.setDisplaySize(width, height);
       sprite.name = obj.id;
       sprite.setDepth(-1);
       scene.physics.add.existing(sprite, true);
       const body = sprite.body as Phaser.Physics.Arcade.StaticBody;
-      body.setSize(width, height);
-      body.updateFromGameObject();
+
+      body.setSize(width, height, true);
       (sprite as any).setData && (sprite as any).setData('isPlatform', true);
       node = sprite;
     } else {
@@ -325,8 +305,7 @@ function createPlatform(
       rect.setDepth(-1);
       scene.physics.add.existing(rect, true);
       const body = rect.body as Phaser.Physics.Arcade.StaticBody;
-      body.setSize(width, height);
-      body.updateFromGameObject();
+      body.setSize(width, height, true);
       (rect as any).setData && (rect as any).setData('isPlatform', true);
       node = rect;
     }
@@ -343,7 +322,7 @@ function createSpring(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
-  const y = obj.position.y; // obj.position.y is already the center position
+  const y = obj.position.y;
   const key = 'spring';
   const springW = ENTITY_SIZES.SPRING.WIDTH;
   const springH = ENTITY_SIZES.SPRING.HEIGHT;
@@ -355,7 +334,10 @@ function createSpring(
     simg.name = obj.id;
     simg.setDepth(0);
     const body = simg.body as Phaser.Physics.Arcade.StaticBody;
-    body.setSize(springW, springH);
+
+    const collisionHeight = springH * 1.1;
+    body.setSize(springW, collisionHeight);
+    body.setOffset(0, -(collisionHeight - springH) / 2);
     body.updateFromGameObject();
     node = simg as unknown as Phaser.GameObjects.GameObject;
   } else {
@@ -375,7 +357,7 @@ function createSpike(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
-  const y = obj.position.y; // obj.position.y is already the center position
+  const y = obj.position.y;
   const key = 'spike';
   const spikeW = ENTITY_SIZES.SPIKE.WIDTH;
   const spikeH = ENTITY_SIZES.SPIKE.HEIGHT;
@@ -387,7 +369,11 @@ function createSpike(
     simg.name = obj.id;
     simg.setDepth(0);
     const body = simg.body as Phaser.Physics.Arcade.StaticBody;
-    body.setSize(spikeW, spikeH);
+
+    const collisionHeight = spikeH * 0.7;
+    const offsetY = (spikeH - collisionHeight) / 2;
+    body.setSize(spikeW * 0.9, collisionHeight);
+    body.setOffset(spikeW * 0.05, offsetY);
     body.updateFromGameObject();
     node = simg as unknown as Phaser.GameObjects.GameObject;
   } else {
@@ -450,7 +436,12 @@ function createEnemy(
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
-  const startKey = (scene.textures.exists('enemy-1') ? 'enemy-1' : (scene.textures.exists('enemy-0') ? 'enemy-0' : undefined)) || 'enemy-0';
+  const startKey =
+    (scene.textures.exists('enemy-1')
+      ? 'enemy-1'
+      : scene.textures.exists('enemy-0')
+        ? 'enemy-0'
+        : undefined) || 'enemy-0';
 
   let enemySprite: Phaser.GameObjects.Sprite;
   if ((scene as any).physics?.world) {
@@ -459,13 +450,12 @@ function createEnemy(
     const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 48;
     enemySprite.setDisplaySize(w, h);
     enemySprite.setDepth(5);
-    
-    // Add physics body for enemy to stand on platforms
+
     const body = enemySprite.body as Phaser.Physics.Arcade.Body;
     body.setCollideWorldBounds(true);
     body.setBounce(0);
     body.setDragX(100);
-    body.setMaxVelocity(100, 1200); // Slow horizontal movement
+    body.setMaxVelocity(100, 1200);
   } else {
     enemySprite = scene.add.sprite(x, y, startKey);
     const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 48;
@@ -476,16 +466,21 @@ function createEnemy(
 
   enemySprite.setName(obj.id);
   (enemySprite as any).setData && (enemySprite as any).setData('isEnemy', true);
-  
-  // Store patrol data - patrol ±2 blocks from spawn position
+
   const TILE_SIZE = 32;
-  (enemySprite as any).setData && (enemySprite as any).setData('patrolLeft', x - 2 * TILE_SIZE);
-  (enemySprite as any).setData && (enemySprite as any).setData('patrolRight', x + 2 * TILE_SIZE);
-  (enemySprite as any).setData && (enemySprite as any).setData('patrolDirection', 1); // 1 = right, -1 = left
-  (enemySprite as any).setData && (enemySprite as any).setData('patrolSpeed', 30);
+  (enemySprite as any).setData &&
+    (enemySprite as any).setData('patrolLeft', x - 2 * TILE_SIZE);
+  (enemySprite as any).setData &&
+    (enemySprite as any).setData('patrolRight', x + 2 * TILE_SIZE);
+  (enemySprite as any).setData &&
+    (enemySprite as any).setData('patrolDirection', 1);
+  (enemySprite as any).setData &&
+    (enemySprite as any).setData('patrolSpeed', 30);
 
   if (scene.anims.exists('enemy-walk')) {
-    try { enemySprite.play('enemy-walk'); } catch {}
+    try {
+      enemySprite.play('enemy-walk');
+    } catch {}
   }
 
   return enemySprite;
@@ -498,7 +493,7 @@ function createLava(
   const w = (obj.scale?.x ?? 1) * ENTITY_SIZES.LAVA.WIDTH;
   const h = (obj.scale?.y ?? 1) * ENTITY_SIZES.LAVA.HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y; // obj.position.y is already the center position
+  const y = obj.position.y;
   const key = scene.textures.exists('lava') ? 'lava' : 'Lava-filler';
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
@@ -528,7 +523,7 @@ function createDoor(
   const w = (obj.scale?.x ?? 1) * ENTITY_SIZES.DOOR.WIDTH;
   const h = (obj.scale?.y ?? 1) * ENTITY_SIZES.DOOR.HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y; // obj.position.y is already the center position
+  const y = obj.position.y;
   const key = 'door';
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
