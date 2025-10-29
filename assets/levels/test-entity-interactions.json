@@ -1,0 +1,267 @@
+{
+  "version": "1.0.0",
+  "name": "Entity Interactions Test Level",
+  "description": "Comprehensive test level containing all entity types to validate interactions, damage mechanics, collectibles, and AI behaviors",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#87CEEB",
+    "bounds": { "width": 1500, "height": 700 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 600 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "ground_platform",
+      "type": "platform",
+      "position": { "x": 0, "y": 680 },
+      "scale": { "x": 15, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "platform_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 580 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "platform_2",
+      "type": "platform",
+      "position": { "x": 400, "y": 480 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "platform_3",
+      "type": "platform",
+      "position": { "x": 600, "y": 380 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "platform_4",
+      "type": "platform",
+      "position": { "x": 800, "y": 480 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "platform_5",
+      "type": "platform",
+      "position": { "x": 1000, "y": 380 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "platform_6",
+      "type": "platform",
+      "position": { "x": 1200, "y": 280 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "spike_1",
+      "type": "spike",
+      "position": { "x": 300, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spike_2",
+      "type": "spike",
+      "position": { "x": 350, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spike_3",
+      "type": "spike",
+      "position": { "x": 500, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spike_4",
+      "type": "spike",
+      "position": { "x": 700, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spring_1",
+      "type": "spring",
+      "position": { "x": 150, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "spring_2",
+      "type": "spring",
+      "position": { "x": 450, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "spring_3",
+      "type": "spring",
+      "position": { "x": 750, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "spring_4",
+      "type": "spring",
+      "position": { "x": 950, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "coin_1",
+      "type": "coin",
+      "position": { "x": 250, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_2",
+      "type": "coin",
+      "position": { "x": 450, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_3",
+      "type": "coin",
+      "position": { "x": 650, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_4",
+      "type": "coin",
+      "position": { "x": 850, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_5",
+      "type": "coin",
+      "position": { "x": 1050, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_6",
+      "type": "coin",
+      "position": { "x": 1250, "y": 250 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_cluster_1",
+      "type": "coin",
+      "position": { "x": 550, "y": 300 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_cluster_2",
+      "type": "coin",
+      "position": { "x": 580, "y": 300 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "coin_cluster_3",
+      "type": "coin",
+      "position": { "x": 610, "y": 300 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "door_locked",
+      "type": "door",
+      "position": { "x": 1350, "y": 620 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": true, "targetLevel": "next-level" }
+    },
+    {
+      "id": "door_unlocked",
+      "type": "door",
+      "position": { "x": 1300, "y": 220 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": {
+        "isLocked": false,
+        "isOpen": true,
+        "targetLevel": "bonus-level"
+      }
+    },
+    {
+      "id": "enemy_1",
+      "type": "enemy",
+      "position": { "x": 320, "y": 620 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 50 }
+    },
+    {
+      "id": "enemy_2",
+      "type": "enemy",
+      "position": { "x": 520, "y": 420 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "idle", "speed": 0 }
+    },
+    {
+      "id": "enemy_3",
+      "type": "enemy",
+      "position": { "x": 720, "y": 320 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 75 }
+    },
+    {
+      "id": "enemy_4",
+      "type": "enemy",
+      "position": { "x": 920, "y": 420 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "speed": 100,
+        "targetId": "player_1"
+      }
+    }
+  ],
+  "metadata": {
+    "createdBy": "Test Level Generator",
+    "createdAt": "2024-10-28",
+    "difficulty": "medium",
+    "tags": [
+      "test",
+      "entity-interactions",
+      "comprehensive",
+      "damage",
+      "collectibles",
+      "ai",
+      "springs",
+      "spikes",
+      "doors",
+      "enemies"
+    ]
+  }
+}

@@ -17,11 +17,15 @@ export function loadLevel(
 ): Phaser.GameObjects.GameObject[] {
   const level: LevelData = 'version' in json ? json : convertLegacyLevel(json);
 
+  const objectsArray = Array.isArray(level.objects)
+    ? level.objects
+    : Object.values(level.objects).flat();
+
   console.log(
     '[loadLevel] Loading level:',
     level.name,
     'with',
-    level.objects.length,
+    objectsArray.length,
     'objects'
   );
   validateLevel(level);
@@ -34,7 +38,7 @@ export function loadLevel(
     (scene as any).platformGroup = scene.physics.add.staticGroup();
   }
 
-  level.objects.forEach((obj) => {
+  objectsArray.forEach((obj: LevelObject) => {
     console.log('[loadLevel] Creating object:', obj.type, 'at', obj.position);
     const gameObject = createGameObject(scene, obj);
     if (gameObject) {
@@ -52,6 +56,7 @@ export function loadLevel(
 function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
   const objects: LevelObject[] = [];
 
+  // Player
   objects.push({
     id: 'player_1',
     type: LevelObjectType.Player,
@@ -63,6 +68,7 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
     },
   });
 
+  // Platforms
   legacy.platforms.forEach((p, i) => {
     objects.push({
       id: `platform_${i + 1}`,
@@ -114,7 +120,12 @@ function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
       scene.physics.world.gravity.y = gy !== undefined && gy > 10 ? gy : 800;
     }
     if (settings.bounds) {
-      scene.physics.world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+      scene.physics.world.setBounds(
+        0,
+        0,
+        settings.bounds.width,
+        settings.bounds.height
+      );
     }
   }
 }
@@ -141,7 +152,7 @@ function createGameObject(
       return createSpring(scene, obj);
     case LevelObjectType.Spike:
       return createSpike(scene, obj);
-    case LevelObjectType.Collectible:
+    case LevelObjectType.Coin:
       return createCoin(scene, obj);
     case LevelObjectType.Obstacle:
       return tex ? createLava(scene, obj) : null;
@@ -160,7 +171,12 @@ function createPlayer(
   const textureKey = obj.visual?.texture || 'player-idle-1';
 
   if ((scene as any).physics?.world) {
-    const playerSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
+    const playerSprite = scene.physics.add.sprite(
+      obj.position.x,
+      obj.position.y,
+      textureKey
+    );
+    playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
     playerSprite.setDepth(10);
     // Disable bounce and set sane movement params

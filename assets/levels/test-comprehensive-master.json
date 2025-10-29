@@ -1,0 +1,1123 @@
+{
+  "version": "1.0.0",
+  "name": "Comprehensive Master Test Level",
+  "description": "Ultimate test level combining all testing scenarios: basic mechanics, boundary conditions, collision complexity, entity interactions, physics extremes, performance stress, gameplay scenarios, visual effects, and error recovery",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#1A1A2E",
+    "bounds": { "width": 5000, "height": 1000 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 900 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "ground_platform_main",
+      "type": "platform",
+      "position": { "x": 0, "y": 980 },
+      "scale": { "x": 125, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "section_marker_basic",
+      "type": "platform",
+      "position": { "x": 500, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "basic_step_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "basic_step_2",
+      "type": "platform",
+      "position": { "x": 300, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "basic_step_3",
+      "type": "platform",
+      "position": { "x": 400, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "basic_coin_1",
+      "type": "coin",
+      "position": { "x": 250, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "basic_spring_1",
+      "type": "spring",
+      "position": { "x": 450, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "section_marker_boundary",
+      "type": "platform",
+      "position": { "x": 1000, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "boundary_extreme_left",
+      "type": "coin",
+      "position": { "x": 5, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_extreme_right",
+      "type": "coin",
+      "position": { "x": 4995, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_extreme_top",
+      "type": "coin",
+      "position": { "x": 1000, "y": 5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_high_platform",
+      "type": "platform",
+      "position": { "x": 800, "y": 200 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "boundary_spring_launcher",
+      "type": "spring",
+      "position": { "x": 750, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1800 }
+    },
+    {
+      "id": "section_marker_collision",
+      "type": "platform",
+      "position": { "x": 1500, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "collision_dense_1",
+      "type": "platform",
+      "position": { "x": 1200, "y": 940 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_dense_2",
+      "type": "platform",
+      "position": { "x": 1220, "y": 920 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_dense_3",
+      "type": "platform",
+      "position": { "x": 1240, "y": 900 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_tight_gap_left",
+      "type": "platform",
+      "position": { "x": 1300, "y": 880 },
+      "scale": { "x": 1.5, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_tight_gap_right",
+      "type": "platform",
+      "position": { "x": 1332, "y": 880 },
+      "scale": { "x": 1.5, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_precision_coin",
+      "type": "coin",
+      "position": { "x": 1316, "y": 880 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "collision_simultaneous_spike",
+      "type": "spike",
+      "position": { "x": 1400, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "collision_simultaneous_spring",
+      "type": "spring",
+      "position": { "x": 1420, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "collision_simultaneous_coin",
+      "type": "coin",
+      "position": { "x": 1440, "y": 920 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "section_marker_entities",
+      "type": "platform",
+      "position": { "x": 2000, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "entity_platform_1",
+      "type": "platform",
+      "position": { "x": 1600, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "entity_platform_2",
+      "type": "platform",
+      "position": { "x": 1750, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "entity_platform_3",
+      "type": "platform",
+      "position": { "x": 1900, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "entity_spike_hazard_1",
+      "type": "spike",
+      "position": { "x": 1650, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "entity_spike_hazard_2",
+      "type": "spike",
+      "position": { "x": 1700, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "entity_spring_boost",
+      "type": "spring",
+      "position": { "x": 1800, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "entity_coin_cluster_1",
+      "type": "coin",
+      "position": { "x": 1630, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "entity_coin_cluster_2",
+      "type": "coin",
+      "position": { "x": 1660, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "entity_coin_cluster_3",
+      "type": "coin",
+      "position": { "x": 1690, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "entity_door_locked",
+      "type": "door",
+      "position": { "x": 1950, "y": 620 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": true, "targetLevel": "next-section" }
+    },
+    {
+      "id": "entity_enemy_patrol",
+      "type": "enemy",
+      "position": { "x": 1720, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 75 }
+    },
+    {
+      "id": "entity_enemy_follower",
+      "type": "enemy",
+      "position": { "x": 1820, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "speed": 100,
+        "targetId": "player_1"
+      }
+    },
+    {
+      "id": "section_marker_physics",
+      "type": "platform",
+      "position": { "x": 2500, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "physics_high_speed_spring",
+      "type": "spring",
+      "position": { "x": 2200, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 2500 }
+    },
+    {
+      "id": "physics_collision_target",
+      "type": "platform",
+      "position": { "x": 2200, "y": 100 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "physics_overlapping_1",
+      "type": "coin",
+      "position": { "x": 2300, "y": 900 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "physics_overlapping_2",
+      "type": "spike",
+      "position": { "x": 2300, "y": 900 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "physics_overlapping_3",
+      "type": "spring",
+      "position": { "x": 2300, "y": 900 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "physics_extreme_enemy",
+      "type": "enemy",
+      "position": { "x": 2350, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 300 },
+      "properties": { "mass": 0.1 }
+    },
+    {
+      "id": "physics_edge_platform_tiny",
+      "type": "platform",
+      "position": { "x": 2400, "y": 950 },
+      "scale": { "x": 0.1, "y": 0.1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "physics_edge_platform_massive",
+      "type": "platform",
+      "position": { "x": 2450, "y": 950 },
+      "scale": { "x": 10, "y": 0.1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "section_marker_performance",
+      "type": "platform",
+      "position": { "x": 3000, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "perf_dense_platform_1",
+      "type": "platform",
+      "position": { "x": 2600, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "perf_dense_platform_2",
+      "type": "platform",
+      "position": { "x": 2680, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "perf_dense_platform_3",
+      "type": "platform",
+      "position": { "x": 2760, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "perf_dense_platform_4",
+      "type": "platform",
+      "position": { "x": 2840, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "perf_dense_platform_5",
+      "type": "platform",
+      "position": { "x": 2920, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "perf_coin_field_1",
+      "type": "coin",
+      "position": { "x": 2620, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "perf_coin_field_2",
+      "type": "coin",
+      "position": { "x": 2640, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "perf_coin_field_3",
+      "type": "coin",
+      "position": { "x": 2660, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "perf_coin_field_4",
+      "type": "coin",
+      "position": { "x": 2680, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "perf_coin_field_5",
+      "type": "coin",
+      "position": { "x": 2700, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "perf_spike_array_1",
+      "type": "spike",
+      "position": { "x": 2800, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "perf_spike_array_2",
+      "type": "spike",
+      "position": { "x": 2820, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "perf_spike_array_3",
+      "type": "spike",
+      "position": { "x": 2840, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "perf_spike_array_4",
+      "type": "spike",
+      "position": { "x": 2860, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "perf_spike_array_5",
+      "type": "spike",
+      "position": { "x": 2880, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "perf_enemy_swarm_1",
+      "type": "enemy",
+      "position": { "x": 2900, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 50 }
+    },
+    {
+      "id": "perf_enemy_swarm_2",
+      "type": "enemy",
+      "position": { "x": 2920, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 75 }
+    },
+    {
+      "id": "perf_enemy_swarm_3",
+      "type": "enemy",
+      "position": { "x": 2940, "y": 920 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "speed": 80,
+        "targetId": "player_1"
+      }
+    },
+    {
+      "id": "perf_spring_sequence_1",
+      "type": "spring",
+      "position": { "x": 2960, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "perf_spring_sequence_2",
+      "type": "spring",
+      "position": { "x": 2980, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1200 }
+    },
+    {
+      "id": "section_marker_gameplay",
+      "type": "platform",
+      "position": { "x": 3500, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "gameplay_puzzle_platform",
+      "type": "platform",
+      "position": { "x": 3200, "y": 880 },
+      "scale": { "x": 3, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "gameplay_coin_gate_1",
+      "type": "coin",
+      "position": { "x": 3220, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "requiredForProgress": true, "gateId": "gate_1" }
+    },
+    {
+      "id": "gameplay_coin_gate_2",
+      "type": "coin",
+      "position": { "x": 3250, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "requiredForProgress": true, "gateId": "gate_1" }
+    },
+    {
+      "id": "gameplay_spike_barrier",
+      "type": "spike",
+      "position": { "x": 3300, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": { "gateId": "gate_1", "disabledWhenGateOpen": true }
+    },
+    {
+      "id": "gameplay_spring_unlock",
+      "type": "spring",
+      "position": { "x": 3330, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": {
+        "gateId": "gate_1",
+        "enabledWhenGateOpen": true,
+        "bounceForce": 1200
+      }
+    },
+    {
+      "id": "gameplay_timing_platform",
+      "type": "platform",
+      "position": { "x": 3400, "y": 780 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "gameplay_timing_enemy",
+      "type": "enemy",
+      "position": { "x": 3420, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 80 },
+      "properties": { "patrolRange": 100, "timingCritical": true }
+    },
+    {
+      "id": "gameplay_timing_coin",
+      "type": "coin",
+      "position": { "x": 3450, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "timingWindow": 2.0, "requiredForProgress": true }
+    },
+    {
+      "id": "section_marker_visual",
+      "type": "platform",
+      "position": { "x": 4000, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "visual_texture_platform_1",
+      "type": "platform",
+      "position": { "x": 3600, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "visual_texture_platform_2",
+      "type": "platform",
+      "position": { "x": 3700, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "visual_texture_platform_3",
+      "type": "platform",
+      "position": { "x": 3800, "y": 880 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "visual_tint_platform_red",
+      "type": "platform",
+      "position": { "x": 3600, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass", "tint": 16711680 }
+    },
+    {
+      "id": "visual_tint_platform_green",
+      "type": "platform",
+      "position": { "x": 3700, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass", "tint": 65280 }
+    },
+    {
+      "id": "visual_tint_platform_blue",
+      "type": "platform",
+      "position": { "x": 3800, "y": 780 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass", "tint": 255 }
+    },
+    {
+      "id": "visual_alpha_platform_75",
+      "type": "platform",
+      "position": { "x": 3600, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground", "alpha": 0.75 }
+    },
+    {
+      "id": "visual_alpha_platform_50",
+      "type": "platform",
+      "position": { "x": 3700, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground", "alpha": 0.5 }
+    },
+    {
+      "id": "visual_alpha_platform_25",
+      "type": "platform",
+      "position": { "x": 3800, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground", "alpha": 0.25 }
+    },
+    {
+      "id": "visual_animation_coin_1",
+      "type": "coin",
+      "position": { "x": 3650, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "visual_animation_coin_2",
+      "type": "coin",
+      "position": { "x": 3750, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-1" }
+    },
+    {
+      "id": "visual_animation_coin_3",
+      "type": "coin",
+      "position": { "x": 3850, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-2" }
+    },
+    {
+      "id": "visual_tinted_coin_red",
+      "type": "coin",
+      "position": { "x": 3650, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0", "tint": 16711680 }
+    },
+    {
+      "id": "visual_tinted_coin_green",
+      "type": "coin",
+      "position": { "x": 3750, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0", "tint": 65280 }
+    },
+    {
+      "id": "visual_tinted_coin_blue",
+      "type": "coin",
+      "position": { "x": 3850, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0", "tint": 255 }
+    },
+    {
+      "id": "visual_spring_normal",
+      "type": "spring",
+      "position": { "x": 3650, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "visual_spring_tinted",
+      "type": "spring",
+      "position": { "x": 3750, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring", "tint": 16711680 }
+    },
+    {
+      "id": "visual_spring_alpha",
+      "type": "spring",
+      "position": { "x": 3850, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring", "alpha": 0.7 }
+    },
+    {
+      "id": "visual_spike_normal",
+      "type": "spike",
+      "position": { "x": 3900, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "visual_spike_tinted",
+      "type": "spike",
+      "position": { "x": 3920, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike", "tint": 16711680 }
+    },
+    {
+      "id": "visual_complex_combo",
+      "type": "platform",
+      "position": { "x": 3950, "y": 680 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile", "tint": 16776960, "alpha": 0.8 }
+    },
+    {
+      "id": "visual_rotation_platform",
+      "type": "platform",
+      "position": { "x": 3650, "y": 580 },
+      "scale": { "x": 3, "y": 0.5 },
+      "rotation": 0.785398,
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "visual_scale_coin_large",
+      "type": "coin",
+      "position": { "x": 3750, "y": 580 },
+      "scale": { "x": 2, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "visual_scale_coin_small",
+      "type": "coin",
+      "position": { "x": 3850, "y": 580 },
+      "scale": { "x": 0.5, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "visual_feedback_coin",
+      "type": "coin",
+      "position": { "x": 3950, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "feedbackType": "collect", "particleEffect": "sparkle" }
+    },
+    {
+      "id": "visual_background_decoration_1",
+      "type": "decoration",
+      "position": { "x": 3600, "y": 400 },
+      "scale": { "x": 1.5, "y": 1.5 },
+      "physics": { "type": "none" },
+      "visual": { "texture": "upvote1", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "visual_foreground_decoration_1",
+      "type": "decoration",
+      "position": { "x": 3800, "y": 400 },
+      "physics": { "type": "none" },
+      "visual": { "texture": "downvote1", "alpha": 0.7 },
+      "layer": "foreground"
+    },
+    {
+      "id": "section_marker_error",
+      "type": "platform",
+      "position": { "x": 4500, "y": 0 },
+      "scale": { "x": 0.2, "y": 25 },
+      "physics": { "type": "static", "isCollidable": false },
+      "visual": { "texture": "lava-tile", "alpha": 0.3 },
+      "layer": "background"
+    },
+    {
+      "id": "error_safe_platform",
+      "type": "platform",
+      "position": { "x": 4200, "y": 880 },
+      "scale": { "x": 5, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_boundary_violation_negative_x",
+      "type": "platform",
+      "position": { "x": -500, "y": 800 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_boundary_violation_beyond_width",
+      "type": "platform",
+      "position": { "x": 5500, "y": 800 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_invalid_texture_platform",
+      "type": "platform",
+      "position": { "x": 4300, "y": 800 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "nonexistent_texture_12345" }
+    },
+    {
+      "id": "error_extreme_scale_zero",
+      "type": "platform",
+      "position": { "x": 4400, "y": 800 },
+      "scale": { "x": 0, "y": 0 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_extreme_scale_negative",
+      "type": "platform",
+      "position": { "x": 4500, "y": 800 },
+      "scale": { "x": -2, "y": -1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_extreme_scale_massive",
+      "type": "platform",
+      "position": { "x": 4600, "y": 800 },
+      "scale": { "x": 1000, "y": 1000 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_invalid_physics_type",
+      "type": "platform",
+      "position": { "x": 4300, "y": 750 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "invalid_physics_type", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_extreme_physics_values",
+      "type": "platform",
+      "position": { "x": 4400, "y": 750 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": {
+        "type": "static",
+        "isCollidable": true,
+        "friction": 999999,
+        "restitution": -50,
+        "density": 0,
+        "gravityScale": 1000000
+      },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_invalid_entity_type",
+      "type": "nonexistent_entity_type",
+      "position": { "x": 4500, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_missing_properties_coin",
+      "type": "coin",
+      "position": { "x": 4600, "y": 750 }
+    },
+    {
+      "id": "error_extreme_rotation",
+      "type": "platform",
+      "position": { "x": 4700, "y": 750 },
+      "scale": { "x": 2, "y": 1 },
+      "rotation": 999999.999,
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_invalid_visual_properties",
+      "type": "coin",
+      "position": { "x": 4300, "y": 700 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": {
+        "texture": "coin-0",
+        "tint": "invalid_color_value",
+        "alpha": 150,
+        "frame": "invalid_frame"
+      }
+    },
+    {
+      "id": "error_extreme_alpha_values",
+      "type": "coin",
+      "position": { "x": 4400, "y": 700 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": {
+        "texture": "coin-0",
+        "alpha": -5.5
+      }
+    },
+    {
+      "id": "error_null_position_values",
+      "type": "coin",
+      "position": { "x": null, "y": null },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "error_string_position_values",
+      "type": "coin",
+      "position": { "x": "undefined", "y": "not_a_number" },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "error_circular_reference_enemy",
+      "type": "enemy",
+      "position": { "x": 4500, "y": 700 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "targetId": "error_circular_reference_enemy",
+        "speed": 100
+      }
+    },
+    {
+      "id": "error_invalid_target_reference",
+      "type": "enemy",
+      "position": { "x": 4600, "y": 700 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": {
+        "movementPattern": "follow",
+        "targetId": "nonexistent_entity_12345",
+        "speed": 50
+      }
+    },
+    {
+      "id": "error_malformed_spring_properties",
+      "type": "spring",
+      "position": { "x": 4300, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": {
+        "bounceForce": "not_a_number",
+        "cooldown": -100,
+        "maxUses": 0.5,
+        "isActive": "maybe"
+      }
+    },
+    {
+      "id": "error_malformed_spike_properties",
+      "type": "spike",
+      "position": { "x": 4400, "y": 950 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" },
+      "properties": {
+        "damage": "infinite",
+        "damageType": 12345,
+        "isLethal": "null_value",
+        "effectRadius": -50
+      }
+    },
+    {
+      "id": "error_duplicate_id_test_1",
+      "type": "coin",
+      "position": { "x": 4600, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "error_duplicate_id_test_1",
+      "type": "platform",
+      "position": { "x": 4700, "y": 650 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "",
+      "type": "platform",
+      "position": { "x": 4750, "y": 650 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "error_infinity_values",
+      "type": "platform",
+      "position": { "x": "Infinity", "y": "-Infinity" },
+      "scale": { "x": "NaN", "y": "Infinity" },
+      "rotation": "NaN",
+      "physics": {
+        "type": "static",
+        "isCollidable": true,
+        "friction": "Infinity",
+        "density": "NaN"
+      },
+      "visual": {
+        "texture": "grass",
+        "alpha": "Infinity",
+        "tint": "NaN"
+      }
+    },
+    {
+      "id": "completion_door",
+      "type": "door",
+      "position": { "x": 4800, "y": 820 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": {
+        "isLocked": false,
+        "isOpen": true,
+        "targetLevel": "level-complete",
+        "completionTrigger": true
+      }
+    },
+    {
+      "id": "completion_celebration_coin_1",
+      "type": "coin",
+      "position": { "x": 4770, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "celebrationItem": true, "optional": true }
+    },
+    {
+      "id": "completion_celebration_coin_2",
+      "type": "coin",
+      "position": { "x": 4800, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "celebrationItem": true, "optional": true }
+    },
+    {
+      "id": "completion_celebration_coin_3",
+      "type": "coin",
+      "position": { "x": 4830, "y": 850 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" },
+      "properties": { "celebrationItem": true, "optional": true }
+    }
+  ],
+  "metadata": {
+    "createdBy": "Comprehensive Master Test Generator",
+    "createdAt": "2024-10-28",
+    "difficulty": "extreme",
+    "tags": [
+      "test",
+      "comprehensive",
+      "master-level",
+      "basic-mechanics",
+      "boundary-conditions",
+      "collision-complex",
+      "entity-interactions",
+      "physics-extremes",
+      "performance-stress",
+      "gameplay-scenarios",
+      "visual-effects",
+      "error-recovery",
+      "all-scenarios",
+      "ultimate-test"
+    ]
+  }
+}
