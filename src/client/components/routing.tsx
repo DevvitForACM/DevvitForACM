@@ -31,6 +31,11 @@ function RoutingProvider({ children }: { children: React.ReactNode }) {
 
   const value = { navigate, goBack, location };
 
+  // Set data attribute on body for CSS targeting
+  React.useEffect(() => {
+    document.body.setAttribute('data-route', location.pathname);
+  }, [location.pathname]);
+
   return (
     <RoutingContext.Provider value={value}>{children}</RoutingContext.Provider>
   );

@@ -8,9 +8,8 @@ import {
   LEVEL_SCHEMA_VERSION,
   LegacyLevelFormat,
 } from './level-schema';
-import { ENTITY_CONFIG } from '@/constants/game-constants';
+import { ENTITY_CONFIG, PLAYER, ENTITY_SIZES } from '@/constants/game-constants';
 import { Player } from '../entities/player';
-import { Coin } from '../entities/coin';
 
 export function loadLevel(
   scene: Phaser.Scene,
@@ -33,6 +32,11 @@ export function loadLevel(
   applySettings(scene, level.settings);
 
   const createdObjects: Phaser.GameObjects.GameObject[] = [];
+  
+  // Create a static physics group for platforms to ensure proper collision
+  if (!(scene as any).platformGroup && (scene as any).physics?.world) {
+    (scene as any).platformGroup = scene.physics.add.staticGroup();
+  }
 
   objectsArray.forEach((obj: LevelObject) => {
     console.log('[loadLevel] Creating object:', obj.type, 'at', obj.position);
@@ -87,7 +91,8 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
       width: legacy.world.width,
       height: legacy.world.height,
     },
-    gravity: { x: 0, y: 1 },
+    // Use sensible Arcade Physics gravity in pixels/sec^2
+    gravity: { x: 0, y: 800 },
   };
 
   return {
@@ -110,7 +115,9 @@ function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
 
   if ((scene as any).physics?.world) {
     if (settings.gravity) {
-      scene.physics.world.gravity.y = settings.gravity.y ?? 800;
+      const gy = settings.gravity.y;
+      // Normalize legacy/normalized gravity values (e.g., 0..2) to Arcade pixels/sec^2
+      scene.physics.world.gravity.y = gy !== undefined && gy > 10 ? gy : 800;
     }
     if (settings.bounds) {
       scene.physics.world.setBounds(
@@ -127,6 +134,15 @@ function createGameObject(
   scene: Phaser.Scene,
   obj: LevelObject
 ): Phaser.GameObjects.GameObject | null {
+  // Texture-directed overrides
+  const tex = obj.visual?.texture?.toLowerCase();
+  if (tex === 'lava' || tex === 'lava-filler') {
+    return createLava(scene, obj);
+  }
+  if (tex === 'door') {
+    return createDoor(scene, obj);
+  }
+
   switch (obj.type) {
     case LevelObjectType.Player:
       return createPlayer(scene, obj);
@@ -138,8 +154,11 @@ function createGameObject(
       return createSpike(scene, obj);
     case LevelObjectType.Coin:
       return createCoin(scene, obj);
-    case LevelObjectType.Door:
-      return createDoor(scene, obj); // ✅ New door case
+    case LevelObjectType.Obstacle:
+      return tex ? createLava(scene, obj) : null;
+    case LevelObjectType.Decoration:
+    case LevelObjectType.Goal:
+      return tex === 'door' ? createDoor(scene, obj) : null;
     default:
       return null;
   }
@@ -149,7 +168,7 @@ function createPlayer(
   scene: Phaser.Scene,
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
-  const textureKey = obj.visual?.texture || 'player-idle-0';
+  const textureKey = obj.visual?.texture || 'player-idle-1';
 
   if ((scene as any).physics?.world) {
     const playerSprite = scene.physics.add.sprite(
@@ -159,39 +178,57 @@ function createPlayer(
     );
     playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
-    playerSprite.setBounce(ENTITY_CONFIG.PLAYER_BOUNCE);
+    playerSprite.setDepth(10);
+    // Disable bounce and set sane movement params
+    playerSprite.setBounce(0);
     playerSprite.setCollideWorldBounds(true);
 
-    const player = new Player(
-      scene,
-      obj.id,
-      obj.position.x,
-      obj.position.y,
-      textureKey
-    );
+    // Scale uniformly to target height to avoid squeezing
+    const nativeW = playerSprite.width || playerSprite.displayWidth || 32;
+    const nativeH = playerSprite.height || playerSprite.displayHeight || 32;
+    const targetH = PLAYER.SIZE.HEIGHT;
+    const uniformScale = targetH / nativeH;
+    playerSprite.setScale(uniformScale);
+
+    // Set physics body size to match visual size and tune physics
+    const body = playerSprite.body as Phaser.Physics.Arcade.Body;
+    const dispW = nativeW * uniformScale;
+    const dispH = nativeH * uniformScale;
+    body.setSize(dispW, dispH, true);
+    body.setBounce(0, 0);
+    body.setDragX(900);
+    body.setMaxVelocity(400, 1200);
+    body.allowRotation = false;
+    
+    const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
     player.sprite.destroy();
     player.sprite = playerSprite;
-
+    
+    // Play idle animation if it exists
+    if (scene.anims.exists('player-idle')) {
+      playerSprite.play('player-idle');
+    }
+    
     return playerSprite;
   } else {
-    const playerSprite = scene.add.sprite(
-      obj.position.x,
-      obj.position.y,
-      textureKey
-    );
-    playerSprite.setDisplaySize(60, 100);
+    const playerSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
     playerSprite.setName(obj.id);
+    playerSprite.setDepth(10);
 
-    const player = new Player(
-      scene,
-      obj.id,
-      obj.position.x,
-      obj.position.y,
-      textureKey
-    );
+    // Scale uniformly to target height to avoid squeezing
+    const nativeH = playerSprite.height || playerSprite.displayHeight || 32;
+    const targetH = PLAYER.SIZE.HEIGHT;
+    const uniformScale = targetH / nativeH;
+    playerSprite.setScale(uniformScale);
+    
+    const player = new Player(scene, obj.id, obj.position.x, obj.position.y, textureKey);
     player.sprite.destroy();
     player.sprite = playerSprite;
-
+    
+    if (scene.anims.exists('player-idle')) {
+      playerSprite.play('player-idle');
+    }
+    
     return playerSprite;
   }
 }
@@ -203,13 +240,46 @@ function createPlatform(
   const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y;
+  const yBase = obj.position.y; // incoming Y represents BASE (ground line)
+  const y = yBase - height / 2; // center so tile sits on the base, fully visible
+
+  // Choose texture: grass or dirt-only ground
+  const requested = obj.visual?.texture?.toLowerCase();
+  let texKey = 'grass';
+  if (requested === 'ground' || requested === 'dirt') {
+    if (scene.textures.exists('ground')) texKey = 'ground';
+    else if (scene.textures.exists('grass-filler')) texKey = 'grass-filler';
+  } else if (requested === 'grass') {
+    texKey = 'grass';
+  }
+
+  console.log(`[createPlatform] Creating ${obj.id} (${texKey}) at x=${x}, y=${y}, w=${width}, h=${height}`);
 
   if ((scene as any).physics?.world) {
-    const platform = scene.add.rectangle(x, y, width, height, 0x888888);
-    scene.physics.add.existing(platform, true);
-    platform.name = obj.id;
-    return platform;
+    let node: Phaser.GameObjects.GameObject;
+    if (scene.textures.exists(texKey)) {
+      const sprite = scene.add.sprite(x, y, texKey);
+      sprite.setDisplaySize(width, height);
+      sprite.name = obj.id;
+      sprite.setDepth(-1);
+      scene.physics.add.existing(sprite, true);
+      const body = sprite.body as Phaser.Physics.Arcade.StaticBody;
+      body.setSize(width, height);
+      body.updateFromGameObject();
+      (sprite as any).setData && (sprite as any).setData('isPlatform', true);
+      node = sprite;
+    } else {
+      const rect = scene.add.rectangle(x, y, width, height, 0x4a8f38);
+      rect.name = obj.id;
+      rect.setDepth(-1);
+      scene.physics.add.existing(rect, true);
+      const body = rect.body as Phaser.Physics.Arcade.StaticBody;
+      body.setSize(width, height);
+      body.updateFromGameObject();
+      (rect as any).setData && (rect as any).setData('isPlatform', true);
+      node = rect;
+    }
+    return node;
   } else {
     const platform = scene.add.rectangle(x, y, width, height, 0x888888);
     platform.name = obj.id;
@@ -223,10 +293,30 @@ function createSpring(
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
-  const img = scene.add.image(x, y, 'spring');
-  img.setDisplaySize(32, 24);
-  img.name = obj.id;
-  return img;
+  const key = 'spring';
+  const springW = (ENTITY_SIZES as any)?.SPRING?.WIDTH ?? 32;
+  const springH = (ENTITY_SIZES as any)?.SPRING?.HEIGHT ?? 24;
+
+  let node: Phaser.GameObjects.GameObject;
+  if ((scene as any).physics?.world) {
+    const simg = scene.physics.add.staticImage(x, y - springH / 2, key);
+    simg.setDisplaySize(springW, springH);
+    simg.name = obj.id;
+    simg.setDepth(0);
+    const body = simg.body as Phaser.Physics.Arcade.StaticBody;
+    body.setSize(springW, springH);
+    body.updateFromGameObject();
+    node = simg as unknown as Phaser.GameObjects.GameObject;
+  } else {
+    const img = scene.add.image(x, y - springH / 2, key);
+    img.setDisplaySize(springW, springH);
+    img.name = obj.id;
+    img.setDepth(0);
+    node = img;
+  }
+
+  (node as any).setData && (node as any).setData('isSpring', true);
+  return node;
 }
 
 function createSpike(
@@ -235,10 +325,30 @@ function createSpike(
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
   const y = obj.position.y;
-  const img = scene.add.image(x, y, 'spike');
-  img.setDisplaySize(32, 32);
-  img.name = obj.id;
-  return img;
+  const key = 'spike';
+  const spikeW = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 32;
+  const spikeH = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 32;
+
+  let node: Phaser.GameObjects.GameObject;
+  if ((scene as any).physics?.world) {
+    const simg = scene.physics.add.staticImage(x, y - spikeH / 2, key);
+    simg.setDisplaySize(spikeW, spikeH);
+    simg.name = obj.id;
+    simg.setDepth(0);
+    const body = simg.body as Phaser.Physics.Arcade.StaticBody;
+    body.setSize(spikeW, spikeH);
+    body.updateFromGameObject();
+    node = simg as unknown as Phaser.GameObjects.GameObject;
+  } else {
+    const img = scene.add.image(x, y - spikeH / 2, key);
+    img.setDisplaySize(spikeW, spikeH);
+    img.name = obj.id;
+    img.setDepth(0);
+    node = img;
+  }
+
+  (node as any).setData && (node as any).setData('isSpike', true);
+  return node;
 }
 
 function createCoin(
@@ -246,45 +356,102 @@ function createCoin(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const textureKey = obj.visual?.texture || 'coin-0';
-  const coinSprite = scene.add.sprite(
-    obj.position.x,
-    obj.position.y,
-    textureKey
-  );
-  coinSprite.setDisplaySize(60, 60);
-  coinSprite.setName(obj.id);
-
-  const coin = new Coin(
-    scene,
-    obj.id,
-    obj.position.x,
-    obj.position.y,
-    textureKey
-  );
-  coin.sprite = coinSprite;
-
+  const coinW = ENTITY_SIZES.COIN.WIDTH;
+  const coinH = ENTITY_SIZES.COIN.HEIGHT;
+  
+  let coinSprite: Phaser.GameObjects.Sprite;
+  
+  if ((scene as any).physics?.world) {
+    // Create sprite with physics
+    coinSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
+    coinSprite.setDisplaySize(coinW, coinH);
+    coinSprite.setDepth(5);
+    coinSprite.setName(obj.id);
+    
+    // Set physics body
+    const body = coinSprite.body as Phaser.Physics.Arcade.Body;
+    body.setSize(coinW, coinH);
+    body.setAllowGravity(false); // Coins float in place
+    body.setImmovable(true);
+  } else {
+    // No physics, just visual
+    coinSprite = scene.add.sprite(obj.position.x, obj.position.y, textureKey);
+    coinSprite.setDisplaySize(coinW, coinH);
+    coinSprite.setDepth(5);
+    coinSprite.setName(obj.id);
+  }
+  
+  // Tag as coin for collision detection
+  (coinSprite as any).setData && (coinSprite as any).setData('isCoin', true);
+  
+  // Auto-play spin if available
+  if (scene.anims.exists('coin-spin')) {
+    try { coinSprite.play('coin-spin'); } catch {}
+  }
+  
   return coinSprite;
+}
+
+function createLava(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
+  const w = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
+  const h = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
+  const x = obj.position.x;
+  const y = obj.position.y - h / 2; // incoming y is base
+  const key = scene.textures.exists('lava') ? 'lava' : 'Lava-filler';
+  let node: Phaser.GameObjects.GameObject;
+  if ((scene as any).physics?.world) {
+    const img = scene.physics.add.staticImage(x, y, key);
+    img.setDisplaySize(w, h);
+    img.name = obj.id;
+    img.setDepth(-1);
+    const body = img.body as Phaser.Physics.Arcade.StaticBody;
+    body.setSize(w, h);
+    body.updateFromGameObject();
+    node = img as unknown as Phaser.GameObjects.GameObject;
+  } else {
+    const img = scene.add.image(x, y, key);
+    img.setDisplaySize(w, h);
+    img.name = obj.id;
+    img.setDepth(-1);
+    node = img;
+  }
+  (node as any).setData && (node as any).setData('isLava', true);
+  return node;
 }
 
 function createDoor(
   scene: Phaser.Scene,
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
+  const w = (obj.scale?.x ?? 1) * ENTITY_SIZES.DOOR.WIDTH;
+  const h = (obj.scale?.y ?? 1) * ENTITY_SIZES.DOOR.HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y;
-  const textureKey = obj.visual?.texture || 'door';
-
-  const doorSprite = scene.add.sprite(x, y, textureKey);
-  doorSprite.setDisplaySize(80, 120);
-  doorSprite.setName(obj.id);
-
-  // optional physics body
+  const y = obj.position.y - h / 2; // incoming y is base
+  const key = 'door';
+  let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
-    scene.physics.add.existing(doorSprite, true);
+    const img = scene.physics.add.staticImage(x, y, key);
+    img.setDisplaySize(w, h);
+    img.name = obj.id;
+    img.setDepth(0);
+    const body = img.body as Phaser.Physics.Arcade.StaticBody;
+    body.setSize(w, h);
+    body.updateFromGameObject();
+    node = img as unknown as Phaser.GameObjects.GameObject;
+  } else {
+    const img = scene.add.image(x, y, key);
+    img.setDisplaySize(w, h);
+    img.name = obj.id;
+    img.setDepth(0);
+    node = img;
   }
-
-  console.log('[loadLevel] Created door at', x, y);
-  return doorSprite;
+  // treat door as solid platform for now
+  (node as any).setData && (node as any).setData('isPlatform', true);
+  (node as any).setData && (node as any).setData('isDoor', true);
+  return node;
 }
 
 function validateLevel(level: LevelData): void {

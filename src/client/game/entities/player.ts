@@ -30,22 +30,36 @@ export class Player extends BaseEntity {
   }
 
   private createAnimations(): void {
-    if (!this.scene.anims.exists('player-idle')) {
+    // Check if idle textures exist
+    const idleFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.scene.textures.exists(`player-idle-${i}`))
+      .map((i) => ({ key: `player-idle-${i}` }));
+    
+    if (!this.scene.anims.exists('player-idle') && idleFrames.length > 0) {
       this.scene.anims.create({
         key: 'player-idle',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+        frames: idleFrames,
         frameRate: 8,
         repeat: -1,
       });
     }
 
+    // Check if jump textures exist, fallback to idle if not
+    const jumpFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.scene.textures.exists(`player-jump-${i}`))
+      .map((i) => ({ key: `player-jump-${i}` }));
+    
     if (!this.scene.anims.exists('player-jump-sequence')) {
-      this.scene.anims.create({
-        key: 'player-jump-sequence',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-jump-${i}` })),
-        frameRate: 12,
-        repeat: 0,
-      });
+      // If no jump frames, use idle frames as fallback
+      const frames = jumpFrames.length > 0 ? jumpFrames : idleFrames;
+      if (frames.length > 0) {
+        this.scene.anims.create({
+          key: 'player-jump-sequence',
+          frames: frames,
+          frameRate: 12,
+          repeat: 0,
+        });
+      }
     }
   }
 
