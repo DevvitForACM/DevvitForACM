@@ -181,30 +181,40 @@ export default function Create() {
       const maxGridY = Math.max(0, ...groundOrDirt.map((g: any) => g.gridY), ...entities.map((e: any) => e.gridY));
       const width = Math.max(1000, ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID));
       const height = Math.max(600, (maxGridY + 3) * GRID);
-      // Convert grid Y to world Y - grid Y=0 is at the BOTTOM of the world
-      const toY = (gridY: number) => height - (gridY * GRID) - GRID;
+      // Convert grid Y to world Y (center of the grid cell)
+      // Grid Y=0 is at the BOTTOM, Y increases upward
+      const toY = (gridY: number) => height - (gridY * GRID) - (GRID / 2);
 
       const objects: LevelObject[] = [];
 
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      // Place player on top of the block they're placed on
-      let playerY = playerEnt ? toY(playerEnt.gridY) + GRID / 2 : Math.max(200, height - 100);
+      // Player Y is just the center of their grid cell
+      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
       
       objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava' || t === 'enemy') {
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'enemy' || t === 'lava') {
+          // All entities use center-based positioning
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
-          let visual: any = undefined;
+          let scale = undefined;
+          let visual = undefined;
+          
           if (t === 'spike') levelType = LevelObjectType.Spike;
           else if (t === 'coin') levelType = LevelObjectType.Coin;
-          else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
           else if (t === 'enemy') levelType = LevelObjectType.Enemy;
+          else if (t === 'lava') {
+            levelType = LevelObjectType.Obstacle;
+            scale = { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT };
+            visual = { texture: 'lava' };
+          }
+          
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+          if (scale) obj.scale = scale;
           if (visual) obj.visual = visual;
           objects.push(obj);
         }
@@ -301,8 +311,9 @@ export default function Create() {
       600,
       (maxGridY + 3) * GRID
     );
-    // Convert grid Y to world Y - grid Y=0 is at the BOTTOM of the world
-    const toY = (gridY: number) => height - (gridY * GRID) - GRID;
+    // Convert grid Y to world Y (center of the grid cell)
+    // Grid Y=0 is at the BOTTOM, Y increases upward
+    const toY = (gridY: number) => height - (gridY * GRID) - (GRID / 2);
 
     const objects: LevelObject[] = [];
 
@@ -310,8 +321,8 @@ export default function Create() {
       (e: any) => String(e.type).toLowerCase().trim() === 'player'
     );
     const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-    // Place player on top of the block they're placed on
-    let playerY = playerEnt ? toY(playerEnt.gridY) + GRID / 2 : Math.max(200, height - 100);
+    // Player Y is just the center of their grid cell
+    let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
     
     objects.push({
       id: 'player_1',
@@ -322,16 +333,25 @@ export default function Create() {
 
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava' || t === 'enemy') {
+      if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'enemy' || t === 'lava') {
+        // All entities use center-based positioning
         const x = e.gridX * GRID + GRID / 2;
         const y = toY(e.gridY);
         let levelType: LevelObjectType = LevelObjectType.Spring;
-        let visual: any = undefined;
+        let scale = undefined;
+        let visual = undefined;
+        
         if (t === 'spike') levelType = LevelObjectType.Spike;
         else if (t === 'coin') levelType = LevelObjectType.Coin;
-        else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
         else if (t === 'enemy') levelType = LevelObjectType.Enemy;
+        else if (t === 'lava') {
+          levelType = LevelObjectType.Obstacle;
+          scale = { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT };
+          visual = { texture: 'lava' };
+        }
+        
         const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+        if (scale) obj.scale = scale;
         if (visual) obj.visual = visual;
         objects.push(obj);
       }
@@ -442,16 +462,17 @@ export default function Create() {
         600,
         (maxGridY + 3) * GRID
       );
-      // Convert grid Y to world Y - grid Y=0 is at the BOTTOM of the world
-      const toY = (gridY: number) => height - (gridY * GRID) - GRID;
+      // Convert grid Y to world Y (center of the grid cell)
+      // Grid Y=0 is at the BOTTOM, Y increases upward
+      const toY = (gridY: number) => height - (gridY * GRID) - (GRID / 2);
 
       const playerEnt = entities.find(
         (e: any) => String(e.type).toLowerCase().trim() === 'player'
       );
       
-      // Place player on top of the block they're placed on
+      // Player Y is just the center of their grid cell
       const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      let playerY = playerEnt ? toY(playerEnt.gridY) + GRID / 2 : Math.max(200, height - 100);
+      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
       
       console.log(`[Create] Player at gridX=${playerEnt?.gridX}, gridY=${playerEnt?.gridY}, worldY=${playerY}, height=${height}`);
       
@@ -479,16 +500,25 @@ export default function Create() {
 
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava' || t === 'enemy') {
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'enemy' || t === 'lava') {
+          // All entities use center-based positioning
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
-          let visual: any = undefined;
+          let scale = undefined;
+          let visual = undefined;
+          
           if (t === 'spike') levelType = LevelObjectType.Spike;
           else if (t === 'coin') levelType = LevelObjectType.Coin;
-          else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
           else if (t === 'enemy') levelType = LevelObjectType.Enemy;
+          else if (t === 'lava') {
+            levelType = LevelObjectType.Obstacle;
+            scale = { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT };
+            visual = { texture: 'lava' };
+          }
+          
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+          if (scale) obj.scale = scale;
           if (visual) obj.visual = visual;
           objects.push(obj);
         }

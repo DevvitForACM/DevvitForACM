@@ -242,8 +242,8 @@ function createPlatform(
   const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
-  const yBase = obj.position.y; // incoming Y represents BASE (ground line)
-  const y = yBase - height / 2; // center so tile sits on the base, fully visible
+  // obj.position.y is the CENTER of where the block should be rendered
+  const y = obj.position.y;
 
   // Choose texture: grass or dirt-only ground
   const requested = obj.visual?.texture?.toLowerCase();
@@ -294,14 +294,14 @@ function createSpring(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
-  const y = obj.position.y;
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = 'spring';
   const springW = (ENTITY_SIZES as any)?.SPRING?.WIDTH ?? 32;
   const springH = (ENTITY_SIZES as any)?.SPRING?.HEIGHT ?? 24;
 
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
-    const simg = scene.physics.add.staticImage(x, y - springH / 2, key);
+    const simg = scene.physics.add.staticImage(x, y, key);
     simg.setDisplaySize(springW, springH);
     simg.name = obj.id;
     simg.setDepth(0);
@@ -310,7 +310,7 @@ function createSpring(
     body.updateFromGameObject();
     node = simg as unknown as Phaser.GameObjects.GameObject;
   } else {
-    const img = scene.add.image(x, y - springH / 2, key);
+    const img = scene.add.image(x, y, key);
     img.setDisplaySize(springW, springH);
     img.name = obj.id;
     img.setDepth(0);
@@ -326,14 +326,14 @@ function createSpike(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
-  const y = obj.position.y;
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = 'spike';
   const spikeW = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 32;
   const spikeH = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 32;
 
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
-    const simg = scene.physics.add.staticImage(x, y - spikeH / 2, key);
+    const simg = scene.physics.add.staticImage(x, y, key);
     simg.setDisplaySize(spikeW, spikeH);
     simg.name = obj.id;
     simg.setDepth(0);
@@ -342,7 +342,7 @@ function createSpike(
     body.updateFromGameObject();
     node = simg as unknown as Phaser.GameObjects.GameObject;
   } else {
-    const img = scene.add.image(x, y - spikeH / 2, key);
+    const img = scene.add.image(x, y, key);
     img.setDisplaySize(spikeW, spikeH);
     img.name = obj.id;
     img.setDepth(0);
@@ -405,14 +405,21 @@ function createEnemy(
   let enemySprite: Phaser.GameObjects.Sprite;
   if ((scene as any).physics?.world) {
     enemySprite = scene.physics.add.sprite(x, y, startKey);
-    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 32;
-    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 32;
+    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 48;
+    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 48;
     enemySprite.setDisplaySize(w, h);
     enemySprite.setDepth(5);
+    
+    // Add physics body for enemy to stand on platforms
+    const body = enemySprite.body as Phaser.Physics.Arcade.Body;
+    body.setCollideWorldBounds(true);
+    body.setBounce(0);
+    body.setDragX(100);
+    body.setMaxVelocity(100, 1200); // Slow horizontal movement
   } else {
     enemySprite = scene.add.sprite(x, y, startKey);
-    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 32;
-    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 32;
+    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 48;
+    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 48;
     enemySprite.setDisplaySize(w, h);
     enemySprite.setDepth(5);
   }
@@ -434,7 +441,7 @@ function createLava(
   const w = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const h = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y - h / 2; // incoming y is base
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = scene.textures.exists('lava') ? 'lava' : 'Lava-filler';
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
@@ -464,7 +471,7 @@ function createDoor(
   const w = (obj.scale?.x ?? 1) * ENTITY_SIZES.DOOR.WIDTH;
   const h = (obj.scale?.y ?? 1) * ENTITY_SIZES.DOOR.HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y - h / 2; // incoming y is base
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = 'door';
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {

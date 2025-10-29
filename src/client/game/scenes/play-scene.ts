@@ -340,7 +340,7 @@ export class PlayScene extends Phaser.Scene {
   private setupCollisions(): void {
     const platforms = this.children.list.filter((child: any) => {
       const isPlatform = typeof child?.getData === 'function' && child.getData('isPlatform');
-      const isHazard = typeof child?.getData === 'function' && (child.getData('isSpike') || child.getData('isSpring') || child.getData('isLava'));
+      const isHazard = typeof child?.getData === 'function' && (child.getData('isSpike') || child.getData('isSpring') || child.getData('isLava') || child.getData('isEnemy'));
       const hasBody = !!(child as any)?.body;
       return hasBody && isPlatform && !isHazard;
     }) as Phaser.GameObjects.GameObject[];
@@ -404,7 +404,14 @@ export class PlayScene extends Phaser.Scene {
       return tagged || tex === 'door' || /door/i.test(name);
     }) as Phaser.GameObjects.GameObject[];
 
-    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}, coins=${coins.length}, doors=${doors.length}`);
+    const enemies = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isEnemy');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || /enemy/i.test(tex) || /enemy/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}, coins=${coins.length}, doors=${doors.length}, enemies=${enemies.length}`);
 
     spikes.forEach((spike) => {
       this.physics.add.overlap(this.player, spike, this.onPlayerSpikeOverlap, undefined, this);
@@ -420,6 +427,15 @@ export class PlayScene extends Phaser.Scene {
     });
     doors.forEach((door) => {
       this.physics.add.overlap(this.player, door, this.onPlayerDoorOverlap, undefined, this);
+    });
+    
+    // Enemy collisions with platforms (so enemies stand on blocks)
+    enemies.forEach((enemy) => {
+      platforms.forEach((platform) => {
+        this.physics.add.collider(enemy, platform);
+      });
+      // Enemy-player overlap (respawn player like spike/lava)
+      this.physics.add.overlap(this.player, enemy, this.onPlayerEnemyOverlap, undefined, this);
     });
   }
 
@@ -494,6 +510,11 @@ export class PlayScene extends Phaser.Scene {
 
   private onPlayerLavaOverlap(): void {
     // Same behavior as spike
+    this.onPlayerSpikeOverlap();
+  }
+
+  private onPlayerEnemyOverlap(): void {
+    // Same behavior as spike - respawn at last safe position
     this.onPlayerSpikeOverlap();
   }
 

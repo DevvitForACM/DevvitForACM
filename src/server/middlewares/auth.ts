@@ -1,14 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyServerJwt } from '../services/auth.service.redis';
-
-// Dynamic import of context - only available in Devvit runtime
-let devvitContext: any = null;
-try {
-  const devvitWeb = require('@devvit/web/server');
-  devvitContext = devvitWeb.context;
-} catch (err) {
-  // Not in Devvit context
-}
+import { context as devvitContext, reddit as devvitReddit } from '@devvit/web/server';
 
 export interface UserPayload {
   uid: string;
@@ -22,39 +14,42 @@ export interface AuthedRequest extends Request {
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   console.log('[requireAuth] Starting auth check...');
 
-  // Try Devvit context first (automatically provided by Devvit Web)
-  if (devvitContext) {
-    console.log('[requireAuth] Context available:', {
-      hasContext: !!devvitContext,
+  // 1) Prefer Devvit context
+  if (devvitContext && devvitContext.userId) {
+    console.log('[requireAuth] Using Devvit context auth', {
       userId: devvitContext.userId,
       username: devvitContext.username,
-      contextKeys: Object.keys(devvitContext)
     });
-
-    if (devvitContext.userId) {
-      console.log('[requireAuth] Using Devvit context auth');
-      req.user = {
-        uid: devvitContext.userId,
-        username: devvitContext.username || 'anonymous'
-      };
-      return next();
-    }
-  } else {
-    console.log('[requireAuth] Devvit context not available');
-  }
-
-  // In standalone/development mode, use a test user
-  const isDevelopment = process.env.NODE_ENV !== 'production' && !devvitContext;
-  if (isDevelopment) {
-    console.log('[requireAuth] Development mode - using test user');
     req.user = {
-      uid: 'test-user-dev',
-      username: 'DevUser'
+      uid: devvitContext.userId,
+      username: devvitContext.username || 'anonymous',
     };
     return next();
   }
 
-  // Fallback to JWT auth for external/standalone requests
+  // 2) Fall back to Reddit helper
+  try {
+    if (devvitReddit && typeof devvitReddit.getCurrentUsername === 'function') {
+      const username = await devvitReddit.getCurrentUsername();
+      if (username) {
+        console.log('[requireAuth] Using reddit.getCurrentUsername() auth', { username });
+        req.user = { uid: `reddit:${username}`, username };
+        return next();
+      }
+    }
+  } catch (e) {
+    console.warn('[requireAuth] reddit.getCurrentUsername() failed:', e);
+  }
+
+  // 3) Development fallback (last resort only)
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  if (isDevelopment) {
+    console.warn('[requireAuth] Dev fallback engaged: using test user');
+    req.user = { uid: 'test-user-dev', username: 'DevUser' };
+    return next();
+  }
+
+  // 4) JWT Bearer token fallback
   console.log('[requireAuth] Falling back to JWT auth');
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) {
@@ -66,7 +61,6 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
   const payload = await verifyServerJwt(token);
   if (!payload) return res.status(401).json({ error: 'Invalid token' });
 
-  // validate shape
   if (typeof payload.uid !== 'string' || typeof payload.username !== 'string') {
     return res.status(401).json({ error: 'Invalid token payload' });
   }
