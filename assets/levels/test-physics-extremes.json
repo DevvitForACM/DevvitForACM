@@ -1,0 +1,423 @@
+{
+  "version": "1.0.0",
+  "name": "Physics Extremes Test Level",
+  "description": "Test level for validating physics engine behavior under extreme conditions including varied gravity, high-speed collisions, and overlapping entities",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#2C1810",
+    "bounds": { "width": 2000, "height": 800 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 700 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "ground_platform",
+      "type": "platform",
+      "position": { "x": 0, "y": 780 },
+      "scale": { "x": 20, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "section_divider_1",
+      "type": "platform",
+      "position": { "x": 400, "y": 0 },
+      "scale": { "x": 0.5, "y": 20 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "section_divider_2",
+      "type": "platform",
+      "position": { "x": 800, "y": 0 },
+      "scale": { "x": 0.5, "y": 20 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "section_divider_3",
+      "type": "platform",
+      "position": { "x": 1200, "y": 0 },
+      "scale": { "x": 0.5, "y": 20 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "section_divider_4",
+      "type": "platform",
+      "position": { "x": 1600, "y": 0 },
+      "scale": { "x": 0.5, "y": 20 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "zero_gravity_platform_1",
+      "type": "platform",
+      "position": { "x": 450, "y": 600 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "gravityOverride": { "x": 0, "y": 0 } }
+    },
+    {
+      "id": "zero_gravity_platform_2",
+      "type": "platform",
+      "position": { "x": 450, "y": 400 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "gravityOverride": { "x": 0, "y": 0 } }
+    },
+    {
+      "id": "zero_gravity_platform_3",
+      "type": "platform",
+      "position": { "x": 450, "y": 200 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" },
+      "properties": { "gravityOverride": { "x": 0, "y": 0 } }
+    },
+    {
+      "id": "low_gravity_platform_1",
+      "type": "platform",
+      "position": { "x": 850, "y": 680 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" },
+      "properties": { "gravityOverride": { "x": 0, "y": 400 } }
+    },
+    {
+      "id": "low_gravity_platform_2",
+      "type": "platform",
+      "position": { "x": 850, "y": 500 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" },
+      "properties": { "gravityOverride": { "x": 0, "y": 400 } }
+    },
+    {
+      "id": "low_gravity_platform_3",
+      "type": "platform",
+      "position": { "x": 850, "y": 320 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" },
+      "properties": { "gravityOverride": { "x": 0, "y": 400 } }
+    },
+    {
+      "id": "high_gravity_platform_1",
+      "type": "platform",
+      "position": { "x": 1250, "y": 700 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava" },
+      "properties": { "gravityOverride": { "x": 0, "y": 1200 } }
+    },
+    {
+      "id": "high_gravity_platform_2",
+      "type": "platform",
+      "position": { "x": 1250, "y": 600 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava" },
+      "properties": { "gravityOverride": { "x": 0, "y": 1200 } }
+    },
+    {
+      "id": "negative_gravity_platform_1",
+      "type": "platform",
+      "position": { "x": 1650, "y": 200 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spikes" },
+      "properties": { "gravityOverride": { "x": 0, "y": -200 } }
+    },
+    {
+      "id": "negative_gravity_platform_2",
+      "type": "platform",
+      "position": { "x": 1650, "y": 400 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spikes" },
+      "properties": { "gravityOverride": { "x": 0, "y": -200 } }
+    },
+    {
+      "id": "negative_gravity_ceiling",
+      "type": "platform",
+      "position": { "x": 1600, "y": 20 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "high_speed_spring_1",
+      "type": "spring",
+      "position": { "x": 200, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 2000 }
+    },
+    {
+      "id": "high_speed_spring_2",
+      "type": "spring",
+      "position": { "x": 600, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1500 }
+    },
+    {
+      "id": "high_speed_spring_3",
+      "type": "spring",
+      "position": { "x": 1000, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 2500 }
+    },
+    {
+      "id": "collision_target_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 100 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_target_2",
+      "type": "platform",
+      "position": { "x": 600, "y": 150 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_target_3",
+      "type": "platform",
+      "position": { "x": 1000, "y": 50 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "overlapping_entity_1",
+      "type": "coin",
+      "position": { "x": 300, "y": 700 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "overlapping_entity_2",
+      "type": "spike",
+      "position": { "x": 300, "y": 700 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "overlapping_entity_3",
+      "type": "spring",
+      "position": { "x": 300, "y": 700 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "overlapping_cluster_1",
+      "type": "coin",
+      "position": { "x": 500, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "overlapping_cluster_2",
+      "type": "coin",
+      "position": { "x": 502, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "overlapping_cluster_3",
+      "type": "coin",
+      "position": { "x": 504, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "overlapping_cluster_4",
+      "type": "coin",
+      "position": { "x": 500, "y": 652 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "overlapping_cluster_5",
+      "type": "coin",
+      "position": { "x": 502, "y": 652 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "rapid_state_trigger_1",
+      "type": "spring",
+      "position": { "x": 700, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 800, "cooldown": 0.1 }
+    },
+    {
+      "id": "rapid_state_trigger_2",
+      "type": "spring",
+      "position": { "x": 720, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 800, "cooldown": 0.1 }
+    },
+    {
+      "id": "rapid_state_trigger_3",
+      "type": "spring",
+      "position": { "x": 740, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 800, "cooldown": 0.1 }
+    },
+    {
+      "id": "edge_case_enemy_1",
+      "type": "enemy",
+      "position": { "x": 350, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 200 },
+      "properties": { "mass": 0.1 }
+    },
+    {
+      "id": "edge_case_enemy_2",
+      "type": "enemy",
+      "position": { "x": 750, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 500 },
+      "properties": { "mass": 10 }
+    },
+    {
+      "id": "edge_case_platform_1",
+      "type": "platform",
+      "position": { "x": 1100, "y": 750 },
+      "scale": { "x": 0.1, "y": 0.1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "edge_case_platform_2",
+      "type": "platform",
+      "position": { "x": 1150, "y": 750 },
+      "scale": { "x": 10, "y": 0.1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "simultaneous_collision_1",
+      "type": "spike",
+      "position": { "x": 1400, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "simultaneous_collision_2",
+      "type": "coin",
+      "position": { "x": 1420, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "simultaneous_collision_3",
+      "type": "spring",
+      "position": { "x": 1440, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "simultaneous_collision_4",
+      "type": "door",
+      "position": { "x": 1460, "y": 720 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": false }
+    },
+    {
+      "id": "boundary_test_entity_1",
+      "type": "coin",
+      "position": { "x": 10, "y": 10 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_test_entity_2",
+      "type": "coin",
+      "position": { "x": 1990, "y": 10 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_test_entity_3",
+      "type": "coin",
+      "position": { "x": 10, "y": 790 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "boundary_test_entity_4",
+      "type": "coin",
+      "position": { "x": 1990, "y": 790 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "physics_chain_reaction_1",
+      "type": "enemy",
+      "position": { "x": 1500, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "idle", "speed": 0 }
+    },
+    {
+      "id": "physics_chain_reaction_2",
+      "type": "enemy",
+      "position": { "x": 1520, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "idle", "speed": 0 }
+    },
+    {
+      "id": "physics_chain_reaction_3",
+      "type": "enemy",
+      "position": { "x": 1540, "y": 720 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "idle", "speed": 0 }
+    },
+    {
+      "id": "physics_chain_reaction_trigger",
+      "type": "spring",
+      "position": { "x": 1480, "y": 750 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    }
+  ],
+  "metadata": {
+    "createdBy": "Test Level Generator",
+    "createdAt": "2024-10-28",
+    "difficulty": "extreme",
+    "tags": [
+      "test",
+      "physics-extremes",
+      "gravity-variations",
+      "high-speed-collisions",
+      "overlapping-entities",
+      "edge-cases",
+      "stress-test",
+      "collision-resolution"
+    ]
+  }
+}

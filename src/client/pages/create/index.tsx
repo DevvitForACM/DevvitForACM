@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
-import { SCENE_KEYS, COLORS, ENTITY_CONFIG } from '@/constants/game-constants';
+import { SCENE_KEYS, ENTITY_CONFIG } from '@/constants/game-constants';
 import {
   LEVEL_SCHEMA_VERSION,
   LevelObjectType,
@@ -154,7 +154,7 @@ export default function Create() {
           let levelType: LevelObjectType = LevelObjectType.Spring;
           let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-          else if (t === 'coin') levelType = LevelObjectType.Collectible;
+else if (t === 'coin') levelType = LevelObjectType.Coin;
           else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
           if (visual) obj.visual = visual;
@@ -285,7 +285,7 @@ export default function Create() {
         let levelType: LevelObjectType = LevelObjectType.Spring;
         let visual: any = undefined;
         if (t === 'spike') levelType = LevelObjectType.Spike;
-        else if (t === 'coin') levelType = LevelObjectType.Collectible;
+else if (t === 'coin') levelType = LevelObjectType.Coin;
         else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
         const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
         if (visual) obj.visual = visual;
@@ -452,7 +452,7 @@ export default function Create() {
           let levelType: LevelObjectType = LevelObjectType.Spring;
           let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-          else if (t === 'coin') levelType = LevelObjectType.Collectible;
+else if (t === 'coin') levelType = LevelObjectType.Coin;
           else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
           if (visual) obj.visual = visual;
@@ -491,8 +491,8 @@ export default function Create() {
     }
 
     console.log('[Create] handlePlay - levelData:', levelData);
-    console.log('[Create] handlePlay - objects count:', levelData.objects.length);
-    const platforms = levelData.objects.filter(o => o.type === 'platform');
+console.log('[Create] handlePlay - objects count:', (Array.isArray(levelData.objects) ? levelData.objects : Object.values(levelData.objects).flat()).length);
+const platforms = (Array.isArray(levelData.objects) ? levelData.objects : Object.values(levelData.objects).flat()).filter((o: any) => o.type === 'platform');
     console.log('[Create] handlePlay - platform objects:', platforms.length);
 
     setIsPlaying(true);
@@ -501,7 +501,7 @@ export default function Create() {
     scene.scene.stop(SCENE_KEYS.CREATE);
     
     // Restart PlayScene with new data (this will call init and create again)
-    console.log('[Create] Restarting PlayScene with', levelData.objects.length, 'objects');
+console.log('[Create] Restarting PlayScene with', (Array.isArray(levelData.objects) ? levelData.objects : Object.values(levelData.objects).flat()).length, 'objects');
     scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
   };
 

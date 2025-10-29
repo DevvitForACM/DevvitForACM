@@ -9,8 +9,8 @@ export function useAuth() {
     const getContext = async () => {
       try {
         const { context } = await import('@devvit/web/client');
-        const authToken = context.authToken;
-        const userId = context.userId;
+        const authToken = (context as any).authToken;
+        const userId = (context as any).userId;
 
         // eslint-disable-next-line no-console
         console.log('[useAuth] Context:', { 

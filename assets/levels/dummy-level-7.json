@@ -1,0 +1,227 @@
+{
+  "version": "1.0.0",
+  "name": "Speed Run Circuit",
+  "description": "A fast-paced level designed for speedrunning with optimal paths and shortcuts",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#FF4500",
+    "bounds": { "width": 2200, "height": 600 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 80, "y": 500 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "start_platform",
+      "type": "platform",
+      "position": { "x": 0, "y": 580 },
+      "scale": { "x": 4, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "speed_platform_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 520 },
+      "scale": { "x": 1.5, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "speed_platform_2",
+      "type": "platform",
+      "position": { "x": 350, "y": 460 },
+      "scale": { "x": 1.5, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "speed_platform_3",
+      "type": "platform",
+      "position": { "x": 500, "y": 400 },
+      "scale": { "x": 1.5, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "shortcut_platform_upper",
+      "type": "platform",
+      "position": { "x": 650, "y": 300 },
+      "scale": { "x": 3, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "shortcut_platform_lower",
+      "type": "platform",
+      "position": { "x": 650, "y": 500 },
+      "scale": { "x": 3, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "boost_section_1",
+      "type": "platform",
+      "position": { "x": 900, "y": 450 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "boost_section_2",
+      "type": "platform",
+      "position": { "x": 1100, "y": 400 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "boost_section_3",
+      "type": "platform",
+      "position": { "x": 1300, "y": 350 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "final_stretch_1",
+      "type": "platform",
+      "position": { "x": 1500, "y": 400 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "final_stretch_2",
+      "type": "platform",
+      "position": { "x": 1700, "y": 450 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "finish_platform",
+      "type": "platform",
+      "position": { "x": 1900, "y": 500 },
+      "scale": { "x": 5, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "launch_spring_1",
+      "type": "spring",
+      "position": { "x": 150, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1100 }
+    },
+    {
+      "id": "launch_spring_2",
+      "type": "spring",
+      "position": { "x": 550, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1300 }
+    },
+    {
+      "id": "shortcut_spring",
+      "type": "spring",
+      "position": { "x": 700, "y": 270 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1500 }
+    },
+    {
+      "id": "boost_spring_1",
+      "type": "spring",
+      "position": { "x": 950, "y": 420 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "boost_spring_2",
+      "type": "spring",
+      "position": { "x": 1150, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "boost_spring_3",
+      "type": "spring",
+      "position": { "x": 1350, "y": 320 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "speed_coin_1",
+      "type": "coin",
+      "position": { "x": 250, "y": 490 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "speed_coin_2",
+      "type": "coin",
+      "position": { "x": 400, "y": 430 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-1" }
+    },
+    {
+      "id": "shortcut_coin",
+      "type": "coin",
+      "position": { "x": 700, "y": 270 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-2" }
+    },
+    {
+      "id": "speed_coin_3",
+      "type": "coin",
+      "position": { "x": 1000, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-3" }
+    },
+    {
+      "id": "speed_coin_4",
+      "type": "coin",
+      "position": { "x": 1200, "y": 370 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-4" }
+    },
+    {
+      "id": "finish_coin",
+      "type": "coin",
+      "position": { "x": 1950, "y": 470 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "speed_trap_1",
+      "type": "spike",
+      "position": { "x": 800, "y": 570 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "speed_trap_2",
+      "type": "spike",
+      "position": { "x": 1600, "y": 570 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "finish_door",
+      "type": "door",
+      "position": { "x": 2000, "y": 440 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": false, "targetLevel": "victory" }
+    }
+  ]
+}

@@ -10,7 +10,6 @@ import {
 } from './level-schema';
 import { ENTITY_CONFIG, PLAYER, ENTITY_SIZES } from '@/constants/game-constants';
 import { Player } from '../entities/player';
-import { Coin } from '../entities/coin';
 
 export function loadLevel(
   scene: Phaser.Scene,
@@ -18,11 +17,15 @@ export function loadLevel(
 ): Phaser.GameObjects.GameObject[] {
   const level: LevelData = 'version' in json ? json : convertLegacyLevel(json);
 
+  const objectsArray = Array.isArray(level.objects)
+    ? level.objects
+    : Object.values(level.objects).flat();
+
   console.log(
     '[loadLevel] Loading level:',
     level.name,
     'with',
-    level.objects.length,
+    objectsArray.length,
     'objects'
   );
   validateLevel(level);
@@ -35,7 +38,7 @@ export function loadLevel(
     (scene as any).platformGroup = scene.physics.add.staticGroup();
   }
 
-  level.objects.forEach((obj) => {
+  objectsArray.forEach((obj: LevelObject) => {
     console.log('[loadLevel] Creating object:', obj.type, 'at', obj.position);
     const gameObject = createGameObject(scene, obj);
     if (gameObject) {
@@ -53,6 +56,7 @@ export function loadLevel(
 function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
   const objects: LevelObject[] = [];
 
+  // Player
   objects.push({
     id: 'player_1',
     type: LevelObjectType.Player,
@@ -64,6 +68,7 @@ function convertLegacyLevel(legacy: LegacyLevelFormat): LevelData {
     },
   });
 
+  // Platforms
   legacy.platforms.forEach((p, i) => {
     objects.push({
       id: `platform_${i + 1}`,
@@ -115,7 +120,12 @@ function applySettings(scene: Phaser.Scene, settings: LevelSettings): void {
       scene.physics.world.gravity.y = gy !== undefined && gy > 10 ? gy : 800;
     }
     if (settings.bounds) {
-      scene.physics.world.setBounds(0, 0, settings.bounds.width, settings.bounds.height);
+      scene.physics.world.setBounds(
+        0,
+        0,
+        settings.bounds.width,
+        settings.bounds.height
+      );
     }
   }
 }
@@ -142,8 +152,10 @@ function createGameObject(
       return createSpring(scene, obj);
     case LevelObjectType.Spike:
       return createSpike(scene, obj);
-    case LevelObjectType.Collectible:
+    case LevelObjectType.Coin:
       return createCoin(scene, obj);
+    case LevelObjectType.Enemy:
+      return createEnemy(scene, obj);
     case LevelObjectType.Obstacle:
       return tex ? createLava(scene, obj) : null;
     case LevelObjectType.Decoration:
@@ -201,7 +213,6 @@ function createPlayer(
     playerSprite.setDepth(10);
 
     // Scale uniformly to target height to avoid squeezing
-    const nativeW = playerSprite.width || playerSprite.displayWidth || 32;
     const nativeH = playerSprite.height || playerSprite.displayHeight || 32;
     const targetH = PLAYER.SIZE.HEIGHT;
     const uniformScale = targetH / nativeH;
@@ -376,6 +387,39 @@ function createCoin(
   }
   
   return coinSprite;
+}
+
+function createEnemy(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  const startKey = (scene.textures.exists('enemy-1') ? 'enemy-1' : (scene.textures.exists('enemy-0') ? 'enemy-0' : undefined)) || 'enemy-0';
+
+  let enemySprite: Phaser.GameObjects.Sprite;
+  if ((scene as any).physics?.world) {
+    enemySprite = scene.physics.add.sprite(x, y, startKey);
+    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 32;
+    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 32;
+    enemySprite.setDisplaySize(w, h);
+    enemySprite.setDepth(5);
+  } else {
+    enemySprite = scene.add.sprite(x, y, startKey);
+    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 32;
+    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 32;
+    enemySprite.setDisplaySize(w, h);
+    enemySprite.setDepth(5);
+  }
+
+  enemySprite.setName(obj.id);
+  (enemySprite as any).setData && (enemySprite as any).setData('isEnemy', true);
+
+  if (scene.anims.exists('enemy-walk')) {
+    try { enemySprite.play('enemy-walk'); } catch {}
+  }
+
+  return enemySprite;
 }
 
 function createLava(

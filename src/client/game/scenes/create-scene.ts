@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { createScrollControls } from '@/game/controls/camera-controls';
 
 const GRID_SIZE = 32;
-const BASELINE_Y = 0;
 
 export class CreateScene extends Phaser.Scene {
   public cameraScrollSpeed: number = 0;
@@ -47,6 +46,11 @@ export class CreateScene extends Phaser.Scene {
 
     for (let i = 0; i <= 4; i++) {
       this.load.image(`coin-${i}`, `/Coin/${i}.png`);
+    }
+
+    // Enemy frames
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`enemy-${i}`, `/Enemy/${i}.png`);
     }
   };
 
@@ -153,6 +157,19 @@ export class CreateScene extends Phaser.Scene {
         key: 'player-jump',
         frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-jump-${i}` })),
         frameRate: 10,
+        repeat: -1,
+      });
+    }
+
+    // Enemy walk animation
+    const enemyFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.textures.exists(`enemy-${i}`))
+      .map((i) => ({ key: `enemy-${i}` }));
+    if (!this.anims.exists('enemy-walk') && enemyFrames.length > 0) {
+      this.anims.create({
+        key: 'enemy-walk',
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `enemy-${i}` })),
+        frameRate: 6,
         repeat: -1,
       });
     }
@@ -291,6 +308,14 @@ export class CreateScene extends Phaser.Scene {
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       try {
         sprite.play('player-idle');
+      } catch {}
+      container.add(sprite);
+    } else if (t === 'enemy' && (this.textures.exists('enemy-1') || this.textures.exists('enemy-0'))) {
+      const startKey = this.textures.exists('enemy-1') ? 'enemy-1' : 'enemy-0';
+      const sprite = this.add.sprite(0, 0, startKey);
+      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
+      try {
+        sprite.play('enemy-walk');
       } catch {}
       container.add(sprite);
     } else if (

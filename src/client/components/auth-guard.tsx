@@ -116,6 +116,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
 // Component that hides profile bar on specific routes
 function AuthGuardContent({ user, children }: { user: UserProfile | null; children: React.ReactNode }) {
+  void user;
   // This will only be rendered inside the Router, so we can safely use routing hooks
   return (
     <>

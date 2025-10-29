@@ -1,0 +1,422 @@
+{
+  "version": "1.0.0",
+  "name": "Complex Collision Scenarios Test Level",
+  "description": "Test level for validating collision detection accuracy in challenging configurations with dense platform arrangements, tight gaps, and complex geometry interactions",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#4A4A4A",
+    "bounds": { "width": 1800, "height": 600 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 500 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "ground_platform",
+      "type": "platform",
+      "position": { "x": 0, "y": 580 },
+      "scale": { "x": 18, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "grass" }
+    },
+    {
+      "id": "dense_platform_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 540 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "dense_platform_2",
+      "type": "platform",
+      "position": { "x": 220, "y": 520 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "dense_platform_3",
+      "type": "platform",
+      "position": { "x": 240, "y": 500 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "dense_platform_4",
+      "type": "platform",
+      "position": { "x": 260, "y": 480 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "dense_platform_5",
+      "type": "platform",
+      "position": { "x": 280, "y": 460 },
+      "scale": { "x": 1, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "tight_gap_left",
+      "type": "platform",
+      "position": { "x": 350, "y": 480 },
+      "scale": { "x": 1.5, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "tight_gap_right",
+      "type": "platform",
+      "position": { "x": 382, "y": 480 },
+      "scale": { "x": 1.5, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "narrow_passage_top",
+      "type": "platform",
+      "position": { "x": 450, "y": 400 },
+      "scale": { "x": 3, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "narrow_passage_bottom",
+      "type": "platform",
+      "position": { "x": 450, "y": 520 },
+      "scale": { "x": 3, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "corner_collision_1",
+      "type": "platform",
+      "position": { "x": 550, "y": 500 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "corner_collision_2",
+      "type": "platform",
+      "position": { "x": 570, "y": 480 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "corner_collision_3",
+      "type": "platform",
+      "position": { "x": 590, "y": 460 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "corner_collision_4",
+      "type": "platform",
+      "position": { "x": 610, "y": 440 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "simultaneous_collision_platform_1",
+      "type": "platform",
+      "position": { "x": 700, "y": 520 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "simultaneous_collision_spike_1",
+      "type": "spike",
+      "position": { "x": 720, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "simultaneous_collision_spring_1",
+      "type": "spring",
+      "position": { "x": 740, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "simultaneous_collision_coin_1",
+      "type": "coin",
+      "position": { "x": 760, "y": 520 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "simultaneous_collision_platform_2",
+      "type": "platform",
+      "position": { "x": 780, "y": 520 },
+      "scale": { "x": 1, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "chain_reaction_spring_1",
+      "type": "spring",
+      "position": { "x": 850, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1200 }
+    },
+    {
+      "id": "chain_reaction_target_1",
+      "type": "coin",
+      "position": { "x": 850, "y": 300 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "chain_reaction_spring_2",
+      "type": "spring",
+      "position": { "x": 870, "y": 280 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 800 }
+    },
+    {
+      "id": "chain_reaction_target_2",
+      "type": "coin",
+      "position": { "x": 920, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "chain_reaction_enemy_1",
+      "type": "enemy",
+      "position": { "x": 900, "y": 520 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 100 }
+    },
+    {
+      "id": "overlapping_geometry_1",
+      "type": "platform",
+      "position": { "x": 1000, "y": 500 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "overlapping_geometry_2",
+      "type": "platform",
+      "position": { "x": 1020, "y": 480 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "overlapping_geometry_3",
+      "type": "platform",
+      "position": { "x": 1040, "y": 460 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "complex_geometry_1",
+      "type": "platform",
+      "position": { "x": 1150, "y": 520 },
+      "scale": { "x": 0.5, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "complex_geometry_2",
+      "type": "platform",
+      "position": { "x": 1170, "y": 500 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "complex_geometry_3",
+      "type": "platform",
+      "position": { "x": 1190, "y": 480 },
+      "scale": { "x": 0.5, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "complex_geometry_4",
+      "type": "platform",
+      "position": { "x": 1210, "y": 460 },
+      "scale": { "x": 2, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "multi_collision_spike_cluster_1",
+      "type": "spike",
+      "position": { "x": 1300, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "multi_collision_spike_cluster_2",
+      "type": "spike",
+      "position": { "x": 1320, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "multi_collision_spike_cluster_3",
+      "type": "spike",
+      "position": { "x": 1340, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "multi_collision_coin_cluster_1",
+      "type": "coin",
+      "position": { "x": 1310, "y": 520 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "multi_collision_coin_cluster_2",
+      "type": "coin",
+      "position": { "x": 1330, "y": 520 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "multi_collision_spring_cluster_1",
+      "type": "spring",
+      "position": { "x": 1320, "y": 490 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" }
+    },
+    {
+      "id": "precision_gap_left",
+      "type": "platform",
+      "position": { "x": 1450, "y": 480 },
+      "scale": { "x": 1, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "precision_gap_right",
+      "type": "platform",
+      "position": { "x": 1470, "y": 480 },
+      "scale": { "x": 1, "y": 2 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "precision_gap_coin",
+      "type": "coin",
+      "position": { "x": 1460, "y": 480 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "precision_gap_spike",
+      "type": "spike",
+      "position": { "x": 1460, "y": 520 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "collision_stress_platform_1",
+      "type": "platform",
+      "position": { "x": 1550, "y": 540 },
+      "scale": { "x": 0.8, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_stress_platform_2",
+      "type": "platform",
+      "position": { "x": 1565, "y": 525 },
+      "scale": { "x": 0.8, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_stress_platform_3",
+      "type": "platform",
+      "position": { "x": 1580, "y": 510 },
+      "scale": { "x": 0.8, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_stress_platform_4",
+      "type": "platform",
+      "position": { "x": 1595, "y": 495 },
+      "scale": { "x": 0.8, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_stress_platform_5",
+      "type": "platform",
+      "position": { "x": 1610, "y": 480 },
+      "scale": { "x": 0.8, "y": 0.5 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "collision_stress_enemy_1",
+      "type": "enemy",
+      "position": { "x": 1570, "y": 520 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 150 }
+    },
+    {
+      "id": "collision_stress_enemy_2",
+      "type": "enemy",
+      "position": { "x": 1590, "y": 500 },
+      "physics": { "type": "dynamic", "isCollidable": true },
+      "visual": { "texture": "enemy" },
+      "behavior": { "movementPattern": "patrol", "speed": 120 }
+    },
+    {
+      "id": "final_challenge_spring",
+      "type": "spring",
+      "position": { "x": 1700, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "final_challenge_door",
+      "type": "door",
+      "position": { "x": 1750, "y": 520 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": false, "targetLevel": "next-level" }
+    }
+  ],
+  "metadata": {
+    "createdBy": "Test Level Generator",
+    "createdAt": "2024-10-28",
+    "difficulty": "hard",
+    "tags": [
+      "test",
+      "collision-complex",
+      "dense-platforms",
+      "tight-gaps",
+      "simultaneous-collisions",
+      "corner-collisions",
+      "chain-reactions",
+      "complex-geometry",
+      "precision-challenges"
+    ]
+  }
+}

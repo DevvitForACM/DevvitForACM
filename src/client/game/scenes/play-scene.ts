@@ -31,7 +31,7 @@ async function fetchLevelData(levelName: string): Promise<LevelData | null> {
 export class PlayScene extends Phaser.Scene {
   public cameraScrollSpeed = 0;
   private fromEditor = false;
-  private editorLevelData?: LevelData;
+  private editorLevelData: LevelData | null = null;
   private levelName?: string;
 
   private levelConfig: LevelConfig;
@@ -39,7 +39,7 @@ export class PlayScene extends Phaser.Scene {
   // private maxXAllowed: number = Infinity;
   // private worldHeight: number = 0;
   // private platformRects: Array<{ l: number; r: number; t: number; b: number }> = [];
-  private lastSafePos?: { x: number; y: number };
+  private lastSafePos: { x: number; y: number } | null = null;
   private platformCount: number = 0;
   // private coinSprites: Phaser.GameObjects.Sprite[] = [];
   // Grid-step debounce
@@ -89,6 +89,11 @@ export class PlayScene extends Phaser.Scene {
     for (let i = 0; i <= 4; i++) {
       this.load.image(`coin-${i}`, `/Coin/${i}.png`);
     }
+
+    // Enemy frames
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`enemy-${i}`, `/Enemy/${i}.png`);
+    }
   }
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -107,9 +112,9 @@ export class PlayScene extends Phaser.Scene {
   }): void {
     // Reset state on init
     this.fromEditor = false;
-    this.editorLevelData = undefined;
+    this.editorLevelData = null;
     this.platformCount = 0;
-    this.lastSafePos = undefined;
+    this.lastSafePos = null;
     this.springCooldownUntil = 0;
     
     if (data.levelData) {
@@ -174,6 +179,19 @@ export class PlayScene extends Phaser.Scene {
         this.anims.create({
           key: 'coin-spin',
           frames: coinFrames,
+          frameRate: 6,
+          repeat: -1,
+        });
+      }
+
+      // Ensure enemy walk animation exists
+      const enemyFrames = [0, 1, 2, 3, 4]
+        .filter((i) => this.textures.exists(`enemy-${i}`))
+        .map((i) => ({ key: `enemy-${i}` }));
+      if (!this.anims.exists('enemy-walk') && enemyFrames.length > 0) {
+        this.anims.create({
+          key: 'enemy-walk',
+          frames: [0, 1, 2, 3, 4].map((i) => ({ key: `enemy-${i}` })),
           frameRate: 6,
           repeat: -1,
         });
