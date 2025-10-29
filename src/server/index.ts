@@ -4,6 +4,8 @@ import authRoutes from './routes/auth.routes';
 import levelRoutes from './routes/level.routes';
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
+import authRoutes from './routes/auth.routes';
+import leaderboardRoutes from './routes/leaderboard.routes';
 
 const app = express();
 
@@ -149,33 +151,9 @@ app.use(router);
 // Auth routes
 app.use('/api/auth', authRoutes);
 
-// Auth routes (Reddit OAuth)
-app.use('/auth', authRoutes);
+// leaderboard routes
+app.use('/api/leaderboard', leaderboardRoutes);
 
-// Level routes
-app.use('/api/levels', levelRoutes);
-
-// Global error handler - must be after all routes
-app.use((err: Error, req: express.Request, res: express.Response) => {
-  console.error('[Global Error Handler] Error:', err);
-  console.error('[Global Error Handler] Stack:', err.stack);
-  console.error('[Global Error Handler] Request:', req.method, req.url);
-
-  if (!res.headersSent) {
-    res.status(500).json({
-      error: 'Internal server error',
-      message: err.message,
-      stack: err.stack
-    });
-  }
-});
-
-// Get port from environment variable with fallback
-const port = getServerPort();
-
-const server = createServer(app);
-server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port, () => console.log(`http://localhost:${port}`));
 // Health check endpoint
 app.get('/health', (_req, res) => {
   console.log('🏥 SERVER: Health check endpoint accessed');

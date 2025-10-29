@@ -1,0 +1,32 @@
+name: acmxkiro-game
+version: 0.0.1
+description: Simple multiplayer logic game with leaderboard functionality
+
+redis: true
+
+webApp:
+  client: dist/client
+  server: dist/server
+
+permissions:
+  - read
+  - write
+  - submit
+  - identity
+  - modposts
+
+reddit:
+  menu:
+    - label: "Create Game Post"
+      location: subreddit
+      forUserType: moderator
+  post:
+    render: "client/main.tsx"
+
+  panels:
+    - name: game-panel
+      label: "Play ACMXKiro"
+      render: "client/main.tsx"
+
+install:
+  onInstall: true
