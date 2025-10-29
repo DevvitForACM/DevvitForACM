@@ -1,0 +1,156 @@
+{
+  "version": "1.0.0",
+  "name": "Lava Cave Challenge",
+  "description": "Navigate through a dangerous lava cave with spikes and springs",
+  "settings": {
+    "gravity": { "x": 0, "y": 800 },
+    "backgroundColor": "#8B0000",
+    "bounds": { "width": 1600, "height": 700 }
+  },
+  "objects": [
+    {
+      "id": "player_1",
+      "type": "player",
+      "position": { "x": 100, "y": 600 },
+      "physics": { "type": "dynamic" },
+      "visual": { "texture": "player-idle-1" }
+    },
+    {
+      "id": "lava_ground",
+      "type": "platform",
+      "position": { "x": 0, "y": 680 },
+      "scale": { "x": 40, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "lava-tile" }
+    },
+    {
+      "id": "safe_platform_1",
+      "type": "platform",
+      "position": { "x": 200, "y": 580 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "safe_platform_2",
+      "type": "platform",
+      "position": { "x": 400, "y": 480 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "safe_platform_3",
+      "type": "platform",
+      "position": { "x": 600, "y": 380 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "safe_platform_4",
+      "type": "platform",
+      "position": { "x": 800, "y": 480 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "safe_platform_5",
+      "type": "platform",
+      "position": { "x": 1000, "y": 580 },
+      "scale": { "x": 2, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "final_platform",
+      "type": "platform",
+      "position": { "x": 1300, "y": 480 },
+      "scale": { "x": 3, "y": 1 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "ground" }
+    },
+    {
+      "id": "spike_trap_1",
+      "type": "spike",
+      "position": { "x": 320, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spike_trap_2",
+      "type": "spike",
+      "position": { "x": 520, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spike_trap_3",
+      "type": "spike",
+      "position": { "x": 720, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spike_trap_4",
+      "type": "spike",
+      "position": { "x": 920, "y": 650 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spike" }
+    },
+    {
+      "id": "spring_1",
+      "type": "spring",
+      "position": { "x": 250, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1000 }
+    },
+    {
+      "id": "spring_2",
+      "type": "spring",
+      "position": { "x": 650, "y": 350 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 1200 }
+    },
+    {
+      "id": "spring_3",
+      "type": "spring",
+      "position": { "x": 1050, "y": 550 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "spring" },
+      "properties": { "bounceForce": 800 }
+    },
+    {
+      "id": "treasure_coin_1",
+      "type": "coin",
+      "position": { "x": 450, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-0" }
+    },
+    {
+      "id": "treasure_coin_2",
+      "type": "coin",
+      "position": { "x": 650, "y": 300 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-1" }
+    },
+    {
+      "id": "treasure_coin_3",
+      "type": "coin",
+      "position": { "x": 850, "y": 450 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "coin-2" }
+    },
+    {
+      "id": "exit_door",
+      "type": "door",
+      "position": { "x": 1350, "y": 420 },
+      "physics": { "type": "static", "isCollidable": true },
+      "visual": { "texture": "door" },
+      "properties": { "isLocked": false, "targetLevel": "next-level" }
+    }
+  ]
+}

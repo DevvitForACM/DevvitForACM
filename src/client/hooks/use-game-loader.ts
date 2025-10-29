@@ -33,7 +33,9 @@ export function useGameLoader(levelId: string) {
         if (!res.ok) throw new Error(`Failed to load level ${levelId}`);
 
         const data: LevelData = await res.json();
-        if (!data.objects || !Array.isArray(data.objects)) {
+        // runtime-check for legacy payloads that might include an 'objects' array
+        // use a cast to any to avoid TypeScript error when checking unknown properties
+        if (!('objects' in (data as any)) || !Array.isArray((data as any).objects)) {
           throw new Error('Invalid level data format');
         }
 
