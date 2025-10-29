@@ -194,17 +194,41 @@ export class PlayScene extends Phaser.Scene {
         });
       }
       
-      // Ensure player jump animation exists
-      const jumpFrames = [0, 1, 2, 3, 4]
-        .filter((i) => this.textures.exists(`player-jump-${i}`))
-        .map((i) => ({ key: `player-jump-${i}` }));
-      if (!this.anims.exists('player-jump-sequence') && jumpFrames.length > 0) {
-        this.anims.create({
-          key: 'player-jump-sequence',
-          frames: jumpFrames.length > 0 ? jumpFrames : idleFrames,
-          frameRate: 12,
-          repeat: 0,
-        });
+      // Create specific jump animations based on frame purpose
+      if (this.textures.exists('player-jump-1')) {
+        // Jump launch animation (frame 1)
+        if (!this.anims.exists('player-jump-launch')) {
+          this.anims.create({
+            key: 'player-jump-launch',
+            frames: [{ key: 'player-jump-1' }],
+            frameRate: 1,
+            repeat: 0,
+          });
+        }
+      }
+      
+      if (this.textures.exists('player-jump-2')) {
+        // Airborne animation (frame 2)
+        if (!this.anims.exists('player-jump-air')) {
+          this.anims.create({
+            key: 'player-jump-air',
+            frames: [{ key: 'player-jump-2' }],
+            frameRate: 1,
+            repeat: -1,
+          });
+        }
+      }
+      
+      if (this.textures.exists('player-jump-3') && this.textures.exists('player-jump-4')) {
+        // Landing animation (frames 3-4)
+        if (!this.anims.exists('player-jump-land')) {
+          this.anims.create({
+            key: 'player-jump-land',
+            frames: [{ key: 'player-jump-3' }, { key: 'player-jump-4' }],
+            frameRate: 15,
+            repeat: 0,
+          });
+        }
       }
 
       if ((this.physics as any)?.world) {
@@ -646,7 +670,11 @@ export class PlayScene extends Phaser.Scene {
 
     // Jump - only when on ground and jump key pressed
     if (up && onFloor) {
-      audioManager.playJump();
+      // Show jump launch frame (frame 1) immediately
+      if (this.anims.exists('player-jump-launch')) {
+        this.player.play('player-jump-launch', true);
+      }
+      
       // compute velocity to reach ~1 block height only
       const oneBlockV = this.getOneBlockJumpVelocity();
       const jump = Math.min(GAMEPLAY.JUMP_VELOCITY, oneBlockV);
@@ -666,13 +694,39 @@ export class PlayScene extends Phaser.Scene {
     if (vx < 0) this.player.setFlipX(true);
     else if (vx > 0) this.player.setFlipX(false);
 
-    // Play animations only if they exist
+    // Handle animations based on player state
     if (!onFloor) {
-      if (this.anims.exists('player-jump-sequence') && this.player.anims.currentAnim?.key !== 'player-jump-sequence') {
-        this.player.play('player-jump-sequence', true);
+      const velocityY = this.playerBody.velocity.y;
+      const currentAnim = this.player.anims.currentAnim?.key;
+      
+      // If moving upward (jumping), use airborne frame after launch
+      if (velocityY < -50 && currentAnim !== 'player-jump-launch' && currentAnim !== 'player-jump-air') {
+        if (this.anims.exists('player-jump-air')) {
+          this.player.play('player-jump-air', true);
+        }
+      }
+      // If falling down, use airborne frame
+      else if (velocityY > 50 && currentAnim !== 'player-jump-air') {
+        if (this.anims.exists('player-jump-air')) {
+          this.player.play('player-jump-air', true);
+        }
       }
     } else {
-      if (this.anims.exists('player-idle') && this.player.anims.currentAnim?.key !== 'player-idle') {
+      // Just landed - play landing animation briefly, then idle
+      const currentAnim = this.player.anims.currentAnim?.key;
+      if (currentAnim?.startsWith('player-jump-')) {
+        if (this.anims.exists('player-jump-land')) {
+          this.player.play('player-jump-land', true);
+          // Switch to idle after landing animation completes
+          this.player.once('animationcomplete', () => {
+            if (this.anims.exists('player-idle')) {
+              this.player.play('player-idle', true);
+            }
+          });
+        } else if (this.anims.exists('player-idle')) {
+          this.player.play('player-idle', true);
+        }
+      } else if (this.anims.exists('player-idle') && currentAnim !== 'player-idle') {
         this.player.play('player-idle', true);
       }
     }
