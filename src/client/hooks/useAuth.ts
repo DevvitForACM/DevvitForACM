@@ -17,7 +17,7 @@ export function useAuth() {
           setUser(null);
         }
       } catch (e) {
-        // eslint-disable-next-line no-console
+         
         console.warn('[useAuth] Failed to fetch auth:', e);
         setUser(null);
       } finally {

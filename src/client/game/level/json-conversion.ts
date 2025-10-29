@@ -202,6 +202,8 @@ function createGameObject(
       return createSpike(scene, obj);
     case LevelObjectType.Coin:
       return createCoin(scene, obj);
+    case LevelObjectType.Enemy:
+      return createEnemy(scene, obj);
     case LevelObjectType.Obstacle:
       return tex ? createLava(scene, obj) : null;
     case LevelObjectType.Decoration:
@@ -288,6 +290,7 @@ function createPlatform(
   const width = (obj.scale?.x ?? 1) * ENTITY_CONFIG.PLATFORM_WIDTH;
   const height = (obj.scale?.y ?? 1) * ENTITY_CONFIG.PLATFORM_HEIGHT;
   const x = obj.position.x;
+  // obj.position.y is the CENTER of where the block should be rendered
   const y = obj.position.y;
 
   const requested = obj.visual?.texture?.toLowerCase();
@@ -340,7 +343,7 @@ function createSpring(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
-  const y = obj.position.y;
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = 'spring';
   const springW = ENTITY_SIZES.SPRING.WIDTH;
   const springH = ENTITY_SIZES.SPRING.HEIGHT;
@@ -372,7 +375,7 @@ function createSpike(
   obj: LevelObject
 ): Phaser.GameObjects.GameObject {
   const x = obj.position.x;
-  const y = obj.position.y;
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = 'spike';
   const spikeW = ENTITY_SIZES.SPIKE.WIDTH;
   const spikeH = ENTITY_SIZES.SPIKE.HEIGHT;
@@ -441,6 +444,53 @@ function createCoin(
   return coinSprite;
 }
 
+function createEnemy(
+  scene: Phaser.Scene,
+  obj: LevelObject
+): Phaser.GameObjects.GameObject {
+  const x = obj.position.x;
+  const y = obj.position.y;
+  const startKey = (scene.textures.exists('enemy-1') ? 'enemy-1' : (scene.textures.exists('enemy-0') ? 'enemy-0' : undefined)) || 'enemy-0';
+
+  let enemySprite: Phaser.GameObjects.Sprite;
+  if ((scene as any).physics?.world) {
+    enemySprite = scene.physics.add.sprite(x, y, startKey);
+    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 48;
+    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 48;
+    enemySprite.setDisplaySize(w, h);
+    enemySprite.setDepth(5);
+    
+    // Add physics body for enemy to stand on platforms
+    const body = enemySprite.body as Phaser.Physics.Arcade.Body;
+    body.setCollideWorldBounds(true);
+    body.setBounce(0);
+    body.setDragX(100);
+    body.setMaxVelocity(100, 1200); // Slow horizontal movement
+  } else {
+    enemySprite = scene.add.sprite(x, y, startKey);
+    const w = (ENTITY_SIZES as any)?.BASE?.WIDTH ?? 48;
+    const h = (ENTITY_SIZES as any)?.BASE?.HEIGHT ?? 48;
+    enemySprite.setDisplaySize(w, h);
+    enemySprite.setDepth(5);
+  }
+
+  enemySprite.setName(obj.id);
+  (enemySprite as any).setData && (enemySprite as any).setData('isEnemy', true);
+  
+  // Store patrol data - patrol ±2 blocks from spawn position
+  const TILE_SIZE = 32;
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolLeft', x - 2 * TILE_SIZE);
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolRight', x + 2 * TILE_SIZE);
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolDirection', 1); // 1 = right, -1 = left
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolSpeed', 30);
+
+  if (scene.anims.exists('enemy-walk')) {
+    try { enemySprite.play('enemy-walk'); } catch {}
+  }
+
+  return enemySprite;
+}
+
 function createLava(
   scene: Phaser.Scene,
   obj: LevelObject
@@ -448,7 +498,7 @@ function createLava(
   const w = (obj.scale?.x ?? 1) * ENTITY_SIZES.LAVA.WIDTH;
   const h = (obj.scale?.y ?? 1) * ENTITY_SIZES.LAVA.HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y;
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = scene.textures.exists('lava') ? 'lava' : 'Lava-filler';
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {
@@ -478,7 +528,7 @@ function createDoor(
   const w = (obj.scale?.x ?? 1) * ENTITY_SIZES.DOOR.WIDTH;
   const h = (obj.scale?.y ?? 1) * ENTITY_SIZES.DOOR.HEIGHT;
   const x = obj.position.x;
-  const y = obj.position.y;
+  const y = obj.position.y; // obj.position.y is already the center position
   const key = 'door';
   let node: Phaser.GameObjects.GameObject;
   if ((scene as any).physics?.world) {

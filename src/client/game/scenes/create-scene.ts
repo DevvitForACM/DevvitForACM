@@ -43,15 +43,20 @@ export class CreateScene extends Phaser.Scene {
     this.load.image('lava', `${base}lava.png`);
     this.load.image('door', `${base}door.png`);
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `/idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `${base}idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `/jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `${base}jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `/coin/${i}.png`);
+      this.load.image(`coin-${i}`, `${base}coin/${i}.png`);
+    }
+
+    // Enemy frames
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`enemy-${i}`, `${base}enemy/${i}.png`);
     }
   }
 
@@ -158,6 +163,19 @@ export class CreateScene extends Phaser.Scene {
         key: 'player-jump',
         frames: jumpFrames,
         frameRate: 10,
+        repeat: -1,
+      });
+    }
+
+    // Enemy walk animation
+    const enemyFrames = [0, 1, 2, 3, 4]
+      .filter((i) => this.textures.exists(`enemy-${i}`))
+      .map((i) => ({ key: `enemy-${i}` }));
+    if (!this.anims.exists('enemy-walk') && enemyFrames.length > 0) {
+      this.anims.create({
+        key: 'enemy-walk',
+        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `enemy-${i}` })),
+        frameRate: 6,
         repeat: -1,
       });
     }
@@ -315,6 +333,14 @@ export class CreateScene extends Phaser.Scene {
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       try {
         sprite.play('player-idle');
+      } catch {}
+      container.add(sprite);
+    } else if (t === 'enemy' && (this.textures.exists('enemy-1') || this.textures.exists('enemy-0'))) {
+      const startKey = this.textures.exists('enemy-1') ? 'enemy-1' : 'enemy-0';
+      const sprite = this.add.sprite(0, 0, startKey);
+      sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
+      try {
+        sprite.play('enemy-walk');
       } catch {}
       container.add(sprite);
     } else if (

@@ -181,9 +181,80 @@ export const LevelController = {
       const db = new LevelsServiceRedis(redis);
       const levels = await db.getPublicLevels(limitNum);
 
-      return res.status(200).json({ levels });
+      // Enrich with creator username and top score (per-level)
+      const enriched = [] as Array<any>;
+      try {
+        // Lazy import to avoid circular deps
+        const { RedisService } = await import('../services/redis.service');
+        const svc = new RedisService(redis);
+        for (const lvl of levels) {
+          const out: any = { ...lvl };
+          const creatorId = lvl.metadata?.createdBy;
+          if (creatorId) {
+            const prof = await svc.hGetAll(`users:${creatorId}`);
+            if (prof?.username) out.creatorUsername = prof.username;
+          }
+          const top = await svc.zRangeWithScores(`leaderboard:level:${lvl.id}:scores`, 0, 0, true);
+          out.topScore = top && top.length > 0 && top[0] ? top[0].score : 0;
+          enriched.push(out);
+        }
+      } catch (e) {
+        console.warn('[getAllPublicLevels] Enrichment failed:', e);
+        enriched.push(...levels);
+      }
+
+      return res.status(200).json({ levels: enriched });
     } catch (err) {
       console.error('Error fetching public levels:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  // GET /levels/local - list JSON levels from assets/levels for temporary play
+  async getLocalLevels(_req: Request, res: Response) {
+    try {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+
+      const baseDir = path.resolve(process.cwd(), 'assets', 'levels');
+      if (!fs.existsSync(baseDir)) {
+        return res.status(200).json({ levels: [] });
+      }
+
+      const files = fs.readdirSync(baseDir).filter((f: string) => f.endsWith('.json'));
+
+      // Prepare Redis reader for top scores
+      let svc: any = null;
+      try {
+        const { RedisService } = await import('../services/redis.service');
+        if (redis) {
+          svc = new RedisService(redis);
+        }
+      } catch {}
+
+      const levels: Array<any> = [];
+      for (const file of files) {
+        try {
+          const full = path.join(baseDir, file);
+          const txt = fs.readFileSync(full, 'utf8');
+          const json = JSON.parse(txt);
+          const id = file.replace(/\.json$/i, '');
+          const name = json.name || id;
+          const creatorUsername = json?.metadata?.createdBy || 'local';
+          let topScore = 0;
+          if (svc) {
+            const top = await svc.zRangeWithScores(`leaderboard:level:${id}:scores`, 0, 0, true);
+            topScore = top && top.length > 0 && top[0] ? top[0].score : 0;
+          }
+          levels.push({ id, name, creatorUsername, topScore, source: 'local' });
+        } catch (e) {
+          console.warn('[getLocalLevels] Failed reading level file:', file, e);
+        }
+      }
+
+      return res.status(200).json({ levels });
+    } catch (err) {
+      console.error('Error fetching local levels:', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
   },

@@ -15,14 +15,25 @@ import { audioManager } from '@/services/audio-manager';
 
 async function fetchLevelData(levelName: string): Promise<LevelData | null> {
   try {
+    // First try to load from API by ID
+    const apiUrl = `/api/levels/${levelName}`;
+    console.log('[fetchLevelData] Trying API:', apiUrl);
+    let response = await fetch(apiUrl);
+    if (response.ok) {
+      const data = (await response.json()) as LevelData;
+      if (!data || typeof data !== 'object') throw new Error('Invalid structure');
+      console.log('[fetchLevelData] Level loaded from API:', (data as any).id || data.name);
+      return data;
+    }
+
+    // Fallback to static JSON file by name
     const url = `/levels/${levelName}.json`;
-    console.log('[fetchLevelData] Fetching:', url);
-    const response = await fetch(url);
-    console.log('[fetchLevelData] Response status:', response.status);
+    console.log('[fetchLevelData] Fallback to static:', url);
+    response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = (await response.json()) as LevelData;
     if (!data || typeof data !== 'object') throw new Error('Invalid structure');
-    console.log('[fetchLevelData] Level loaded successfully:', data.name);
+    console.log('[fetchLevelData] Level loaded from static JSON:', data.name);
     return data;
   } catch (err) {
     console.warn(`[PlayScene] Failed to fetch level '${levelName}':`, err);
@@ -33,7 +44,7 @@ async function fetchLevelData(levelName: string): Promise<LevelData | null> {
 export class PlayScene extends Phaser.Scene {
   public cameraScrollSpeed = 0;
   private fromEditor = false;
-  private editorLevelData?: LevelData;
+  private editorLevelData: LevelData | null = null;
   private levelName?: string;
 
   private levelConfig: LevelConfig;
@@ -41,7 +52,7 @@ export class PlayScene extends Phaser.Scene {
   // private maxXAllowed: number = Infinity;
   // private worldHeight: number = 0;
   // private platformRects: Array<{ l: number; r: number; t: number; b: number }> = [];
-  private lastSafePos?: { x: number; y: number };
+  private lastSafePos: { x: number; y: number } | null = null;
   private platformCount: number = 0;
   // private coinSprites: Phaser.GameObjects.Sprite[] = [];
   // Grid-step debounce
@@ -81,15 +92,20 @@ export class PlayScene extends Phaser.Scene {
     this.load.image('door', `${base}door.png`);
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `/idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `${base}idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `/jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `${base}jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `/coin/${i}.png`);
+      this.load.image(`coin-${i}`, `${base}coin/${i}.png`);
+    }
+
+    // Enemy frames for play scene
+    for (let i = 0; i <= 4; i++) {
+      this.load.image(`enemy-${i}`, `${base}enemy/${i}.png`);
     }
   }
 
@@ -231,6 +247,19 @@ export class PlayScene extends Phaser.Scene {
         }
       }
 
+      // Ensure enemy walk animation exists
+      const enemyFrames = [0, 1, 2, 3, 4]
+        .filter((i) => this.textures.exists(`enemy-${i}`))
+        .map((i) => ({ key: `enemy-${i}` }));
+      if (!this.anims.exists('enemy-walk') && enemyFrames.length > 0) {
+        this.anims.create({
+          key: 'enemy-walk',
+          frames: [0, 1, 2, 3, 4].map((i) => ({ key: `enemy-${i}` })),
+          frameRate: 6,
+          repeat: -1,
+        });
+      }
+
       if ((this.physics as any)?.world) {
         // Use standardized gravity for all levels
         this.physics.world.gravity.y = GAMEPLAY.GRAVITY;
@@ -349,7 +378,7 @@ export class PlayScene extends Phaser.Scene {
   private setupCollisions(): void {
     const platforms = this.children.list.filter((child: any) => {
       const isPlatform = typeof child?.getData === 'function' && child.getData('isPlatform');
-      const isHazard = typeof child?.getData === 'function' && (child.getData('isSpike') || child.getData('isSpring') || child.getData('isLava'));
+      const isHazard = typeof child?.getData === 'function' && (child.getData('isSpike') || child.getData('isSpring') || child.getData('isLava') || child.getData('isEnemy'));
       const hasBody = !!(child as any)?.body;
       return hasBody && isPlatform && !isHazard;
     }) as Phaser.GameObjects.GameObject[];
@@ -413,7 +442,14 @@ export class PlayScene extends Phaser.Scene {
       return tagged || tex === 'door' || /door/i.test(name);
     }) as Phaser.GameObjects.GameObject[];
 
-    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}, coins=${coins.length}, doors=${doors.length}`);
+    const enemies = this.children.list.filter((c: any) => {
+      const tagged = typeof c?.getData === 'function' && c.getData('isEnemy');
+      const tex = (c as any)?.texture?.key;
+      const name = (c as any)?.name ?? '';
+      return tagged || /enemy/i.test(tex) || /enemy/i.test(name);
+    }) as Phaser.GameObjects.GameObject[];
+
+    console.log(`[setupCollisions] Hazards: spikes=${spikes.length}, springs=${springs.length}, lava=${lavas.length}, coins=${coins.length}, doors=${doors.length}, enemies=${enemies.length}`);
 
     spikes.forEach((spike) => {
       this.physics.add.overlap(this.player, spike, this.onPlayerSpikeOverlap, undefined, this);
@@ -430,6 +466,19 @@ export class PlayScene extends Phaser.Scene {
     doors.forEach((door) => {
       this.physics.add.overlap(this.player, door, this.onPlayerDoorOverlap, undefined, this);
     });
+    
+    // Enemy collisions with platforms (so enemies stand on blocks)
+    enemies.forEach((enemy) => {
+      platforms.forEach((platform) => {
+        this.physics.add.collider(enemy, platform);
+      });
+      // Enemy-player overlap (respawn player like spike/lava)
+      this.physics.add.overlap(this.player, enemy, this.onPlayerEnemyOverlap, undefined, this);
+    });
+    
+    // Store enemies and platforms for patrol logic
+    (this as any).enemies = enemies;
+    (this as any).platforms = platforms;
   }
 
   private getOneBlockJumpVelocity(): number {
@@ -546,6 +595,97 @@ export class PlayScene extends Phaser.Scene {
     this.onPlayerSpikeOverlap();
   }
 
+  private onPlayerEnemyOverlap(): void {
+    // Same behavior as spike - respawn at last safe position
+    this.onPlayerSpikeOverlap();
+  }
+
+  private updateEnemyPatrol(_delta: number): void {
+    const enemies = (this as any).enemies as Phaser.GameObjects.GameObject[] | undefined;
+    const platforms = (this as any).platforms as Phaser.GameObjects.GameObject[] | undefined;
+    
+    if (!enemies || !platforms) return;
+    
+    const TILE_SIZE = 32;
+    const GROUND_CHECK_DISTANCE = TILE_SIZE / 2 + 5; // Check slightly beyond tile edge
+    
+    enemies.forEach((enemy: any) => {
+      if (!enemy.body || !enemy.active) return;
+      
+      const body = enemy.body as Phaser.Physics.Arcade.Body;
+      const patrolLeft = enemy.getData('patrolLeft');
+      const patrolRight = enemy.getData('patrolRight');
+      const patrolSpeed = enemy.getData('patrolSpeed') || 30;
+      let direction = enemy.getData('patrolDirection') || 1;
+      
+      if (patrolLeft === undefined || patrolRight === undefined) return;
+      
+      // Check if enemy should turn around
+      let shouldTurn = false;
+      
+      // Check bounds
+      if (direction === 1 && enemy.x >= patrolRight) {
+        shouldTurn = true;
+      } else if (direction === -1 && enemy.x <= patrolLeft) {
+        shouldTurn = true;
+      }
+      
+      // Check if there's a valid platform ahead (dirt or grass only)
+      if (!shouldTurn && body.blocked.down) {
+        const checkX = enemy.x + (direction * GROUND_CHECK_DISTANCE);
+        const checkY = enemy.y + TILE_SIZE; // Check below enemy
+        
+        let hasValidGround = false;
+        
+        // Check if there's a dirt/grass platform at the next position
+        for (const platform of platforms) {
+          const plat = platform as any;
+          if (!plat.body) continue;
+          
+          const platBody = plat.body as Phaser.Physics.Arcade.StaticBody;
+          const platLeft = platBody.x;
+          const platRight = platBody.x + platBody.width;
+          const platTop = platBody.y;
+          const platBottom = platBody.y + platBody.height;
+          
+          // Check if platform is dirt or grass
+          const isDirtOrGrass = plat.texture?.key === 'grass' || 
+                               plat.texture?.key === 'ground' || 
+                               plat.texture?.key === 'grass-filler';
+          
+          if (!isDirtOrGrass) continue;
+          
+          // Check if the check point is above this platform
+          if (checkX >= platLeft && checkX <= platRight &&
+              checkY >= platTop && checkY <= platBottom) {
+            hasValidGround = true;
+            break;
+          }
+        }
+        
+        if (!hasValidGround) {
+          shouldTurn = true;
+        }
+      }
+      
+      // Turn around if needed
+      if (shouldTurn) {
+        direction *= -1;
+        enemy.setData('patrolDirection', direction);
+      }
+      
+      // Move enemy
+      body.setVelocityX(direction * patrolSpeed);
+      
+      // Flip sprite based on direction
+      if (direction < 0) {
+        enemy.setFlipX(true);
+      } else {
+        enemy.setFlipX(false);
+      }
+    });
+  }
+
   private onPlayerCoinOverlap(_p: any, coin: any): void {
     if (!coin || !coin.active) return;
     audioManager.playCoin();
@@ -618,6 +758,9 @@ export class PlayScene extends Phaser.Scene {
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
     }
+    
+    // Update enemy patrol behavior
+    this.updateEnemyPatrol(delta);
 
     if (!this.player || !this.playerBody || !this.cursors) return;
 

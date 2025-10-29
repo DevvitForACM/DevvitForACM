@@ -30,4 +30,11 @@ export const ASSETS = {
   'Coin/2': new URL('../../assets/Coin/2.png', import.meta.url).href,
   'Coin/3': new URL('../../assets/Coin/3.png', import.meta.url).href,
   'Coin/4': new URL('../../assets/Coin/4.png', import.meta.url).href,
+
+  // Enemy
+  'Enemy/0': new URL('../../assets/enemy/0.png', import.meta.url).href,
+  'Enemy/1': new URL('../../assets/enemy/1.png', import.meta.url).href,
+  'Enemy/2': new URL('../../assets/enemy/2.png', import.meta.url).href,
+  'Enemy/3': new URL('../../assets/enemy/3.png', import.meta.url).href,
+  'Enemy/4': new URL('../../assets/enemy/4.png', import.meta.url).href,
 } as const;
