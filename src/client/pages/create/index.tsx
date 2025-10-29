@@ -10,6 +10,8 @@ import {
   type LevelData,
   type LevelObject,
 } from '@/game/level/level-schema';
+import { useRouting } from '@/components/routing';
+import { authService } from '@/services/auth.service';
 
 const ENTITY_TYPES_DATA = {
   player: { name: 'Player', icon: '🧍', color: '#22c55e' },
@@ -36,6 +38,7 @@ const ENTITY_TYPES = [
 ];
 
 export default function Create() {
+  const { navigate } = useRouting();
   const [scene, setScene] = useState<CreateScene | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [entityCount, setEntityCount] = useState(0);
@@ -46,6 +49,12 @@ export default function Create() {
     message: string;
   } | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // DB debug state
+  const [dbStatus, setDbStatus] = useState<'idle' | 'ok' | 'error' | 'loading'>('idle');
+  const [publicLevels, setPublicLevels] = useState<Array<{ id: string; name?: string }>>([]);
+  const [userLevels, setUserLevels] = useState<Array<{ id: string; name?: string }>>([]);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const config = useMemo(() => createBlankCanvasConfig('#f6f7f8'), []);
 
@@ -79,6 +88,49 @@ export default function Create() {
       }
     }, 100);
     return () => clearInterval(check);
+  }, []);
+
+  const refreshLevels = async () => {
+    try {
+      setDbStatus('loading');
+      setDbError(null);
+
+      console.log('[Create][DB] Fetching public levels…');
+      const pubRes = await fetch('/api/levels/public');
+      if (!pubRes.ok) throw new Error(`public: HTTP ${pubRes.status}`);
+      const pubJson = await pubRes.json();
+      const pubList = Array.isArray(pubJson.levels) ? pubJson.levels : [];
+      setPublicLevels(pubList.map((l: any) => ({ id: l.id, name: l.name })));
+      console.log('[Create][DB] public levels:', pubList.length, pubList.map((l:any)=>l.id).slice(0,5));
+
+      const user = authService.getCurrentUser();
+      if (user?.uid) {
+        console.log('[Create][DB] Fetching user levels…', user.uid);
+        const userRes = await fetch(`/api/levels/user/${user.uid}`, { credentials: 'include' });
+        if (userRes.ok) {
+          const userJson = await userRes.json();
+          const uList = Array.isArray(userJson.levels) ? userJson.levels : [];
+          setUserLevels(uList.map((l: any) => ({ id: l.id, name: l.name })));
+          console.log('[Create][DB] user levels:', uList.length, uList.map((l:any)=>l.id).slice(0,5));
+        } else {
+          console.warn('[Create][DB] user levels request failed:', userRes.status);
+          setUserLevels([]);
+        }
+      } else {
+        setUserLevels([]);
+      }
+
+      setDbStatus('ok');
+    } catch (e: any) {
+      console.error('[Create][DB] Fetch failed:', e);
+      setDbError(e?.message || 'Failed to fetch levels');
+      setDbStatus('error');
+    }
+  };
+
+  useEffect(() => {
+    // initial fetch on mount
+    refreshLevels();
   }, []);
 
   const handleSelect = (id: string) => {
@@ -125,37 +177,33 @@ export default function Create() {
         return t === 'ground' || t === 'grass' || t === 'tile' || t === 'dirt';
       });
 
+      // Calculate world dimensions
+      const maxGridY = Math.max(0, ...groundOrDirt.map((g: any) => g.gridY), ...entities.map((e: any) => e.gridY));
       const width = Math.max(1000, ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID));
-      const height = Math.max(600, ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID));
-      const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+      const height = Math.max(600, (maxGridY + 3) * GRID);
+      // Convert grid Y to world Y - grid Y=0 is at the BOTTOM of the world
+      const toY = (gridY: number) => height - (gridY * GRID) - GRID;
 
       const objects: LevelObject[] = [];
 
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
-      let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
-      
-      if (playerEnt) {
-        const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
-        if (blocksAtPlayerX.length > 0) {
-          const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
-          const blockBaseY = toY(highestGridY);
-          playerY = blockBaseY - GRID;
-        }
-      }
+      const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+      // Place player on top of the block they're placed on
+      let playerY = playerEnt ? toY(playerEnt.gridY) + GRID / 2 : Math.max(200, height - 100);
       
       objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
 
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava' || t === 'enemy') {
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
           let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-else if (t === 'coin') levelType = LevelObjectType.Coin;
+          else if (t === 'coin') levelType = LevelObjectType.Coin;
           else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
+          else if (t === 'enemy') levelType = LevelObjectType.Enemy;
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
           if (visual) obj.visual = visual;
           objects.push(obj);
@@ -204,13 +252,13 @@ else if (t === 'coin') levelType = LevelObjectType.Coin;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        // eslint-disable-next-line no-console
+         
         console.error('[Create] Publish error response:', errorData);
         throw new Error(`Failed to publish: ${errorData.error || response.statusText}`);
       }
 
       const result = await response.json();
-      // eslint-disable-next-line no-console
+       
       console.info('[Create] Level published successfully:', result);
       
       setSaveBanner({ 
@@ -219,7 +267,7 @@ else if (t === 'coin') levelType = LevelObjectType.Coin;
       });
       setTimeout(() => setSaveBanner(null), 3000);
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error('[Create] Publish failed:', error);
       setSaveBanner({ 
         status: 'error', 
@@ -243,32 +291,27 @@ else if (t === 'coin') levelType = LevelObjectType.Coin;
       return t === 'ground' || t === 'grass' || t === 'tile' || t === 'dirt';
     });
 
+    // Calculate world dimensions
+    const maxGridY = Math.max(0, ...groundOrDirt.map((g: any) => g.gridY), ...entities.map((e: any) => e.gridY));
     const width = Math.max(
       1000,
       ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID)
     );
     const height = Math.max(
       600,
-      ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID)
+      (maxGridY + 3) * GRID
     );
-    const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+    // Convert grid Y to world Y - grid Y=0 is at the BOTTOM of the world
+    const toY = (gridY: number) => height - (gridY * GRID) - GRID;
 
     const objects: LevelObject[] = [];
 
     const playerEnt = entities.find(
       (e: any) => String(e.type).toLowerCase().trim() === 'player'
     );
-    let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-    let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
-    
-    if (playerEnt) {
-      const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
-      if (blocksAtPlayerX.length > 0) {
-        const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
-        const blockBaseY = toY(highestGridY);
-        playerY = blockBaseY - GRID;
-      }
-    }
+    const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+    // Place player on top of the block they're placed on
+    let playerY = playerEnt ? toY(playerEnt.gridY) + GRID / 2 : Math.max(200, height - 100);
     
     objects.push({
       id: 'player_1',
@@ -279,14 +322,15 @@ else if (t === 'coin') levelType = LevelObjectType.Coin;
 
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
-      if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
+      if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava' || t === 'enemy') {
         const x = e.gridX * GRID + GRID / 2;
         const y = toY(e.gridY);
         let levelType: LevelObjectType = LevelObjectType.Spring;
         let visual: any = undefined;
         if (t === 'spike') levelType = LevelObjectType.Spike;
-else if (t === 'coin') levelType = LevelObjectType.Coin;
+        else if (t === 'coin') levelType = LevelObjectType.Coin;
         else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
+        else if (t === 'enemy') levelType = LevelObjectType.Enemy;
         const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
         if (visual) obj.visual = visual;
         objects.push(obj);
@@ -388,39 +432,28 @@ else if (t === 'coin') levelType = LevelObjectType.Coin;
       });
       const objects: LevelObject[] = [];
 
+      // Calculate world dimensions
+      const maxGridY = Math.max(0, ...groundOrDirt.map((g: any) => g.gridY), ...entities.map((e: any) => e.gridY));
       const width = Math.max(
         1000,
         ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID)
       );
       const height = Math.max(
         600,
-        ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID)
+        (maxGridY + 3) * GRID
       );
-      const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+      // Convert grid Y to world Y - grid Y=0 is at the BOTTOM of the world
+      const toY = (gridY: number) => height - (gridY * GRID) - GRID;
 
       const playerEnt = entities.find(
         (e: any) => String(e.type).toLowerCase().trim() === 'player'
       );
       
-      // Find the topmost block at the player's X position
-      let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      // Place player on top of the block they're placed on
+      const playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+      let playerY = playerEnt ? toY(playerEnt.gridY) + GRID / 2 : Math.max(200, height - 100);
       
-      if (playerEnt) {
-        // Find all blocks at the same X coordinate as the player
-        const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
-        
-        if (blocksAtPlayerX.length > 0) {
-          // Find the highest gridY (topmost block)
-          const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
-          // Place player on top of the highest block
-          // The block's Y is its base, so we need to place player above it
-          const blockBaseY = toY(highestGridY);
-          // Platform height is GRID (32), player should be above the block
-          playerY = blockBaseY - GRID;
-          console.log(`[Create] Player at gridX=${playerEnt.gridX}, highestGridY=${highestGridY}, blockBaseY=${blockBaseY}, playerY=${playerY}`);
-        }
-      }
+      console.log(`[Create] Player at gridX=${playerEnt?.gridX}, gridY=${playerEnt?.gridY}, worldY=${playerY}, height=${height}`);
       
       objects.push({
         id: 'player_1',
@@ -446,14 +479,15 @@ else if (t === 'coin') levelType = LevelObjectType.Coin;
 
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
-        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
+        if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava' || t === 'enemy') {
           const x = e.gridX * GRID + GRID / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
           let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-else if (t === 'coin') levelType = LevelObjectType.Coin;
+          else if (t === 'coin') levelType = LevelObjectType.Coin;
           else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
+          else if (t === 'enemy') levelType = LevelObjectType.Enemy;
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
           if (visual) obj.visual = visual;
           objects.push(obj);
@@ -589,7 +623,30 @@ console.log('[Create] Restarting PlayScene with', (Array.isArray(levelData.objec
                 {entityCount}
               </span>
             </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs">
+              <span className={
+                dbStatus === 'ok' ? 'text-emerald-600' : dbStatus === 'error' ? 'text-rose-600' : 'text-gray-500'
+              }>
+                DB: {dbStatus.toUpperCase()}
+              </span>
+              <span className="text-gray-600">
+                public {publicLevels.length}
+                {userLevels.length ? ` / yours ${userLevels.length}` : ''}
+              </span>
+              <button
+                onClick={refreshLevels}
+                className="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-800"
+              >
+                Refresh
+              </button>
+            </div>
             <div className="flex gap-1 sm:gap-2">
+              <button
+                onClick={() => navigate('/')}
+                className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300"
+              >
+                ← Home
+              </button>
               <button
                 onClick={handleClear}
                 className="px-2 py-1 sm:px-4 sm:py-2 text-xs bg-zinc-900 sm:text-sm text-white rounded font-medium"
@@ -634,6 +691,13 @@ console.log('[Create] Restarting PlayScene with', (Array.isArray(levelData.objec
               ← Return to Editor
             </button>
           </div>
+        </div>
+      )}
+
+      {/* DB error banner */}
+      {dbStatus === 'error' && dbError && (
+        <div className="absolute top-14 left-3 z-[60] px-3 py-2 rounded shadow text-sm font-medium bg-rose-600 text-white">
+          DB error: {dbError}
         </div>
       )}
 

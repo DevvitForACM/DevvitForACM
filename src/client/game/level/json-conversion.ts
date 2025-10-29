@@ -173,7 +173,12 @@ function createPlayer(
   const textureKey = obj.visual?.texture || 'player-idle-1';
 
   if ((scene as any).physics?.world) {
-    const playerSprite = scene.physics.add.sprite(obj.position.x, obj.position.y, textureKey);
+    const playerSprite = scene.physics.add.sprite(
+      obj.position.x,
+      obj.position.y,
+      textureKey
+    );
+    playerSprite.setDisplaySize(60, 100);
     playerSprite.setName(obj.id);
     playerSprite.setDepth(10);
     // Disable bounce and set sane movement params

@@ -29,28 +29,28 @@ export class CreateScene extends Phaser.Scene {
 
   preload(): void {
     const base = '/';
-    this.load.image('spring', `${base}Spring.png`);
-    this.load.image('spike', `${base}Spikes.png`);
-    this.load.image('grass', `${base}Grass.png`);
-    this.load.image('ground', `${base}Ground.png`);
-    this.load.image('grass-filler', `${base}Grass-filler.png`);
-    this.load.image('lava', `${base}Lava.png`);
-    this.load.image('door', `${base}Door.png`);
+    this.load.image('spring', `${base}spring.png`);
+    this.load.image('spike', `${base}spikes.png`);
+    this.load.image('grass', `${base}grass.png`);
+    this.load.image('ground', `${base}ground.png`);
+    this.load.image('grass-filler', `${base}grass-filler.png`);
+    this.load.image('lava', `${base}lava.png`);
+    this.load.image('door', `${base}door.png`);
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `/Idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `${base}idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `/Jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `${base}jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `/Coin/${i}.png`);
+      this.load.image(`coin-${i}`, `${base}coin/${i}.png`);
     }
 
     // Enemy frames
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`enemy-${i}`, `/Enemy/${i}.png`);
+      this.load.image(`enemy-${i}`, `${base}enemy/${i}.png`);
     }
   };
 
@@ -129,7 +129,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('coin-spin') && coinFrames.length > 0) {
       this.anims.create({
         key: 'coin-spin',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `coin-${i}` })),
+        frames: coinFrames,
         frameRate: 4,
         repeat: -1,
       });
@@ -142,7 +142,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('player-idle') && idleFrames.length > 0) {
       this.anims.create({
         key: 'player-idle',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-idle-${i}` })),
+        frames: idleFrames,
         frameRate: 8,
         repeat: -1,
       });
@@ -155,7 +155,7 @@ export class CreateScene extends Phaser.Scene {
     if (!this.anims.exists('player-jump') && jumpFrames.length > 0) {
       this.anims.create({
         key: 'player-jump',
-        frames: [0, 1, 2, 3, 4].map((i) => ({ key: `player-jump-${i}` })),
+        frames: jumpFrames,
         frameRate: 10,
         repeat: -1,
       });
@@ -283,8 +283,8 @@ export class CreateScene extends Phaser.Scene {
       const sprite = this.add.image(0, 0, 'spike');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
-    } else if (t === 'coin' && this.textures.exists('coin-1')) {
-      const sprite = this.add.sprite(0, 0, 'coin-1');
+    } else if (t === 'coin' && this.textures.exists('coin-0')) {
+      const sprite = this.add.sprite(0, 0, 'coin-0');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       try {
         sprite.play('coin-spin');
@@ -303,8 +303,8 @@ export class CreateScene extends Phaser.Scene {
       const sprite = this.add.image(0, 0, 'spring');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       container.add(sprite);
-    } else if (t === 'player' && this.textures.exists('player-idle-1')) {
-      const sprite = this.add.sprite(0, 0, 'player-idle-1');
+    } else if (t === 'player' && this.textures.exists('player-idle-0')) {
+      const sprite = this.add.sprite(0, 0, 'player-idle-0');
       sprite.setDisplaySize(GRID_SIZE - 4, GRID_SIZE - 4);
       try {
         sprite.play('player-idle');

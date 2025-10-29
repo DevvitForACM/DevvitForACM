@@ -6,6 +6,7 @@ const router = Router();
 
 
 router.get('/public', LevelController.getAllPublicLevels);
+router.get('/local', LevelController.getLocalLevels);
 router.get('/user/:userId', LevelController.getAllLevelsByUser);
 router.get('/:id', LevelController.getLevelByID);
 
