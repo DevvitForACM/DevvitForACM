@@ -545,6 +545,11 @@ export class CreateScene extends Phaser.Scene {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
       this.cameras.main.scrollY += this.cameraScrollSpeedY * (delta / 16);
       
+      // Prevent camera from scrolling into negative X territory
+      if (this.cameras.main.scrollX < 0) {
+        this.cameras.main.scrollX = 0;
+      }
+      
       const cam = this.cameras.main;
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
       const offY = ((-cam.scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
