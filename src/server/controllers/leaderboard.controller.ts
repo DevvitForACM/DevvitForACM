@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { LeaderboardServiceRedis } from '../services/leaderboard.service.redis';
-import { RedisService } from '../services/redis.service';
-import { redis } from '@devvit/web/server';
+import { LeaderboardService } from '../services/leaderboard.service';
 import { 
   LeaderboardResponse, 
   UpdateScoreRequest, 
@@ -14,14 +12,10 @@ export class LeaderboardController {
       const limit = parseInt(req.query.limit as string) || 10;
       const userId = req.query.userId as string;
 
-      // Initialize Redis service
-      const redisService = new RedisService(redis);
-      const leaderboardService = new LeaderboardServiceRedis(redisService);
-
       const [entries, totalPlayers, userRank] = await Promise.all([
-        leaderboardService.getTopUsers(limit),
-        leaderboardService.getTotalPlayers(),
-        userId ? leaderboardService.getUserRank(userId) : Promise.resolve(undefined)
+        LeaderboardService.getTopUsers(limit),
+        LeaderboardService.getTotalPlayers(),
+        userId ? LeaderboardService.getUserRank(userId) : Promise.resolve(undefined)
       ]);
 
       const response: LeaderboardResponse = {
@@ -40,7 +34,6 @@ export class LeaderboardController {
       });
     }
   }
-
 
   static async updateScore(req: Request, res: Response): Promise<void> {
     try {
@@ -62,12 +55,8 @@ export class LeaderboardController {
         return;
       }
 
-      // Initialize Redis service
-      const redisService = new RedisService(redis);
-      const leaderboardService = new LeaderboardServiceRedis(redisService);
-
-      await leaderboardService.updateScore({ userId, username, score });
-      const newRank = await leaderboardService.getUserRank(userId);
+      await LeaderboardService.updateScore({ userId, username, score });
+      const newRank = await LeaderboardService.getUserRank(userId);
 
       const response: UpdateScoreResponse = {
         type: 'score-update',
@@ -86,7 +75,6 @@ export class LeaderboardController {
     }
   }
 
-  
   static async getUserRank(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
@@ -99,11 +87,7 @@ export class LeaderboardController {
         return;
       }
 
-      // Initialize Redis service
-      const redisService = new RedisService(redis);
-      const leaderboardService = new LeaderboardServiceRedis(redisService);
-
-      const rank = await leaderboardService.getUserRank(userId);
+      const rank = await LeaderboardService.getUserRank(userId);
 
       if (rank === null) {
         res.status(404).json({

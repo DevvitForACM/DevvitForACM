@@ -22,8 +22,8 @@ export const ENTITY_CONFIG = {
   PLAYER_RESTITUTION: 0.2,
   PLAYER_COLOR_DEFAULT: 0xffffff,
 
-  PLATFORM_WIDTH: 100,
-  PLATFORM_HEIGHT: 20,
+  PLATFORM_WIDTH: 60,
+  PLATFORM_HEIGHT: 60,
   PLATFORM_COLOR_DEFAULT: 0x888888,
 };
 
@@ -31,7 +31,7 @@ export const ENTITY_CONFIG = {
    CAMERA & PLAYER CONFIGURATION
    ---------------------------------------------- */
 export const CAMERA_SCROLL = {
-  VELOCITY: 5,
+  VELOCITY: 3,
   FONT_SIZE: '48px',
   COLOR: '#111111',
   LEFT_SYMBOL: '<',
@@ -47,8 +47,20 @@ export const PLAYER_CONFIG = {
   MAX_VELOCITY: 8,
 };
 
+/* ----------------------------------------------
+   STANDARDIZED GAMEPLAY SETTINGS
+   These settings are constant across all levels
+   ---------------------------------------------- */
+export const GAMEPLAY = {
+  GRAVITY: 800,          // Standard platformer gravity (pixels/sec²)
+  MOVE_SPEED: 240,       // Player horizontal movement speed
+  JUMP_VELOCITY: 360,    // Player jump strength
+} as const;
+
 export const CAMERA_CONFIG = {
-  ZOOM: 1,
+  ZOOM: 1.5,
+  MIN_ZOOM: 0.8,
+  MAX_ZOOM: 2.5,
   FOLLOW_LERP: 0.1,
 };
 
@@ -75,8 +87,8 @@ export const PHYSICS = {
    ---------------------------------------------- */
 export const PLAYER = {
   SIZE: {
-    WIDTH: 32,
-    HEIGHT: 48,
+    WIDTH: 60,
+    HEIGHT: 100,
   },
   HEALTH: {
     MAX: 100,
@@ -93,20 +105,28 @@ export const PLAYER = {
    ---------------------------------------------- */
 export const ENTITY_SIZES = {
   BASE: {
-    WIDTH: 32,
-    HEIGHT: 32,
+    WIDTH: 60,
+    HEIGHT: 60,
   },
   DOOR: {
-    WIDTH: 48,
-    HEIGHT: 64,
+    WIDTH: 60,
+    HEIGHT: 60,
   },
   COIN: {
-    WIDTH: 24,
-    HEIGHT: 24,
+    WIDTH: 60,
+    HEIGHT: 60,
   },
   SPRING: {
-    WIDTH: 32,
-    HEIGHT: 24,
+    WIDTH: 60,
+    HEIGHT: 60,
+  },
+  SPIKE: {
+    WIDTH: 60,
+    HEIGHT: 60,
+  },
+  LAVA: {
+    WIDTH: 60,
+    HEIGHT: 60,
   },
 } as const;
 
@@ -177,6 +197,13 @@ export const WORLD = {
   DEFAULT_HEIGHT: 600,
   GROUND_HEIGHT: 40,
   PLATFORM_HEIGHT: 30,
+} as const;
+
+/* ----------------------------------------------
+   GRID SETTINGS
+   ---------------------------------------------- */
+export const GRID = {
+  SIZE: 60,
 } as const;
 
 /* ----------------------------------------------

@@ -10,23 +10,26 @@
     {
       "id": "player_1",
       "type": "player",
-      "position": { "x": 100, "y": 500 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 1, "y": 1 },
       "physics": { "type": "dynamic" },
       "visual": { "texture": "player-idle-1" }
     },
     {
       "id": "platform_1",
       "type": "platform",
-      "position": { "x": 0, "y": 580 },
-      "scale": { "x": 10, "y": 1 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 0, "y": 0 },
+      "scale": { "x": 1, "y": 1 },
       "physics": { "type": "static", "isCollidable": true },
       "visual": { "texture": "grass" }
     },
     {
       "id": "platform_2",
       "type": "platform",
-      "position": { "x": 400, "y": 450 },
-      "scale": { "x": 2, "y": 1 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 6, "y": 2 },
+      "scale": { "x": 1, "y": 1 },
       "physics": { "type": "static", "isCollidable": true },
       "visual": { "texture": "grass" }
     }

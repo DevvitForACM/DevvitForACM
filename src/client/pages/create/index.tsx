@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
-import { SCENE_KEYS, ENTITY_CONFIG } from '@/constants/game-constants';
+import { SCENE_KEYS, ENTITY_CONFIG, GRID } from '@/constants/game-constants';
 import {
   LEVEL_SCHEMA_VERSION,
   LevelObjectType,
@@ -34,6 +34,51 @@ const ENTITY_TYPES = [
   { id: 'coin', name: 'Coin', icon: '💰', color: '#eab308' },
   { id: 'door', name: 'Door', icon: '🚪', color: '#8b5cf6' },
 ];
+
+/**
+ * Convert editor GRID.SIZE coordinates (where gridY increases upward) to new system GRID.SIZE coordinates (where 0 is bottom)
+ * Editor gridY: negative values, increases upward
+ * New system gridY: 0 at bottom, increases upward
+ */
+function convertEditorGridToNewSystem(editorGridY: number, worldHeight: number): number {
+  // Editor's gridY calculation: gridY = -Math.floor(wy / GRID_SIZE) - 1
+  // When wy = 0 (top of world), editor gridY ≈ -1 (approximately)
+  // When wy = -worldHeight (very bottom), editor gridY would be large positive
+  
+  // The new system: gridY = 0 is at bottom (pixelY = worldHeight - GRID_SIZE)
+  // Editor gridY = -1 corresponds to roughly the top of the world
+  // We need to map editor's gridY to new system where 0 = bottom
+  // Approximate: newGridY = numCells - 1 + editorGridY
+  // But this needs refinement based on actual coordinate relationship
+  
+  // Actually, looking at CreateScene: gridY = -Math.floor(wy / GRID_SIZE) - 1
+  // And pixelY = -(gridY + 1) * GRID_SIZE + GRID_SIZE / 2
+  // If we want pixelY relative to bottom: pixelY_from_bottom = worldHeight - pixelY
+  // Then newGridY = Math.floor(pixelY_from_bottom / GRID.SIZE)
+  
+  // From editor gridY, we can compute approximate pixelY:
+  // pixelY ≈ -(editorGridY + 1) * GRID_SIZE + GRID_SIZE / 2 (but this is from top)
+  // pixelY_from_bottom = worldHeight - pixelY related calculation
+  
+  // Simpler: If editor stores gridYAL relative to some origin, and we know world height
+  // We can calculate by assuming editor gridY = 0 represents one cell up from world bottom
+  // New system: bottom row = gridY 0
+  // Conversion: newGridY = (worldHeight / GRID.SIZE) - 2 - editorGridY (approximate)
+  
+  // More accurate: Calculate from the actual pixel position that editor gridY represents
+  // Editor's pixelY for a given gridY: pixelY = -(gridY + 1) * GRID_SIZE + GRID_SIZE / 2
+  // This is relative to world origin (top)
+  // Convert to bottom-relative: pixelY_from_bottom = worldHeight - pixelY
+  // Then: newGridY = Math.floor(pixelY_from_bottom / GRID.SIZE)
+  
+  const editorPixelY = -(editorGridY + 1) * GRID.SIZE + GRID.SIZE / 2;
+  const pixelYFromBottom = worldHeight - editorPixelY;
+  const newGridY = Math.floor(pixelYFromBottom / GRID.SIZE);
+  
+  // Clamp to valid range
+  const maxGridY = Math.floor(worldHeight / GRID.SIZE) - 1;
+  return Math.max(0, Math.min(maxGridY, newGridY));
+}
 
 export default function Create() {
   const [scene, setScene] = useState<CreateScene | null>(null);
@@ -116,7 +161,6 @@ export default function Create() {
     if (!scene) return;
     
     setIsPublishing(true);
-    const GRID = 32;
     const entities = scene.getAllEntities();
     
     try {
@@ -125,38 +169,54 @@ export default function Create() {
         return t === 'ground' || t === 'grass' || t === 'tile' || t === 'dirt';
       });
 
-      const width = Math.max(1000, ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID));
-      const height = Math.max(600, ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID));
-      const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+      // Calculate world bounds based on entity positions
+      // First pass: estimate height
+      const tempHeight = 600;
+      const allNewGridYs = groundOrDirt.map((g: any) => convertEditorGridToNewSystem(g.gridY, tempHeight));
+      const maxGridY = allNewGridYs.length > 0 ? Math.max(...allNewGridYs) : 0;
+      const height = Math.max(600, (maxGridY + 2) * GRID.SIZE);
+      const width = Math.max(1000, ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID.SIZE));
 
       const objects: LevelObject[] = [];
 
       const playerEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'player');
-      let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
-      let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
+      let playerGridX = playerEnt ? playerEnt.gridX : 0;
+      let playerGridY = playerEnt ? convertEditorGridToNewSystem(playerEnt.gridY, height) : 0;
       
       if (playerEnt) {
         const blocksAtPlayerX = groundOrDirt.filter((g: any) => g.gridX === playerEnt.gridX);
         if (blocksAtPlayerX.length > 0) {
-          const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
-          const blockBaseY = toY(highestGridY);
-          playerY = blockBaseY - GRID;
+          const highestEditorGridMovY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
+          const highestNewGridY = convertEditorGridToNewSystem(highestEditorGridMovY, height);
+          // Place player one cell above the highest platform
+          playerGridY = Math.max(0, highestNewGridY + 1);
         }
       }
       
-      objects.push({ id: 'player_1', type: LevelObjectType.Player, position: { x: playerX, y: playerY }, physics: { type: PhysicsType.Dynamic } });
+      objects.push({ 
+        id: 'player_1', 
+        type: LevelObjectType.Player, 
+        position: { x: 0, y: 0 }, // Dummy, gridPosition used instead
+        gridPosition: { x: playerGridX, y: playerGridY },
+        physics: { type: PhysicsType.Dynamic } 
+      });
 
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
         if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
-          const x = e.gridX * GRID + GRID / 2;
-          const y = toY(e.gridY);
+          const newGridX = e.gridX;
+          const newGridY = convertEditorGridToNewSystem(e.gridY, height);
           let levelType: LevelObjectType = LevelObjectType.Spring;
           let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-          else if (t === 'coin') levelType = LevelObjectType.Collectible;
+          else if (t === 'coin') levelType = LevelObjectType.Coin;
           else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
-          const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
+          const obj: any = { 
+            id: `${t}_${idx + 1}`, 
+            type: levelType, 
+            position: { x: 0, y: 0 }, // Dummy, gridPosition used instead
+            gridPosition: { x: newGridX, y: newGridY } 
+          };
           if (visual) obj.visual = visual;
           objects.push(obj);
         }
@@ -164,17 +224,28 @@ export default function Create() {
 
       const doorEnt = entities.find((e: any) => String(e.type).toLowerCase().trim() === 'door');
       if (doorEnt) {
-        objects.push({ id: 'goal_1', type: LevelObjectType.Goal, position: { x: doorEnt.gridX * GRID + GRID / 2, y: toY(doorEnt.gridY) }, visual: { texture: 'door' } });
+        const doorGridX = doorEnt.gridX;
+        const doorGridY = convertEditorGridToNewSystem(doorEnt.gridY, height);
+        objects.push({ 
+          id: 'goal_1', 
+          type: LevelObjectType.Goal, 
+          position: { x: 0, y: 0 }, // Dummy, gridPosition used instead
+          gridPosition: { x: doorGridX, y: doorGridY }, 
+          visual: { texture: 'door' } 
+        });
       }
 
       groundOrDirt.forEach((g: any, i: number) => {
         const t = String(g.type).toLowerCase().trim();
         const texture = t === 'dirt' ? 'ground' : 'grass';
+        const newGridX = g.gridX;
+        const newGridY = convertEditorGridToNewSystem(g.gridY, height);
         objects.push({
           id: `platform_${i + 1}`,
           type: LevelObjectType.Platform,
-          position: { x: g.gridX * GRID + GRID / 2, y: toY(g.gridY) },
-          scale: { x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT },
+          position: { x: 0, y: 0 }, // Dummy, gridPosition used instead
+          gridPosition: { x: newGridX, y: newGridY },
+          scale: { x: GRID.SIZE / ENTITY_CONFIG.PLATFORM_WIDTH, y: GRID.SIZE / ENTITY_CONFIG.PLATFORM_HEIGHT },
           physics: { type: PhysicsType.Static, isCollidable: true },
           visual: { texture },
         });
@@ -233,7 +304,6 @@ export default function Create() {
 
   const handleSave = () => {
     if (!scene) return;
-    const GRID = 32;
     const entities = scene.getAllEntities();
 
     console.info('[Create] Saving level… entities:', entities.length);
@@ -245,20 +315,20 @@ export default function Create() {
 
     const width = Math.max(
       1000,
-      ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID)
+      ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID.SIZE)
     );
     const height = Math.max(
       600,
-      ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID)
+      ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID.SIZE)
     );
-    const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+    const toY = (gridY: number) => height - (gridY * GRID.SIZE + GRID.SIZE / 2);
 
     const objects: LevelObject[] = [];
 
     const playerEnt = entities.find(
       (e: any) => String(e.type).toLowerCase().trim() === 'player'
     );
-    let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+    let playerX = playerEnt ? playerEnt.gridX * GRID.SIZE + GRID.SIZE / 2 : 200;
     let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
     
     if (playerEnt) {
@@ -266,7 +336,7 @@ export default function Create() {
       if (blocksAtPlayerX.length > 0) {
         const highestGridY = Math.max(...blocksAtPlayerX.map((g: any) => g.gridY));
         const blockBaseY = toY(highestGridY);
-        playerY = blockBaseY - GRID;
+        playerY = blockBaseY - GRID.SIZE;
       }
     }
     
@@ -280,12 +350,12 @@ export default function Create() {
     entities.forEach((e: any, idx: number) => {
       const t = String(e.type).toLowerCase().trim();
       if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
-        const x = e.gridX * GRID + GRID / 2;
+        const x = e.gridX * GRID.SIZE + GRID.SIZE / 2;
         const y = toY(e.gridY);
         let levelType: LevelObjectType = LevelObjectType.Spring;
         let visual: any = undefined;
         if (t === 'spike') levelType = LevelObjectType.Spike;
-        else if (t === 'coin') levelType = LevelObjectType.Collectible;
+        else if (t === 'coin') levelType = LevelObjectType.Coin;
         else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
         const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
         if (visual) obj.visual = visual;
@@ -301,7 +371,7 @@ export default function Create() {
         id: 'goal_1',
         type: LevelObjectType.Goal,
         position: {
-          x: doorEnt.gridX * GRID + GRID / 2,
+          x: doorEnt.gridX * GRID.SIZE + GRID.SIZE / 2,
           y: toY(doorEnt.gridY),
         },
         visual: { texture: 'door' },
@@ -315,12 +385,12 @@ export default function Create() {
         id: `platform_${i + 1}`,
         type: LevelObjectType.Platform,
         position: {
-          x: g.gridX * GRID + GRID / 2,
+          x: g.gridX * GRID.SIZE + GRID.SIZE / 2,
           y: toY(g.gridY),
         },
         scale: {
-          x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH,
-          y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
+          x: GRID.SIZE / ENTITY_CONFIG.PLATFORM_WIDTH,
+          y: GRID.SIZE / ENTITY_CONFIG.PLATFORM_HEIGHT,
         },
         physics: { type: PhysicsType.Static, isCollidable: true },
         visual: { texture },
@@ -380,7 +450,6 @@ export default function Create() {
     // Always build fresh level data from current editor entities for Play
     let levelData: LevelData | null = null;
     {
-      const GRID = 32;
       const entities = scene.getAllEntities();
       const groundOrDirt = entities.filter((e: any) => {
         const t = String(e.type).toLowerCase().trim();
@@ -390,20 +459,20 @@ export default function Create() {
 
       const width = Math.max(
         1000,
-        ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID)
+        ...groundOrDirt.map((g: any) => (g.gridX + 2) * GRID.SIZE)
       );
       const height = Math.max(
         600,
-        ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID)
+        ...groundOrDirt.map((g: any) => (g.gridY + 2) * GRID.SIZE)
       );
-      const toY = (gridY: number) => height - (gridY * GRID + GRID / 2);
+      const toY = (gridY: number) => height - (gridY * GRID.SIZE + GRID.SIZE / 2);
 
       const playerEnt = entities.find(
         (e: any) => String(e.type).toLowerCase().trim() === 'player'
       );
       
       // Find the topmost block at the player's X position
-      let playerX = playerEnt ? playerEnt.gridX * GRID + GRID / 2 : 200;
+      let playerX = playerEnt ? playerEnt.gridX * GRID.SIZE + GRID.SIZE / 2 : 200;
       let playerY = playerEnt ? toY(playerEnt.gridY) : Math.max(200, height - 100);
       
       if (playerEnt) {
@@ -416,8 +485,8 @@ export default function Create() {
           // Place player on top of the highest block
           // The block's Y is its base, so we need to place player above it
           const blockBaseY = toY(highestGridY);
-          // Platform height is GRID (32), player should be above the block
-          playerY = blockBaseY - GRID;
+          // Platform height is GRID.SIZE (32), player should be above the block
+          playerY = blockBaseY - GRID.SIZE;
           console.log(`[Create] Player at gridX=${playerEnt.gridX}, highestGridY=${highestGridY}, blockBaseY=${blockBaseY}, playerY=${playerY}`);
         }
       }
@@ -437,7 +506,7 @@ export default function Create() {
           id: 'goal_1',
           type: LevelObjectType.Goal,
           position: {
-            x: doorEnt.gridX * GRID + GRID / 2,
+            x: doorEnt.gridX * GRID.SIZE + GRID.SIZE / 2,
             y: toY(doorEnt.gridY),
           },
           visual: { texture: 'door' },
@@ -447,12 +516,12 @@ export default function Create() {
       entities.forEach((e: any, idx: number) => {
         const t = String(e.type).toLowerCase().trim();
         if (t === 'spring' || t === 'spike' || t === 'coin' || t === 'lava') {
-          const x = e.gridX * GRID + GRID / 2;
+          const x = e.gridX * GRID.SIZE + GRID.SIZE / 2;
           const y = toY(e.gridY);
           let levelType: LevelObjectType = LevelObjectType.Spring;
           let visual: any = undefined;
           if (t === 'spike') levelType = LevelObjectType.Spike;
-          else if (t === 'coin') levelType = LevelObjectType.Collectible;
+          else if (t === 'coin') levelType = LevelObjectType.Coin;
           else if (t === 'lava') { levelType = LevelObjectType.Obstacle; visual = { texture: 'lava' }; }
           const obj: any = { id: `${t}_${idx + 1}`, type: levelType, position: { x, y } };
           if (visual) obj.visual = visual;
@@ -466,12 +535,12 @@ export default function Create() {
           id: `platform_${i + 1}`,
           type: LevelObjectType.Platform,
           position: {
-            x: g.gridX * GRID + GRID / 2,
+            x: g.gridX * GRID.SIZE + GRID.SIZE / 2,
             y: toY(g.gridY),
           },
           scale: {
-            x: GRID / ENTITY_CONFIG.PLATFORM_WIDTH,
-            y: GRID / ENTITY_CONFIG.PLATFORM_HEIGHT,
+            x: GRID.SIZE / ENTITY_CONFIG.PLATFORM_WIDTH,
+            y: GRID.SIZE / ENTITY_CONFIG.PLATFORM_HEIGHT,
           },
           physics: { type: PhysicsType.Static, isCollidable: true },
           visual: { texture },
@@ -491,8 +560,11 @@ export default function Create() {
     }
 
     console.log('[Create] handlePlay - levelData:', levelData);
-    console.log('[Create] handlePlay - objects count:', levelData.objects.length);
-    const platforms = levelData.objects.filter(o => o.type === 'platform');
+    const objectsArray = Array.isArray(levelData.objects) 
+      ? levelData.objects 
+      : Object.values(levelData.objects).flat();
+    console.log('[Create] handlePlay - objects count:', objectsArray.length);
+    const platforms = objectsArray.filter((o: any) => o.type === 'platform');
     console.log('[Create] handlePlay - platform objects:', platforms.length);
 
     setIsPlaying(true);
@@ -501,7 +573,7 @@ export default function Create() {
     scene.scene.stop(SCENE_KEYS.CREATE);
     
     // Restart PlayScene with new data (this will call init and create again)
-    console.log('[Create] Restarting PlayScene with', levelData.objects.length, 'objects');
+    console.log('[Create] Restarting PlayScene with', objectsArray.length, 'objects');
     scene.scene.start(SCENE_KEYS.PLAY, { useMapControls: false, levelData });
   };
 

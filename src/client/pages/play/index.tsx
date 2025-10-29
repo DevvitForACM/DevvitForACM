@@ -4,7 +4,7 @@ import { getPhaserConfigWithLevelName } from '@/config/game-config';
 
 const AVAILABLE_LEVELS = [
   { id: 'dummy-level-1', name: 'Level 1' },
-  { id: 'dummy-level-2', name: 'Level 2' },
+  { id: 'grid-demo-level', name: 'Level 2' },
 ];
 
 export default function Play() {
