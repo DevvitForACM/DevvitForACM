@@ -2,10 +2,9 @@ import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import authRoutes from './routes/auth.routes';
 import levelRoutes from './routes/level.routes';
-import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
-import { createPost } from './core/post';
-import authRoutes from './routes/auth.routes';
 import leaderboardRoutes from './routes/leaderboard.routes';
+import { redis, reddit, context, createServer, getServerPort } from '@devvit/web/server';
+import { createPost } from './core/post';
 
 const app = express();
 
@@ -151,6 +150,9 @@ app.use(router);
 // Auth routes
 app.use('/api/auth', authRoutes);
 
+// Level routes
+app.use('/api/levels', levelRoutes);
+
 // leaderboard routes
 app.use('/api/leaderboard', leaderboardRoutes);
 
@@ -188,3 +190,9 @@ app.use((req, res) => {
 });
 
 // Get port from environment variable with fallback
+const port = getServerPort();
+
+// Create and start the server
+const server = createServer(app);
+server.on('error', (err) => console.error(`server error; ${err.stack}`));
+server.listen(port, () => console.log(`http://localhost:${port}`));

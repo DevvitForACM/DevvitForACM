@@ -1,6 +1,6 @@
 import { LeaderboardEntry, UpdateScoreRequest } from '../../shared/types/leaderboard';
 import { LeaderboardModel } from '../models/leaderboard';
-import { redis } from './redis.service';
+import { redis } from '@devvit/web/server';
 
 // Using simple key-value storage for Devvit Redis compatibility
 const LEADERBOARD_PREFIX = 'leaderboard:user:';
