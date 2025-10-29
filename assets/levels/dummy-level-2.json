@@ -10,31 +10,35 @@
     {
       "id": "player_1",
       "type": "player",
-      "position": { "x": 150, "y": 500 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 2, "y": 1 },
       "physics": { "type": "dynamic" },
       "visual": { "texture": "player-idle-1" }
     },
     {
       "id": "platform_1",
       "type": "platform",
-      "position": { "x": 0, "y": 580 },
-      "scale": { "x": 12, "y": 1 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 0, "y": 0 },
+      "scale": { "x": 1, "y": 1 },
       "physics": { "type": "static", "isCollidable": true },
       "visual": { "texture": "grass" }
     },
     {
       "id": "platform_2",
       "type": "platform",
-      "position": { "x": 500, "y": 450 },
-      "scale": { "x": 2, "y": 1 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 8, "y": 2 },
+      "scale": { "x": 1, "y": 1 },
       "physics": { "type": "static", "isCollidable": true },
       "visual": { "texture": "grass" }
     },
     {
       "id": "platform_3",
       "type": "platform",
-      "position": { "x": 800, "y": 350 },
-      "scale": { "x": 3, "y": 1 },
+      "position": { "x": 0, "y": 0 },
+      "gridPosition": { "x": 13, "y": 4 },
+      "scale": { "x": 1, "y": 1 },
       "physics": { "type": "static", "isCollidable": true },
       "visual": { "texture": "grass" }
     }

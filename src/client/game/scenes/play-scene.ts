@@ -8,8 +8,10 @@ import {
   SCENE_KEYS,
   ENTITY_CONFIG,
   SPRING,
+  GAMEPLAY,
 } from '@/constants/game-constants';
 import { DEFAULT_LEVEL } from '@/game/level/level-types';
+import { audioManager } from '@/services/audio-manager';
 
 async function fetchLevelData(levelName: string): Promise<LevelData | null> {
   try {
@@ -206,7 +208,8 @@ export class PlayScene extends Phaser.Scene {
       }
 
       if ((this.physics as any)?.world) {
-        this.physics.world.gravity.y = this.levelConfig.gravityY;
+        // Use standardized gravity for all levels
+        this.physics.world.gravity.y = GAMEPLAY.GRAVITY;
       }
 
       if (this.editorLevelData) {
@@ -248,7 +251,9 @@ export class PlayScene extends Phaser.Scene {
           CAMERA_CONFIG.FOLLOW_LERP
         );
 
-        this.cameras.main.setZoom(this.fromEditor ? 2 : CAMERA_CONFIG.ZOOM);
+        // Calculate responsive zoom based on level size and viewport
+        const zoom = this.calculateResponsiveZoom();
+        this.cameras.main.setZoom(zoom);
         this.cameras.main.roundPixels = true;
         console.log(
           '[PlayScene] Camera zoom:',
@@ -284,6 +289,9 @@ export class PlayScene extends Phaser.Scene {
       } else {
         console.warn('[PlayScene] Player not found!');
       }
+
+      // Listen for window resize to recalculate zoom
+      this.scale.on('resize', this.handleResize, this);
     } catch (err) {
       console.error('[PlayScene] Error creating scene:', err);
       this.add
@@ -293,6 +301,12 @@ export class PlayScene extends Phaser.Scene {
         })
         .setScrollFactor(0);
     }
+  }
+
+  private handleResize(): void {
+    if (!this.cameras?.main) return;
+    const zoom = this.calculateResponsiveZoom();
+    this.cameras.main.setZoom(zoom);
   }
 
   private setupPlayerControls(): void {
@@ -395,13 +409,51 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private getOneBlockJumpVelocity(): number {
-    const g = (this.physics as any)?.world?.gravity?.y ?? this.levelConfig.gravityY ?? 800;
+    const g = GAMEPLAY.GRAVITY;
     const h = ENTITY_CONFIG.PLATFORM_HEIGHT; // one cell high
     // Slightly higher than one block (~1.8x) per request
     return Math.sqrt(2 * g * h * 1.8);
   }
 
+  private calculateResponsiveZoom(): number {
+    const levelData = this.editorLevelData;
+    const bounds = levelData?.settings?.bounds;
+    
+    if (!bounds) {
+      return CAMERA_CONFIG.ZOOM;
+    }
 
+    const viewportWidth = this.cameras.main.width;
+    const viewportHeight = this.cameras.main.height;
+    
+    // Calculate zoom to fit the level width and height
+    const zoomForWidth = viewportWidth / bounds.width;
+    const zoomForHeight = viewportHeight / bounds.height;
+    
+    // Use the smaller zoom to ensure everything fits, with a buffer
+    let calculatedZoom = Math.min(zoomForWidth, zoomForHeight) * 0.95;
+    
+    // For small levels (like grid-demo-level), ensure proper visibility
+    // If the level is smaller than viewport, zoom in appropriately
+    if (bounds.width < 800 && bounds.height < 400) {
+      // Small level - zoom in to make assets visible but not too much
+      calculatedZoom = Math.min(2.0, Math.max(1.2, calculatedZoom));
+    } else if (bounds.height < viewportHeight / CAMERA_CONFIG.ZOOM) {
+      // Level height is small relative to zoomed viewport
+      // Calculate zoom to show the entire level height comfortably
+      calculatedZoom = (viewportHeight / bounds.height) * 0.9;
+    }
+    
+    // Clamp between min and max zoom
+    calculatedZoom = Math.max(CAMERA_CONFIG.MIN_ZOOM, Math.min(CAMERA_CONFIG.MAX_ZOOM, calculatedZoom));
+    
+    // On mobile, slightly reduce zoom for better overview
+    if (viewportWidth < 768) {
+      calculatedZoom *= 0.85;
+    }
+    
+    return calculatedZoom;
+  }
 
   private onPlayerPlatformCollide(platform: Phaser.GameObjects.GameObject): void {
     if (!this.player || !this.playerBody) return;
@@ -435,6 +487,7 @@ export class PlayScene extends Phaser.Scene {
 
   private onPlayerSpikeOverlap(): void {
     if (!this.player || !this.playerBody) return;
+    audioManager.playDeath();
     // Flash red and respawn at last safe block
     this.player.setTint(0xff0000);
     this.time.delayedCall(120, () => this.player.clearTint());
@@ -448,13 +501,14 @@ export class PlayScene extends Phaser.Scene {
     const now = this.time.now;
     if (now < this.springCooldownUntil) return;
     this.springCooldownUntil = now + this.springCooldownMs;
+    audioManager.playSpring();
     // Place player just above spring then apply bounce
     const body: any = spring?.body;
     const top = typeof body?.top === 'number' ? body.top : (spring.y - (spring.displayHeight ?? spring.height ?? 24) / 2);
     const halfH = (this.player.displayHeight ?? 32) / 2;
     this.player.setY(top - halfH - 1);
     // Compute bounce to ~3 tiles height
-    const g = (this.physics as any)?.world?.gravity?.y ?? this.levelConfig.gravityY ?? 800;
+    const g = GAMEPLAY.GRAVITY;
     const height = ENTITY_CONFIG.PLATFORM_HEIGHT * 3;
     const neededV = Math.sqrt(2 * g * height);
     const v = Math.min(neededV, SPRING.BOUNCE_FORCE * 2); // Allow higher bounce
@@ -470,6 +524,7 @@ export class PlayScene extends Phaser.Scene {
 
   private onPlayerCoinOverlap(_p: any, coin: any): void {
     if (!coin || !coin.active) return;
+    audioManager.playCoin();
     // Destroy the coin with a fade effect
     this.tweens.add({
       targets: coin,
@@ -573,8 +628,8 @@ export class PlayScene extends Phaser.Scene {
 
     // Horizontal movement
     let vx = 0;
-    if (left) vx = -this.levelConfig.moveSpeed;
-    if (right) vx = this.levelConfig.moveSpeed;
+    if (left) vx = -GAMEPLAY.MOVE_SPEED;
+    if (right) vx = GAMEPLAY.MOVE_SPEED;
     this.playerBody.setVelocityX(vx);
 
     // Check if player is on the ground
@@ -591,9 +646,10 @@ export class PlayScene extends Phaser.Scene {
 
     // Jump - only when on ground and jump key pressed
     if (up && onFloor) {
+      audioManager.playJump();
       // compute velocity to reach ~1 block height only
       const oneBlockV = this.getOneBlockJumpVelocity();
-      const jump = Math.min(this.levelConfig.jumpVelocity, oneBlockV);
+      const jump = Math.min(GAMEPLAY.JUMP_VELOCITY, oneBlockV);
       this.playerBody.setVelocityY(-jump);
     }
 

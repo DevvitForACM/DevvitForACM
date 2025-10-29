@@ -7,13 +7,12 @@ export default function Home() {
   const { navigate } = useRouting();
 
   useEffect(() => {
-    console.log('🎵 Home page loaded, starting BGM with fade-in...');
-    audioManager.setBGMVolume(100);
-    audioManager.startBGMWithFadeIn(3000);
+    console.log('🎵 Home page loaded, playing BGM...');
+    audioManager.playBGM();
   }, []);
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center"
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
       style={{
         backgroundImage: 'url(/backgrounds/home-background.jpg)',
         backgroundSize: 'cover',
@@ -22,19 +21,19 @@ export default function Home() {
       }}
     >
       {/* Settings - clicking the inner SETTINGS div opens the panel */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50">
         <Settings />
       </div>
 
-      <div className="flex flex-col items-center gap-8">
+      <div className="flex flex-col items-center gap-4 sm:gap-6 md:gap-8 w-full max-w-md">
         {/* Game Title */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-2 sm:mb-4">
           <h1
-            className="text-7xl font-bold text-white mb-2 transform hover:scale-105 transition-transform duration-300"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-2 transform hover:scale-105 transition-transform duration-300"
             style={{
               fontFamily: '"Courier New", monospace',
-              textShadow: '6px 6px 0 #333, 12px 12px 0 #666, 18px 18px 0 #999',
-              letterSpacing: '8px',
+              textShadow: '3px 3px 0 #333, 6px 6px 0 #666, 9px 9px 0 #999',
+              letterSpacing: '4px',
               imageRendering: 'pixelated',
               filter: 'contrast(1.3) brightness(1.1)',
             }}
@@ -42,11 +41,11 @@ export default function Home() {
             SNOOVENTURE
           </h1>
           <div
-            className="text-2xl font-bold text-yellow-300 tracking-wider animate-pulse"
+            className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-yellow-300 tracking-wider animate-pulse"
             style={{
               fontFamily: '"Courier New", monospace',
-              textShadow: '3px 3px 0 #B8860B, 6px 6px 0 #8B6914',
-              letterSpacing: '4px',
+              textShadow: '2px 2px 0 #B8860B, 4px 4px 0 #8B6914',
+              letterSpacing: '2px',
             }}
           >
             ADVENTURE AWAITS
@@ -54,7 +53,7 @@ export default function Home() {
         </div>
         <button
           onClick={() => navigate('/play')}
-          className="relative group transform transition-transform hover:scale-105 w-80 active:translate-y-1"
+          className="relative group transform transition-transform hover:scale-105 w-full sm:w-80 active:translate-y-1"
           style={{
             background: '#4CAF50',
             border: 'none',
@@ -65,7 +64,7 @@ export default function Home() {
           }}
         >
           <div
-            className="px-8 py-6 text-white font-bold text-2xl tracking-widest"
+            className="px-4 py-4 sm:px-8 sm:py-6 text-white font-bold text-lg sm:text-xl md:text-2xl tracking-widest"
             style={{
               textShadow: '2px 2px 0 #1B5E20',
               filter: 'contrast(1.2)',
@@ -86,7 +85,7 @@ export default function Home() {
 
         <button
           onClick={() => navigate('/create')}
-          className="relative group transform transition-transform hover:scale-105 w-80 active:translate-y-1"
+          className="relative group transform transition-transform hover:scale-105 w-full sm:w-80 active:translate-y-1"
           style={{
             background: '#FF9800',
             border: 'none',
@@ -97,7 +96,7 @@ export default function Home() {
           }}
         >
           <div
-            className="px-8 py-6 text-white font-bold text-2xl tracking-widest"
+            className="px-4 py-4 sm:px-8 sm:py-6 text-white font-bold text-lg sm:text-xl md:text-2xl tracking-widest"
             style={{
               textShadow: '2px 2px 0 #BF360C',
               filter: 'contrast(1.2)',

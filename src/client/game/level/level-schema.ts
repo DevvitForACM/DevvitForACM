@@ -36,6 +36,10 @@ export interface BaseObject {
     x: number;
     y: number;
   };
+  gridPosition?: {
+    x: number;
+    y: number;
+  };
   rotation?: number;
   scale?: {
     x: number;
