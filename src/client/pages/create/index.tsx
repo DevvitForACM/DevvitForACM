@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import PhaserContainer from '@/components/phaser-container';
 import { createBlankCanvasConfig } from '@/config/game-config';
 import { CreateScene } from '@/game/scenes/create-scene';
-import { SCENE_KEYS, COLORS, ENTITY_CONFIG } from '@/constants/game-constants';
+import { SCENE_KEYS, ENTITY_CONFIG } from '@/constants/game-constants';
 import {
   LEVEL_SCHEMA_VERSION,
   LevelObjectType,

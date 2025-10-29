@@ -69,25 +69,25 @@ export class PlayScene extends Phaser.Scene {
     );
 
     const base = '/';
-    this.load.image('spring', `${base}Spring.png`);
-    this.load.image('spike', `${base}Spikes.png`);
-    this.load.image('grass', `${base}Grass.png`);
-    this.load.image('ground', `${base}Ground.png`);
-    this.load.image('grass-filler', `${base}Grass-filler.png`);
-    this.load.image('lava', `${base}Lava.png`);
-    this.load.image('Lava-filler', `${base}Lava-filler.png`);
-    this.load.image('door', `${base}Door.png`);
+    this.load.image('spring', `${base}spring.png`);
+    this.load.image('spike', `${base}spikes.png`);
+    this.load.image('grass', `${base}grass.png`);
+    this.load.image('ground', `${base}ground.png`);
+    this.load.image('grass-filler', `${base}grass-filler.png`);
+    this.load.image('lava', `${base}lava.png`);
+    this.load.image('lava-filler', `${base}lava-filler.png`);
+    this.load.image('door', `${base}door.png`);
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-idle-${i}`, `/Idle/${i}.png`);
+      this.load.image(`player-idle-${i}`, `/idle/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`player-jump-${i}`, `/Jump/${i}.png`);
+      this.load.image(`player-jump-${i}`, `/jump/${i}.png`);
     }
 
     for (let i = 0; i <= 4; i++) {
-      this.load.image(`coin-${i}`, `/Coin/${i}.png`);
+      this.load.image(`coin-${i}`, `/coin/${i}.png`);
     }
   }
 
@@ -107,9 +107,9 @@ export class PlayScene extends Phaser.Scene {
   }): void {
     // Reset state on init
     this.fromEditor = false;
-    this.editorLevelData = undefined;
+    this.editorLevelData = undefined as unknown as LevelData;
     this.platformCount = 0;
-    this.lastSafePos = undefined;
+    this.lastSafePos = undefined as unknown as { x: number; y: number };
     this.springCooldownUntil = 0;
     
     if (data.levelData) {
@@ -176,6 +176,32 @@ export class PlayScene extends Phaser.Scene {
           frames: coinFrames,
           frameRate: 6,
           repeat: -1,
+        });
+      }
+      
+      // Ensure player idle animation exists
+      const idleFrames = [0, 1, 2, 3, 4]
+        .filter((i) => this.textures.exists(`player-idle-${i}`))
+        .map((i) => ({ key: `player-idle-${i}` }));
+      if (!this.anims.exists('player-idle') && idleFrames.length > 0) {
+        this.anims.create({
+          key: 'player-idle',
+          frames: idleFrames,
+          frameRate: 8,
+          repeat: -1,
+        });
+      }
+      
+      // Ensure player jump animation exists
+      const jumpFrames = [0, 1, 2, 3, 4]
+        .filter((i) => this.textures.exists(`player-jump-${i}`))
+        .map((i) => ({ key: `player-jump-${i}` }));
+      if (!this.anims.exists('player-jump-sequence') && jumpFrames.length > 0) {
+        this.anims.create({
+          key: 'player-jump-sequence',
+          frames: jumpFrames.length > 0 ? jumpFrames : idleFrames,
+          frameRate: 12,
+          repeat: 0,
         });
       }
 

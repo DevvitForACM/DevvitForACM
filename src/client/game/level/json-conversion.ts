@@ -10,7 +10,6 @@ import {
 } from './level-schema';
 import { ENTITY_CONFIG, PLAYER, ENTITY_SIZES } from '@/constants/game-constants';
 import { Player } from '../entities/player';
-import { Coin } from '../entities/coin';
 
 export function loadLevel(
   scene: Phaser.Scene,
@@ -201,7 +200,6 @@ function createPlayer(
     playerSprite.setDepth(10);
 
     // Scale uniformly to target height to avoid squeezing
-    const nativeW = playerSprite.width || playerSprite.displayWidth || 32;
     const nativeH = playerSprite.height || playerSprite.displayHeight || 32;
     const targetH = PLAYER.SIZE.HEIGHT;
     const uniformScale = targetH / nativeH;

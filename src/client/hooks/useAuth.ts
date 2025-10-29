@@ -1,38 +1,31 @@
 import { useEffect, useState } from 'react';
 
+// Client should not access Devvit auth token directly.
+// Use our server endpoint which reads Reddit user from Devvit context.
 export function useAuth() {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<{ userId: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; uid: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Dynamically import context to ensure it's available at runtime
-    const getContext = async () => {
+    const load = async () => {
       try {
-        const { context } = await import('@devvit/web/client');
-        const authToken = context.authToken;
-        const userId = context.userId;
-
-        // eslint-disable-next-line no-console
-        console.log('[useAuth] Context:', { 
-          hasAuthToken: !!authToken, 
-          authTokenLength: authToken?.length,
-          userId, 
-          contextKeys: Object.keys(context) 
-        });
-
-        if (authToken && userId) {
-          setToken(authToken);
-          setUser({ userId });
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data?.success && data?.user) {
+          setUser({ username: data.user.username, uid: data.user.uid });
         } else {
-          console.warn('[useAuth] No auth token or userId in context');
+          setUser(null);
         }
-      } catch (error) {
-        console.error('[useAuth] Failed to load context:', error);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[useAuth] Failed to fetch auth:', e);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
-
-    getContext();
+    load();
   }, []);
 
-  return { token, user };
+  return { user, loading };
 }
