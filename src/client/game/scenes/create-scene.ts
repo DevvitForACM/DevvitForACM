@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { createScrollControls } from '@/game/controls/camera-controls';
+import { GRID, CAMERA_CONFIG } from '@/constants/game-constants';
 
-const GRID_SIZE = 32;
+const GRID_SIZE = GRID.SIZE;
 
 export class CreateScene extends Phaser.Scene {
   public cameraScrollSpeed: number = 0;
@@ -15,7 +16,12 @@ export class CreateScene extends Phaser.Scene {
   private lastGridOffsetY: number = -1;
   private coordinateText?: Phaser.GameObjects.Text | undefined;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd?: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
+  private wasd?: {
+    W: Phaser.Input.Keyboard.Key;
+    A: Phaser.Input.Keyboard.Key;
+    S: Phaser.Input.Keyboard.Key;
+    D: Phaser.Input.Keyboard.Key;
+  };
   private touchStartX: number = 0;
   private touchStartY: number = 0;
   private isSwiping: boolean = false;
@@ -52,24 +58,26 @@ export class CreateScene extends Phaser.Scene {
     for (let i = 0; i <= 4; i++) {
       this.load.image(`enemy-${i}`, `${base}enemy/${i}.png`);
     }
-  };
+  }
 
   public create(): void {
     this.drawGrid();
 
     this.cameras.main.scrollY = -this.cameras.main.height;
-
+    const zoom = this.calculateResponsiveZoom();
+    this.cameras.main.setZoom(zoom);
     this.cameras.main.roundPixels = true;
 
     this.input.mouse?.disableContextMenu();
 
     this.scale.on('resize', this.handleResize, this);
 
-    // Detect if device is mobile
-    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                    ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+    this.isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+      ('ontouchstart' in window && navigator.maxTouchPoints > 0);
 
-    // Setup keyboard controls (Desktop only)
     if (!this.isMobile && this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
       this.wasd = {
@@ -80,19 +88,19 @@ export class CreateScene extends Phaser.Scene {
       };
     }
 
-    // Setup touch swipe controls (Mobile only)
     if (this.isMobile) {
       this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
         if (!pointer.isDown) return;
         const hitObjects = this.input.hitTestPointer(pointer);
         const hitUI = hitObjects.some(
-          (obj: any) => obj.getData && (obj.getData('isScrollControl') || obj.getData('isUIElement'))
+          (obj: any) =>
+            obj.getData &&
+            (obj.getData('isScrollControl') || obj.getData('isUIElement'))
         );
         const hitEntity = hitObjects.some(
           (obj: any) => obj.getData && obj.getData('entityId')
         );
-        
-        // Only start swipe if not hitting UI or entities
+
         if (!hitUI && !hitEntity) {
           this.touchStartX = pointer.x;
           this.touchStartY = pointer.y;
@@ -104,11 +112,10 @@ export class CreateScene extends Phaser.Scene {
         if (this.isSwiping && pointer.isDown) {
           const deltaX = pointer.x - this.touchStartX;
           const deltaY = pointer.y - this.touchStartY;
-          
-          // Scroll camera inversely to touch movement
+
           this.cameras.main.scrollX -= deltaX;
           this.cameras.main.scrollY -= deltaY;
-          
+
           this.touchStartX = pointer.x;
           this.touchStartY = pointer.y;
         }
@@ -121,11 +128,10 @@ export class CreateScene extends Phaser.Scene {
 
     createScrollControls(this);
 
-    // Create animations only if textures are loaded
     const coinFrames = [0, 1, 2, 3, 4]
       .filter((i) => this.textures.exists(`coin-${i}`))
       .map((i) => ({ key: `coin-${i}` }));
-    
+
     if (!this.anims.exists('coin-spin') && coinFrames.length > 0) {
       this.anims.create({
         key: 'coin-spin',
@@ -138,7 +144,7 @@ export class CreateScene extends Phaser.Scene {
     const idleFrames = [0, 1, 2, 3, 4]
       .filter((i) => this.textures.exists(`player-idle-${i}`))
       .map((i) => ({ key: `player-idle-${i}` }));
-    
+
     if (!this.anims.exists('player-idle') && idleFrames.length > 0) {
       this.anims.create({
         key: 'player-idle',
@@ -147,11 +153,11 @@ export class CreateScene extends Phaser.Scene {
         repeat: -1,
       });
     }
-    
+
     const jumpFrames = [0, 1, 2, 3, 4]
       .filter((i) => this.textures.exists(`player-jump-${i}`))
       .map((i) => ({ key: `player-jump-${i}` }));
-    
+
     if (!this.anims.exists('player-jump') && jumpFrames.length > 0) {
       this.anims.create({
         key: 'player-jump',
@@ -213,8 +219,7 @@ export class CreateScene extends Phaser.Scene {
       const hitEntity = hitObjects.some(
         (obj: any) => obj.getData && obj.getData('entityId')
       );
-      
-      // Only place entity if not hitting UI, not swiping, and not hitting existing entity
+
       if (hitUI || this.isSwiping || hitEntity) return;
 
       const wx = pointer.worldX;
@@ -268,6 +273,26 @@ export class CreateScene extends Phaser.Scene {
     if (newWidth === this.currentWidth && newHeight === this.currentHeight)
       return;
     this.drawGrid();
+    // Recalculate zoom on resize
+    const zoom = this.calculateResponsiveZoom();
+    this.cameras.main.setZoom(zoom);
+  }
+
+  private calculateResponsiveZoom(): number {
+    const viewportWidth = this.cameras.main.width;
+    
+    // For editor, use a responsive zoom based on viewport size
+    // Aim for comfortable editing experience
+    const baseZoom = CAMERA_CONFIG.ZOOM;
+    
+    // On mobile (smaller viewports), zoom out more
+    if (viewportWidth < 768) {
+      return Math.max(CAMERA_CONFIG.MIN_ZOOM, baseZoom * 0.6);
+    } else if (viewportWidth < 1024) {
+      return Math.max(CAMERA_CONFIG.MIN_ZOOM, baseZoom * 0.8);
+    }
+    
+    return baseZoom;
   }
 
   public placeEntity(data: any): void {
@@ -326,7 +351,10 @@ export class CreateScene extends Phaser.Scene {
       sprite.setOrigin(0, 0);
       sprite.setDisplaySize(GRID_SIZE, GRID_SIZE);
       container.add(sprite);
-    } else if (t === 'dirt' && (this.textures.exists('ground') || this.textures.exists('grass-filler'))) {
+    } else if (
+      t === 'dirt' &&
+      (this.textures.exists('ground') || this.textures.exists('grass-filler'))
+    ) {
       const key = this.textures.exists('ground') ? 'ground' : 'grass-filler';
       const dirt = this.add.image(-GRID_SIZE / 2, -GRID_SIZE / 2, key);
       dirt.setOrigin(0, 0);
@@ -365,25 +393,23 @@ export class CreateScene extends Phaser.Scene {
     container.setData('isBaseline', !!data.isBaseline);
 
     container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Prevent event bubbling
       pointer.event?.preventDefault();
       pointer.event?.stopPropagation();
-      
+
       const entityId = container.getData('entityId') as string;
       const gridX = container.getData('gridX') as number;
       const gridY = container.getData('gridY') as number;
       const currentEntityType = container.getData('entityType') as string;
-      
-      const sel = (this.registry.get('selectedEntityType') as string | null) ?? null;
+
+      const sel =
+        (this.registry.get('selectedEntityType') as string | null) ?? null;
       const entityTypes = this.registry.get('entityTypes') as
         | Record<string, { name: string; color: string; icon: string }>
         | undefined;
 
       const isRightClick = pointer.rightButtonDown() || pointer.button === 2;
-      
-      // Desktop: Right-click behavior
+
       if (isRightClick) {
-        // Right-click with a selection: Replace entity
         if (sel && entityTypes) {
           let key = sel;
           if (!entityTypes[key]) {
@@ -392,10 +418,9 @@ export class CreateScene extends Phaser.Scene {
             );
             if (match) key = match;
           }
-          
+
           const info = entityTypes[key];
           if (info && key.toLowerCase() !== currentEntityType.toLowerCase()) {
-            // Replace with different entity
             this.removeEntity(entityId);
             this.placeEntity({
               type: key,
@@ -407,18 +432,14 @@ export class CreateScene extends Phaser.Scene {
             });
           }
         } else {
-          // Right-click with no selection: Remove entity
           this.removeEntity(entityId);
         }
         return;
       }
-      
-      // Mobile/Left-click behavior
+
       if (!sel) {
-        // No entity selected: Remove on click
         this.removeEntity(entityId);
       } else if (entityTypes) {
-        // Entity selected
         let key = sel;
         if (!entityTypes[key]) {
           const match = Object.keys(entityTypes).find(
@@ -426,10 +447,9 @@ export class CreateScene extends Phaser.Scene {
           );
           if (match) key = match;
         }
-        
+
         const info = entityTypes[key];
         if (info && key.toLowerCase() !== currentEntityType.toLowerCase()) {
-          // Replace with different entity
           this.removeEntity(entityId);
           this.placeEntity({
             type: key,
@@ -547,9 +567,8 @@ export class CreateScene extends Phaser.Scene {
 
   public override update(_time: number, delta: number): void {
     if (this.cameras?.main) {
-      // Handle keyboard camera controls (WASD + Arrow keys) - Desktop only
       if (!this.isMobile) {
-        const keyboardSpeed = 8;
+        const keyboardSpeed = 5;
         if (this.cursors || this.wasd) {
           if (this.cursors?.left.isDown || this.wasd?.A.isDown) {
             this.cameras.main.scrollX -= keyboardSpeed * (delta / 16);
@@ -565,16 +584,14 @@ export class CreateScene extends Phaser.Scene {
           }
         }
       }
-      
-      // Handle button-based camera controls
+
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
       this.cameras.main.scrollY += this.cameraScrollSpeedY * (delta / 16);
-      
-      // Prevent camera from scrolling into negative X territory
+
       if (this.cameras.main.scrollX < 0) {
         this.cameras.main.scrollX = 0;
       }
-      
+
       const cam = this.cameras.main;
       const offX = ((-cam.scrollX % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
       const offY = ((-cam.scrollY % GRID_SIZE) + GRID_SIZE) % GRID_SIZE;
@@ -585,7 +602,6 @@ export class CreateScene extends Phaser.Scene {
   }
 
   private placeAtGrid(gridX: number, gridY: number, _attempt: number): void {
-    // Prevent placement on negative X-axis
     if (gridX < 0) return;
 
     const cellKey = `${gridX},${gridY}`;

@@ -1,46 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { authService, type UserProfile } from '@/services/auth.service';
+import { authService } from '@/services/auth.service';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   useEffect(() => {
-    const handleAuthChange = (newUser: UserProfile | null) => {
-      setUser(newUser);
+    const handleAuthChange = () => {
       setIsLoading(false);
     };
 
+    const initAuth = async () => {
+      const currentUser = await authService.checkAuthStatus();
+
+      if (!currentUser?.isAuthenticated) {
+        try {
+          await authService.startAuthentication();
+        } catch (error) {
+          console.error('Auto-authentication failed:', error);
+          setIsLoading(false);
+        }
+      }
+    };
+
     authService.onAuthChange(handleAuthChange);
+    initAuth();
 
     return () => {
       authService.removeAuthListener(handleAuthChange);
     };
   }, []);
-
-  const handleLogin = async () => {
-    setIsAuthenticating(true);
-    try {
-      await authService.startAuthentication();
-    } catch (error) {
-      console.error('Login failed:', error);
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
 
   if (isLoading) {
     return (
