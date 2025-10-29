@@ -426,6 +426,13 @@ function createEnemy(
 
   enemySprite.setName(obj.id);
   (enemySprite as any).setData && (enemySprite as any).setData('isEnemy', true);
+  
+  // Store patrol data - patrol ±2 blocks from spawn position
+  const TILE_SIZE = 32;
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolLeft', x - 2 * TILE_SIZE);
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolRight', x + 2 * TILE_SIZE);
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolDirection', 1); // 1 = right, -1 = left
+  (enemySprite as any).setData && (enemySprite as any).setData('patrolSpeed', 30);
 
   if (scene.anims.exists('enemy-walk')) {
     try { enemySprite.play('enemy-walk'); } catch {}

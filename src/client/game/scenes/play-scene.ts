@@ -437,6 +437,10 @@ export class PlayScene extends Phaser.Scene {
       // Enemy-player overlap (respawn player like spike/lava)
       this.physics.add.overlap(this.player, enemy, this.onPlayerEnemyOverlap, undefined, this);
     });
+    
+    // Store enemies and platforms for patrol logic
+    (this as any).enemies = enemies;
+    (this as any).platforms = platforms;
   }
 
   private getOneBlockJumpVelocity(): number {
@@ -518,6 +522,92 @@ export class PlayScene extends Phaser.Scene {
     this.onPlayerSpikeOverlap();
   }
 
+  private updateEnemyPatrol(_delta: number): void {
+    const enemies = (this as any).enemies as Phaser.GameObjects.GameObject[] | undefined;
+    const platforms = (this as any).platforms as Phaser.GameObjects.GameObject[] | undefined;
+    
+    if (!enemies || !platforms) return;
+    
+    const TILE_SIZE = 32;
+    const GROUND_CHECK_DISTANCE = TILE_SIZE / 2 + 5; // Check slightly beyond tile edge
+    
+    enemies.forEach((enemy: any) => {
+      if (!enemy.body || !enemy.active) return;
+      
+      const body = enemy.body as Phaser.Physics.Arcade.Body;
+      const patrolLeft = enemy.getData('patrolLeft');
+      const patrolRight = enemy.getData('patrolRight');
+      const patrolSpeed = enemy.getData('patrolSpeed') || 30;
+      let direction = enemy.getData('patrolDirection') || 1;
+      
+      if (patrolLeft === undefined || patrolRight === undefined) return;
+      
+      // Check if enemy should turn around
+      let shouldTurn = false;
+      
+      // Check bounds
+      if (direction === 1 && enemy.x >= patrolRight) {
+        shouldTurn = true;
+      } else if (direction === -1 && enemy.x <= patrolLeft) {
+        shouldTurn = true;
+      }
+      
+      // Check if there's a valid platform ahead (dirt or grass only)
+      if (!shouldTurn && body.blocked.down) {
+        const checkX = enemy.x + (direction * GROUND_CHECK_DISTANCE);
+        const checkY = enemy.y + TILE_SIZE; // Check below enemy
+        
+        let hasValidGround = false;
+        
+        // Check if there's a dirt/grass platform at the next position
+        for (const platform of platforms) {
+          const plat = platform as any;
+          if (!plat.body) continue;
+          
+          const platBody = plat.body as Phaser.Physics.Arcade.StaticBody;
+          const platLeft = platBody.x;
+          const platRight = platBody.x + platBody.width;
+          const platTop = platBody.y;
+          const platBottom = platBody.y + platBody.height;
+          
+          // Check if platform is dirt or grass
+          const isDirtOrGrass = plat.texture?.key === 'grass' || 
+                               plat.texture?.key === 'ground' || 
+                               plat.texture?.key === 'grass-filler';
+          
+          if (!isDirtOrGrass) continue;
+          
+          // Check if the check point is above this platform
+          if (checkX >= platLeft && checkX <= platRight &&
+              checkY >= platTop && checkY <= platBottom) {
+            hasValidGround = true;
+            break;
+          }
+        }
+        
+        if (!hasValidGround) {
+          shouldTurn = true;
+        }
+      }
+      
+      // Turn around if needed
+      if (shouldTurn) {
+        direction *= -1;
+        enemy.setData('patrolDirection', direction);
+      }
+      
+      // Move enemy
+      body.setVelocityX(direction * patrolSpeed);
+      
+      // Flip sprite based on direction
+      if (direction < 0) {
+        enemy.setFlipX(true);
+      } else {
+        enemy.setFlipX(false);
+      }
+    });
+  }
+
   private onPlayerCoinOverlap(_p: any, coin: any): void {
     if (!coin || !coin.active) return;
     // Destroy the coin with a fade effect
@@ -589,6 +679,9 @@ export class PlayScene extends Phaser.Scene {
     if (this.cameras?.main) {
       this.cameras.main.scrollX += this.cameraScrollSpeed * (delta / 16);
     }
+    
+    // Update enemy patrol behavior
+    this.updateEnemyPatrol(delta);
 
     if (!this.player || !this.playerBody || !this.cursors) return;
 
