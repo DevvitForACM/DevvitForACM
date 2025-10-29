@@ -59,6 +59,7 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
         postId: postId,
         count: count ? parseInt(count) : 0,
         username: username,
+        postData: (context as any)?.postData ?? null,
       });
     } catch (error) {
       console.error(`API Init Error for post ${postId}:`, error);
@@ -131,9 +132,11 @@ router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
 router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
   try {
     const post = await createPost();
-
+    const target = context.subredditName || process.env.TARGET_SUBREDDIT || process.env.DEVVIT_SUBREDDIT || 'unknown';
     res.json({
-      navigateTo: `https://reddit.com/r/${context.subredditName}/comments/${post.id}`,
+      navigateTo: `https://reddit.com/r/${target}/comments/${(post as any)?.id ?? ''}`,
+      postId: (post as any)?.id ?? null,
+      targetSubreddit: target,
     });
   } catch (error) {
     console.error(`Error creating post: ${error}`);
@@ -141,6 +144,31 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
       status: 'error',
       message: 'Failed to create post',
     });
+  }
+});
+
+// Debug route: force-create a post for a level by ID
+router.post('/internal/debug/post-level/:id', async (req, res): Promise<void> => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ status: 'error', message: 'Level ID required' });
+      return;
+    }
+    const { LevelsServiceRedis } = await import('./services/levels.service.redis');
+    const db = new LevelsServiceRedis(redis);
+    const doc = await db.get(`levels/${id}`);
+    if (!doc.exists()) {
+      res.status(404).json({ status: 'error', message: 'Level not found' });
+      return;
+    }
+    const level = doc.val();
+    const { createLevelPost } = await import('./core/post');
+    const post = await createLevelPost(level as any, undefined);
+    res.json({ status: 'ok', levelId: id, postId: (post as any)?.id ?? null });
+  } catch (error) {
+    console.error('Debug post-level failed:', error);
+    res.status(400).json({ status: 'error', message: error instanceof Error ? error.message : String(error) });
   }
 });
 

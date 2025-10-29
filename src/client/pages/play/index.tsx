@@ -12,11 +12,18 @@ interface PublicLevelItem {
 }
 
 export default function Play() {
-  const { navigate } = useRouting();
+  const { navigate, location } = useRouting();
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [levels, setLevels] = useState<PublicLevelItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-select level from query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const level = params.get('level');
+    if (level) setSelectedLevel(level);
+  }, [location.search]);
 
   useEffect(() => {
     const load = async () => {
@@ -50,6 +57,21 @@ export default function Play() {
     const config = getPhaserConfigWithLevelName(selectedLevel);
     return (
       <main className="w-screen h-screen overflow-hidden">
+        {/* Top nav bar with Back to Levels */}
+        <div className="w-full flex items-center justify-between px-4 py-2 bg-black/60 text-white">
+          <button
+            onClick={() => {
+              setSelectedLevel(null);
+              // clear ?level param by navigating to /play
+              navigate('/play');
+            }}
+            className="px-3 py-1 rounded bg-white/10 hover:bg-white/20"
+          >
+            ← Back to Levels
+          </button>
+          <div className="font-bold tracking-widest opacity-80">PLAYING: {selectedLevel}</div>
+          <div />
+        </div>
         <PhaserContainer config={config} />
       </main>
     );

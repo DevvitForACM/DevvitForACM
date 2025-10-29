@@ -7,6 +7,21 @@ export default function Home() {
   const { navigate } = useRouting();
 
   useEffect(() => {
+    // If running inside a Reddit webview, init endpoint will exist.
+    (async () => {
+      try {
+        const res = await fetch('/api/init');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.type === 'init' && data.postData && data.postData.levelId) {
+          const levelId = String(data.postData.levelId);
+          navigate(`/play?level=${encodeURIComponent(levelId)}`);
+        }
+      } catch {}
+    })();
+  }, [navigate]);
+
+  useEffect(() => {
     console.log('🎵 Home page loaded, playing BGM...');
     audioManager.playBGM();
   }, []);
