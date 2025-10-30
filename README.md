@@ -2,7 +2,11 @@
 
 > **🤖 Built Entirely with Kiro IDE** - Every line of code, feature, and fix was created using Kiro's AI-powered development environment.
 
+> **🏆 Submission for Reddit Best App:** *Community Play* & *Best Kiro Developer Experience Award*
+
 A fully-featured 2D platformer game with an integrated level editor, built on Reddit's Devvit platform. Create, share, and play custom levels directly within Reddit!
+
+📺 **[Live Demo](#)** | 📄 **[Kiro IDE Experience](./KIRO.md)** | 🐛 **[Report Issue](#)**
 
 ![Built with Kiro IDE](https://img.shields.io/badge/Built%20with-Kiro%20IDE-7C3AED?style=for-the-badge&logo=robot&logoColor=white)
 ![Powered by Devvit](https://img.shields.io/badge/Powered%20by-Devvit-FF4500?style=for-the-badge&logo=reddit)
@@ -206,13 +210,20 @@ npm run dev
 
 ### Deploying to Production
 ```bash
-# Build and deploy
+# Build for production
 npm run build
+
+# Deploy to Reddit (uploads to your app)
 npm run deploy
 
-# Publish for app review
+# Publish for Reddit app store review
 npm run launch
 ```
+
+**Deployment URL:** The app runs directly on Reddit after deployment. Access it through:
+- Your Reddit profile → Developer Apps → Snooventure
+- Or the direct URL provided after `npm run deploy`
+- Live on: `https://developers.reddit.com/apps/YOUR_APP_ID`
 
 ## 🤖 Developed Entirely with Kiro IDE
 

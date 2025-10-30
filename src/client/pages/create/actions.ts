@@ -174,22 +174,41 @@ export function handleReturnToEditor(
 
   // Stop PlayScene - this will trigger its shutdown() method which handles cleanup
   if (scene.scene.isActive(SCENE_KEYS.PLAY)) {
+    console.log('[Create] Stopping PlayScene');
     scene.scene.stop(SCENE_KEYS.PLAY);
   }
 
   // Resume CreateScene - it was paused, so just resume it
   if (scene.scene.isPaused(SCENE_KEYS.CREATE)) {
+    console.log('[Create] Resuming CreateScene');
     scene.scene.resume(SCENE_KEYS.CREATE);
+    
+    // Wait a frame for scene to be fully resumed
+    scene.time.delayedCall(10, () => {
+      console.log('[Create] Scene resumed, re-enabling input and updating state');
+      
+      // Re-enable input (defensive, should already be enabled)
+      if (scene.input) {
+        scene.input.enabled = true;
+      }
+      
+      // Reset camera speeds
+      scene.cameraScrollSpeed = 0;
+      scene.cameraScrollSpeedY = 0;
+      
+      // Update entity count to reflect current state
+      const currentCount = scene.getAllEntities().length;
+      console.log('[Create] Current entity count:', currentCount);
+      setEntityCount(currentCount);
+    });
   } else if (!scene.scene.isActive(SCENE_KEYS.CREATE)) {
     // If CreateScene isn't active (shouldn't happen), start it
     console.warn('[Create] CreateScene not active, restarting');
     scene.scene.start(SCENE_KEYS.CREATE);
-  }
-
-  // Wait a frame for scene to be fully resumed
-  scene.time.delayedCall(0, () => {
-    // Update entity count to reflect current state
+  } else {
+    console.log('[Create] CreateScene already active and not paused');
+    // Update entity count anyway
     setEntityCount(scene.getAllEntities().length);
-  });
+  }
 }
 

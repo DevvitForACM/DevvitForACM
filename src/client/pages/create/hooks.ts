@@ -21,7 +21,7 @@ export function useCreateScene(
       const game = (window as any).game;
       if (game) {
         const s = game.scene.getScene('CreateScene') as CreateScene;
-        if (s) {
+        if (s && s.scene.isActive('CreateScene')) {
           setScene(s);
 
           s.registry.set('entityTypes', entityTypesData);
@@ -35,6 +35,11 @@ export function useCreateScene(
             s.setSelectedEntityType(selectedEntity);
           }
 
+          // Remove old listeners before adding new ones (defensive)
+          s.events.off('entity-placed');
+          s.events.off('entity-removed');
+          s.events.off('entities-cleared');
+          
           s.events.on('entity-placed', () =>
             setEntityCount(s.getAllEntities().length)
           );
@@ -42,12 +47,44 @@ export function useCreateScene(
             setEntityCount(s.getAllEntities().length)
           );
           s.events.on('entities-cleared', () => setEntityCount(0));
+          
           clearInterval(check);
         }
       }
     }, 100);
     return () => clearInterval(check);
   }, [entityTypesData, selectedEntity]);
+
+  // Re-establish event listeners when scene changes state
+  useEffect(() => {
+    if (!scene) return;
+
+    const handleWake = () => {
+      console.log('[Create Hook] Scene woke, re-establishing listeners');
+      // Remove old listeners
+      scene.events.off('entity-placed');
+      scene.events.off('entity-removed');
+      scene.events.off('entities-cleared');
+      
+      // Add new listeners
+      scene.events.on('entity-placed', () =>
+        setEntityCount(scene.getAllEntities().length)
+      );
+      scene.events.on('entity-removed', () =>
+        setEntityCount(scene.getAllEntities().length)
+      );
+      scene.events.on('entities-cleared', () => setEntityCount(0));
+      
+      // Update entity count
+      setEntityCount(scene.getAllEntities().length);
+    };
+
+    scene.events.on('wake', handleWake);
+
+    return () => {
+      scene.events.off('wake', handleWake);
+    };
+  }, [scene]);
 
   return { scene, entityCount, setEntityCount };
 }

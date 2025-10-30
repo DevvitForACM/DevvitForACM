@@ -1,0 +1,86 @@
+name: "Snooventure - Devvit Platformer Game"
+version: "1.0.0"
+description: "A fully-featured 2D platformer with integrated level editor for Reddit"
+
+features:
+  game_mechanics:
+    - player_physics:
+        height: 100px
+        collision_box: "60x100px"
+        jump_velocity: 360
+        move_speed: 240
+        gravity: 800
+    
+    - entities:
+        player: "Animated sprite with idle, run, jump states"
+        enemies: "Patrol AI with collision detection"
+        coins: "Collectible with spin animation"
+        spikes: "Deadly hazard"
+        lava: "Deadly hazard"
+        springs: "Bounce pad with cooldown"
+        door: "Level exit (60x100px)"
+    
+    - scoring:
+        timer: "500 second countdown"
+        time_bonus: "10 points per second remaining"
+        coin_bonus: "100 points per coin"
+    
+    - controls:
+        desktop: "WASD + Arrow Keys"
+        mobile: "Virtual joystick + jump button"
+  
+  level_editor:
+    - grid_system:
+        cell_size: "60x60px"
+        coordinate_system: "Bottom-left origin"
+    
+    - placement:
+        method: "Click or drag to place"
+        deletion: "Right-click or eraser tool"
+        validation: "Must have player and door"
+    
+    - features:
+        - "Real-time preview"
+        - "Quick play testing"
+        - "Save with name/description"
+        - "Publish to community"
+  
+  backend:
+    - authentication: "Reddit OAuth"
+    - storage: "PostgreSQL for levels"
+    - caching: "Redis for sessions"
+    - leaderboards: "Per-level score tracking"
+
+technical_requirements:
+  platform: "Reddit Devvit"
+  frontend:
+    - React
+    - Phaser 3
+    - TypeScript
+    - Vite
+    - Tailwind CSS
+  
+  backend:
+    - Node.js 22+
+    - Express
+    - Redis (Devvit)
+    - PostgreSQL
+  
+  quality:
+    - "100% TypeScript strict mode"
+    - "ESLint with zero errors"
+    - "Automated test generation"
+    - "Pre-commit hooks for quality"
+
+performance_targets:
+  - "60 FPS gameplay"
+  - "< 3s level load time"
+  - "< 100ms input latency"
+  - "Mobile-responsive (< 768px)"
+
+security:
+  - "Input sanitization"
+  - "JWT authentication"
+  - "CORS protection"
+  - "Environment variable secrets"
+

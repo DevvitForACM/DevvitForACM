@@ -137,9 +137,37 @@ export class CreateScene extends Phaser.Scene {
     // Handle scene wake event (when resumed from pause)
     this.events.on('wake', () => {
       console.log('[CreateScene] Scene woke up (resumed)');
+      
       // Reset camera scroll speeds that might have been set by controls
       this.cameraScrollSpeed = 0;
       this.cameraScrollSpeedY = 0;
+      
+      // Re-enable input
+      if (this.input) {
+        this.input.enabled = true;
+      }
+      
+      // Re-attach pointer event listeners (they might have been lost)
+      this.input.off('pointermove');
+      this.input.off('pointerout');
+      this.input.off('pointerdown');
+      
+      this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        this.handlePointerMove(pointer);
+      });
+      
+      this.input.on('pointerout', () => {
+        if (this.coordinateText) {
+          this.coordinateText.setVisible(false);
+        }
+      });
+      
+      this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        this.handlePointerDown(pointer);
+      });
+      
+      // Emit custom event so React hooks can respond
+      this.events.emit('scene-resumed');
     });
 
     // Handle scene pause event
@@ -426,13 +454,19 @@ export class CreateScene extends Phaser.Scene {
   }
 
   public shutdown(): void {
-    // Clean up event listeners
-    this.events.removeAllListeners();
+    console.log('[CreateScene] shutdown() called');
+    
+    // Only clean up scale and input listeners
+    // Keep custom events (entity-placed, entity-removed, etc.) for React hooks
     this.scale.off('resize', this.handleResize, this);
     this.input.off('pointermove');
     this.input.off('pointerout');
     this.input.off('pointerdown');
     this.input.off('pointerup');
+    
+    // Remove specific events, not all
+    this.events.off('wake');
+    this.events.off('pause');
     
     // Kill all tweens
     this.tweens.killAll();
